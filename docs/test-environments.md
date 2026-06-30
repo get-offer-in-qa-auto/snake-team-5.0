@@ -74,7 +74,7 @@ PostgreSQL выбран как внешний database backend для production
 
 ## Важный вывод для CI
 
-Если TeamCity каждый раз поднимается с пустым `teamcity-data/`, он считает запуск первым и требует startup confirmation.
+Если TeamCity каждый раз поднимается с пустым `teamcity-local/teamcity-data/`, он считает запуск первым и требует startup confirmation.
 
 Это актуально и для internal HSQLDB, и для внешней PostgreSQL.
 

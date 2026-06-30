@@ -1,14 +1,5 @@
 # Local/generated files currently in this workspace.
 .DS_Store
 README.md
-compose.yaml
-scripts/
 
-/teamcity-data/
-/teamcity-logs/
-/teamcity-agent-conf/
-/teamcity-agent-work/
-/teamcity-agent-system/
-/teamcity-agent-temp/
-/teamcity-agent-tools/
-/teamcity-agent-plugins/
+/teamcity-local/

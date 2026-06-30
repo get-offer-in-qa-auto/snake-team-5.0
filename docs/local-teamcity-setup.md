@@ -26,9 +26,9 @@ jetbrains/teamcity-agent:2026.1.1
 
 Официальная инструкция JetBrains показывает запуск сервера через `docker run` с volume для data directory и logs.
 
-Для локального тестового проекта удобнее использовать `compose.yaml`, потому что нам нужен не только сервер, но и build agent. Agent нужен, чтобы TeamCity мог реально запускать builds.
+Для локального тестового проекта удобнее использовать `teamcity-local/compose.yaml`, потому что нам нужен не только сервер, но и build agent. Agent нужен, чтобы TeamCity мог реально запускать builds.
 
-В `compose.yaml` используется полный образ `jetbrains/teamcity-agent:2026.1.1`. Он тяжелее, чем `jetbrains/teamcity-minimal-agent`, зато содержит больше готовых инструментов для сборок и лучше подходит как универсальный локальный agent.
+В `teamcity-local/compose.yaml` используется полный образ `jetbrains/teamcity-agent:2026.1.1`. Он тяжелее, чем `jetbrains/teamcity-minimal-agent`, зато содержит больше готовых инструментов для сборок и лучше подходит как универсальный локальный agent.
 
 Образ `jetbrains/teamcity-minimal-agent` содержит только TeamCity agent без дополнительных инструментов вроде VCS clients. Его можно использовать для простых smoke-проверок или как базу для своего кастомного agent image, но не как основной agent для полноценного тестирования TeamCity.
 
@@ -36,18 +36,18 @@ jetbrains/teamcity-agent:2026.1.1
 
 ## Локальные директории
 
-При запуске будут созданы локальные директории:
+При запуске локальные runtime-артефакты TeamCity будут созданы внутри директории `teamcity-local/`:
 
-- `teamcity-data/` — TeamCity Data Directory: настройки, проекты, build history, внутренняя база для локального стенда;
-- `teamcity-logs/` — логи сервера;
-- `teamcity-agent-conf/` — конфигурация agent и состояние авторизации;
-- `teamcity-agent-work/` — рабочая директория agent;
-- `teamcity-agent-system/` — кеши и системные файлы agent;
-- `teamcity-agent-temp/` — временные файлы agent;
-- `teamcity-agent-tools/` — инструменты agent;
-- `teamcity-agent-plugins/` — плагины agent.
+- `teamcity-local/teamcity-data/` — TeamCity Data Directory: настройки, проекты, build history, внутренняя база для локального стенда;
+- `teamcity-local/teamcity-logs/` — логи сервера;
+- `teamcity-local/teamcity-agent-conf/` — конфигурация agent и состояние авторизации;
+- `teamcity-local/teamcity-agent-work/` — рабочая директория agent;
+- `teamcity-local/teamcity-agent-system/` — кеши и системные файлы agent;
+- `teamcity-local/teamcity-agent-temp/` — временные файлы agent;
+- `teamcity-local/teamcity-agent-tools/` — инструменты agent;
+- `teamcity-local/teamcity-agent-plugins/` — плагины agent.
 
-Эти директории добавлены в `.gitignore`, потому что это локальное состояние стенда, а не код проекта.
+Директория `teamcity-local/` добавлена в `.gitignore`, потому что это локальное состояние стенда, а не код проекта.
 
 ## Запуск
 
@@ -61,7 +61,7 @@ docker compose version
 Запустить TeamCity:
 
 ```bash
-docker compose up -d
+docker compose -f teamcity-local/compose.yaml up -d
 ```
 
 Первый запуск может быть долгим, потому что Docker скачивает образы сервера и agent. Последующие запуски будут быстрее, если образы уже есть локально.
@@ -69,7 +69,7 @@ docker compose up -d
 Посмотреть логи сервера:
 
 ```bash
-docker compose logs -f teamcity-server
+docker compose -f teamcity-local/compose.yaml logs -f teamcity-server
 ```
 
 После старта открыть:
@@ -101,7 +101,7 @@ http://localhost:8111
 Минимальная проверка после запуска:
 
 ```bash
-docker compose ps
+docker compose -f teamcity-local/compose.yaml ps
 ```
 
 Ожидаем:
@@ -116,23 +116,23 @@ docker compose ps
 Остановить контейнеры, сохранив данные:
 
 ```bash
-docker compose stop
+docker compose -f teamcity-local/compose.yaml stop
 ```
 
 Остановить и удалить контейнеры, сохранив локальные директории:
 
 ```bash
-docker compose down
+docker compose -f teamcity-local/compose.yaml down
 ```
 
-Для полного сброса локального стенда нужно удалить локальные директории `teamcity-data/`, `teamcity-logs/`, `teamcity-agent-conf/`, `teamcity-agent-work/`, `teamcity-agent-system/`, `teamcity-agent-temp/`, `teamcity-agent-tools/` и `teamcity-agent-plugins/`.
+Для полного сброса локального стенда нужно удалить директорию `teamcity-local/`.
 
 ## Важные замечания
 
 - Не используем тег `latest`, чтобы локальный стенд не менял версию без явного решения.
 - Для agent внутри Docker Compose нельзя указывать `http://localhost:8111` как `SERVER_URL`, потому что `localhost` внутри контейнера указывает на сам контейнер agent.
 - Поэтому agent подключается к серверу через имя сервиса: `http://teamcity-server:8111`.
-- Для production JetBrains рекомендует внешнюю базу данных, но для локального тестового стенда достаточно внутренней базы в `teamcity-data/`.
+- Для production JetBrains рекомендует внешнюю базу данных, но для локального тестового стенда достаточно внутренней базы в `teamcity-local/teamcity-data/`.
 
 ## Источники
 
