@@ -1,0 +1,87 @@
+# Test Suites
+
+Дата решения: 2026-06-29
+
+## Цель
+
+Зафиксировать основные группы автотестов для TeamCity.
+
+## Initial Setup / First Admin
+
+Создание первого администратора выделяем в отдельную группу тестов.
+
+Это не обычный login flow, а состояние продукта при чистом первом запуске. Эта группа важна для Docker, CI, bootstrap-сценариев и проверки воспроизводимого поднятия стенда с нуля.
+
+Что проверяем:
+
+- TeamCity стартует с пустым `teamcity-data/`;
+- появляется startup confirmation;
+- можно подтвердить первый запуск;
+- можно выбрать database backend;
+- для локального стенда можно выбрать `Internal database / HSQLDB`;
+- обязательные поля setup wizard нельзя пропустить;
+- нельзя создать первого администратора с невалидными данными;
+- можно создать первого администратора с валидными данными;
+- после создания первого администратора можно войти в TeamCity;
+- после завершения setup REST API становится доступен;
+- после завершения setup wizard не появляется повторно при рестарте с сохраненным `teamcity-data/`;
+- agent появляется в `Agents -> Unauthorized`;
+- первый администратор может авторизовать agent.
+
+## Environment Bootstrap
+
+Эта группа связана с `Initial Setup / First Admin`, но ориентирована на CI.
+
+Цель — поднять TeamCity с нуля без ручного UI и подготовить стенд к запуску остальных автотестов.
+
+Что проверяем:
+
+- bootstrap проходит на пустом `teamcity-data/`;
+- bootstrap может настроить internal HSQLDB;
+- bootstrap может настроить внешний database backend для production-like окружения;
+- создается administrator user или access token;
+- REST API становится доступен;
+- agent авторизуется автоматически или подготовленным API-шагом;
+- после bootstrap можно запускать остальные suites.
+
+## Core REST API
+
+Базовые проверки REST API:
+
+- health/readiness endpoints;
+- получение информации о сервере;
+- создание project;
+- создание build configuration;
+- чтение build configuration;
+- запуск build;
+- получение build status;
+- обработка ошибок авторизации;
+- работа с access token.
+
+## Agent Management
+
+Проверки agent lifecycle:
+
+- agent стартует и пытается зарегистрироваться;
+- unauthorized agent виден в TeamCity;
+- admin может авторизовать agent;
+- authorized agent становится connected/idle;
+- agent может взять build;
+- agent корректно отображается после рестарта.
+
+## Build Execution
+
+Проверки запуска сборок:
+
+- создание простой build configuration;
+- запуск build вручную;
+- успешное завершение build;
+- failed build при ошибочной команде;
+- build logs доступны;
+- build status корректно возвращается через UI/API.
+
+## Database Compatibility
+
+Проверки совместимости с базами данных описаны отдельно в `docs/test-environments.md`.
+
+Цель этой группы — не прогонять весь regression на каждой БД, а проверить, что TeamCity стартует и выполняет базовый сценарий с каждым поддерживаемым database backend.
