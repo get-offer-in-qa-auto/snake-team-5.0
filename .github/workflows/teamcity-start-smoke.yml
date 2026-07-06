@@ -35,11 +35,11 @@ jobs:
         run: docker compose -f ci/teamcity/compose.yaml up -d
 
       - name: Wait for TeamCity web endpoint
-        run: python3 scripts/teamcity_start_smoke.py --url http://localhost:8111 --timeout 600
+        run: python3 scripts/teamcity_start_smoke.py --url http://localhost:8111/login.html --timeout 300 --interval 2 --request-timeout 5
 
       - name: Run TeamCity short suite
         env:
-          TEAMCITY_URL: http://localhost:8111
+          TEAMCITY_URL: http://localhost:8111/login.html
         run: |
           mkdir -p artifacts/test-results
           python3 -m pytest -m short tests --junitxml=artifacts/test-results/teamcity-short.xml

@@ -15,6 +15,8 @@ FIRST_START_MARKERS = (
     "super user authentication token",
 )
 
+OPEN_STATUSES = (200, 401, 403)
+
 
 def request_url(url: str, timeout: int) -> tuple[int | None, str]:
     request = Request(url, headers={"User-Agent": "teamcity-start-smoke"})
@@ -39,14 +41,18 @@ def is_expected_first_start(status: int | None, body: str) -> bool:
     return any(marker in normalized_body for marker in FIRST_START_MARKERS)
 
 
+def is_teamcity_opened(status: int | None, body: str) -> bool:
+    return status in OPEN_STATUSES or is_expected_first_start(status, body)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Wait until TeamCity starts enough for the initial CI smoke."
     )
-    parser.add_argument("--url", default="http://localhost:8111")
-    parser.add_argument("--timeout", type=int, default=600)
-    parser.add_argument("--interval", type=int, default=10)
-    parser.add_argument("--request-timeout", type=int, default=10)
+    parser.add_argument("--url", default="http://localhost:8111/login.html")
+    parser.add_argument("--timeout", type=int, default=300)
+    parser.add_argument("--interval", type=int, default=2)
+    parser.add_argument("--request-timeout", type=int, default=5)
     args = parser.parse_args()
 
     deadline = time.monotonic() + args.timeout
@@ -60,14 +66,8 @@ def main() -> int:
 
         if status is None:
             print(f"TeamCity is not accepting HTTP connections yet: {body}")
-        elif 200 <= status < 500:
+        elif is_teamcity_opened(status, body):
             print(f"TeamCity web endpoint is reachable with HTTP {status}.")
-            return 0
-        elif is_expected_first_start(status, body):
-            print(
-                "TeamCity reached the expected first-start confirmation state "
-                f"with HTTP {status}."
-            )
             return 0
         else:
             print(f"TeamCity answered with HTTP {status}; waiting.")
