@@ -14,6 +14,7 @@
 - показать понятное readiness-состояние: `READY_LOGIN_PAGE`, `AUTH_REQUIRED` или `FIRST_START_REQUIRED`;
 - запустить короткую suite через `pytest -m short`;
 - сохранить JUnit XML test result;
+- сохранить snapshot реальной страницы `login.html`, headers и readiness summary;
 - сохранить Docker Compose status и logs как GitHub Actions artifacts;
 - остановить контейнеры и удалить временные volumes после проверки.
 
@@ -45,6 +46,25 @@ Pipeline считается успешным, если:
 - GitHub Step Summary показывает итоговое состояние TeamCity readiness;
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
+- страница `login.html` сохранена в artifact `teamcity-login-page`.
+
+## Debug artifacts
+
+Runner GitHub Actions недоступен снаружи, поэтому открыть `localhost:8111` руками во время CI нельзя.
+
+Чтобы посмотреть, что реально вернул TeamCity, pipeline сохраняет artifact:
+
+```text
+teamcity-login-page
+```
+
+Внутри:
+
+- `login.html` — HTML страницы, которую вернул TeamCity;
+- `headers.txt` — HTTP headers;
+- `readiness.txt` — человекочитаемая классификация состояния.
+
+Для ручного запуска `workflow_dispatch` есть input `debug_hold_seconds`. Он не открывает внешний доступ к TeamCity, но может задержать остановку контейнеров, чтобы успеть посмотреть live logs в GitHub Actions UI.
 
 ## Следующий этап
 

@@ -7,6 +7,11 @@ on:
       - main
       - "codex/**"
   workflow_dispatch:
+    inputs:
+      debug_hold_seconds:
+        description: "Optional seconds to keep TeamCity containers running after checks for log inspection"
+        required: false
+        default: "0"
 
 jobs:
   teamcity-start-smoke:
@@ -44,6 +49,10 @@ jobs:
           mkdir -p artifacts/test-results
           python3 -m pytest -m short tests --junitxml=artifacts/test-results/teamcity-short.xml
 
+      - name: Capture TeamCity login page
+        if: always()
+        run: python3 scripts/teamcity_capture_page.py --url http://localhost:8111/login.html --output-dir artifacts/teamcity-page
+
       - name: Show container status
         if: always()
         run: docker compose -f ci/teamcity/compose.yaml ps
@@ -70,6 +79,31 @@ jobs:
           name: teamcity-short-test-results
           path: artifacts/test-results
           if-no-files-found: ignore
+
+      - name: Upload TeamCity page snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teamcity-login-page
+          path: artifacts/teamcity-page
+          if-no-files-found: ignore
+
+      - name: Debug hold
+        if: always() && github.event_name == 'workflow_dispatch'
+        env:
+          DEBUG_HOLD_SECONDS: ${{ inputs.debug_hold_seconds }}
+        run: |
+          seconds="${DEBUG_HOLD_SECONDS:-0}"
+          if ! [[ "$seconds" =~ ^[0-9]+$ ]]; then
+            echo "debug_hold_seconds must be a non-negative integer"
+            exit 1
+          fi
+          if [ "$seconds" -gt 0 ]; then
+            echo "Keeping TeamCity containers running for $seconds seconds."
+            sleep "$seconds"
+          else
+            echo "Debug hold disabled."
+          fi
 
       - name: Stop TeamCity
         if: always()
