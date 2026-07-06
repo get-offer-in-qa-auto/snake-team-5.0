@@ -11,6 +11,7 @@
 - поднять TeamCity Server;
 - поднять TeamCity Agent;
 - дождаться HTTP-ответа от `http://localhost:8111/login.html`;
+- показать понятное readiness-состояние: `READY_LOGIN_PAGE`, `AUTH_REQUIRED` или `FIRST_START_REQUIRED`;
 - запустить короткую suite через `pytest -m short`;
 - сохранить JUnit XML test result;
 - сохранить Docker Compose status и logs как GitHub Actions artifacts;
@@ -41,6 +42,7 @@ Pipeline считается успешным, если:
 - Docker Compose успешно поднял containers;
 - TeamCity web endpoint начал отвечать;
 - pytest smoke-test подтвердил, что TeamCity login page открылась;
+- GitHub Step Summary показывает итоговое состояние TeamCity readiness;
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
 
