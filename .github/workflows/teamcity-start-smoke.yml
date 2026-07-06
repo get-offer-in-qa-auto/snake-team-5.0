@@ -37,12 +37,12 @@ jobs:
       - name: Wait for TeamCity web endpoint
         run: python3 scripts/teamcity_start_smoke.py --url http://localhost:8111 --timeout 600
 
-      - name: Run TeamCity smoke tests
+      - name: Run TeamCity short suite
         env:
           TEAMCITY_URL: http://localhost:8111
         run: |
           mkdir -p artifacts/test-results
-          python3 -m pytest -m smoke tests/smoke --junitxml=artifacts/test-results/teamcity-smoke.xml
+          python3 -m pytest -m short tests --junitxml=artifacts/test-results/teamcity-short.xml
 
       - name: Show container status
         if: always()
@@ -63,11 +63,11 @@ jobs:
           path: artifacts/teamcity
           if-no-files-found: ignore
 
-      - name: Upload smoke test results
+      - name: Upload short suite test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: teamcity-smoke-test-results
+          name: teamcity-short-test-results
           path: artifacts/test-results
           if-no-files-found: ignore
 

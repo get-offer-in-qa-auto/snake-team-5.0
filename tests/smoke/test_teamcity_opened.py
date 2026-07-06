@@ -6,6 +6,7 @@ from scripts.teamcity_start_smoke import is_expected_first_start, request_url
 
 
 @pytest.mark.smoke
+@pytest.mark.short
 def test_teamcity_web_endpoint_is_opened():
     teamcity_url = os.getenv("TEAMCITY_URL", "http://localhost:8111")
 

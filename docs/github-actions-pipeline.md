@@ -6,12 +6,12 @@
 
 Первый CI-этап проверяет запуск TeamCity стенда и выполняет один минимальный smoke-test.
 
-На текущем этапе pipeline запускает только один минимальный pytest smoke-test с marker `smoke`: TeamCity web endpoint должен открыть HTTP-соединение и вернуть ожидаемый ответ.
+На текущем этапе pipeline запускает короткую pytest suite через marker `short`. В нее входит один минимальный smoke-test с markers `smoke` и `short`: TeamCity web endpoint должен открыть HTTP-соединение и вернуть ожидаемый ответ.
 
 - поднять TeamCity Server;
 - поднять TeamCity Agent;
 - дождаться HTTP-ответа от TeamCity UI;
-- запустить smoke-test `tests/smoke/test_teamcity_opened.py` через `pytest -m smoke`;
+- запустить короткую suite через `pytest -m short`;
 - сохранить JUnit XML test result;
 - сохранить Docker Compose status и logs как GitHub Actions artifacts;
 - остановить контейнеры и удалить временные volumes после проверки.
