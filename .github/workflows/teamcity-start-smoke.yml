@@ -42,7 +42,7 @@ jobs:
           TEAMCITY_URL: http://localhost:8111
         run: |
           mkdir -p artifacts/test-results
-          python3 -m pytest tests/smoke --junitxml=artifacts/test-results/teamcity-smoke.xml
+          python3 -m pytest -m smoke tests/smoke --junitxml=artifacts/test-results/teamcity-smoke.xml
 
       - name: Show container status
         if: always()
