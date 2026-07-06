@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import http.client
 import sys
 import time
 from urllib.error import HTTPError, URLError
@@ -26,6 +27,8 @@ def request_url(url: str, timeout: int) -> tuple[int | None, str]:
         return error.code, body
     except URLError as error:
         return None, str(error.reason)
+    except (ConnectionError, TimeoutError, OSError, http.client.HTTPException) as error:
+        return None, str(error)
 
 
 def is_expected_first_start(status: int | None, body: str) -> bool:
