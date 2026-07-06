@@ -1,4 +1,9 @@
 # Local/generated files currently in this workspace.
 .DS_Store
 
+# Python local caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
 /teamcity-local/

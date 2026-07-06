@@ -4,13 +4,15 @@
 
 ## Текущий этап
 
-Первый CI-этап проверяет только запуск TeamCity стенда.
+Первый CI-этап проверяет запуск TeamCity стенда и выполняет один минимальный smoke-test.
 
-Автотестов в проекте пока нет, поэтому pipeline не запускает pytest, Playwright или Allure. Его задача на этом этапе:
+На текущем этапе pipeline запускает только один минимальный pytest smoke-test: TeamCity web endpoint должен открыть HTTP-соединение и вернуть ожидаемый ответ.
 
 - поднять TeamCity Server;
 - поднять TeamCity Agent;
 - дождаться HTTP-ответа от TeamCity UI;
+- запустить smoke-test `tests/smoke/test_teamcity_opened.py`;
+- сохранить JUnit XML test result;
 - сохранить Docker Compose status и logs как GitHub Actions artifacts;
 - остановить контейнеры и удалить временные volumes после проверки.
 
@@ -38,8 +40,9 @@ Pipeline считается успешным, если:
 
 - Docker Compose успешно поднял containers;
 - TeamCity web endpoint начал отвечать;
+- pytest smoke-test подтвердил, что TeamCity открылся;
 - контейнеры не упали во время smoke-проверки;
-- логи собраны в artifacts.
+- JUnit XML и логи собраны в artifacts.
 
 ## Следующий этап
 
@@ -52,4 +55,4 @@ Pipeline считается успешным, если:
 - авторизовать agent;
 - проверить состояние `authorized + connected`.
 
-После этого можно добавлять первые pytest smoke/e2e tests.
+После этого можно расширять pytest smoke/e2e tests.
