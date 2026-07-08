@@ -55,10 +55,14 @@ jobs:
           mkdir -p artifacts/test-results
           python3 -m pytest -m smoke tests --junitxml=artifacts/test-results/teamcity-smoke.xml
 
+      # Сохраняем ответ login page даже при падении предыдущих шагов,
+      # чтобы в artifacts было видно, что реально вернул TeamCity.
       - name: Capture TeamCity login page
         if: always()
         run: python3 scripts/teamcity_capture_page.py --url "$TEAMCITY_URL" --output-dir artifacts/teamcity-page
 
+      # Печатаем состояние контейнеров в лог CI,
+      # чтобы сразу видеть, запущены ли server и agent после проверки.
       - name: Show container status
         if: always()
         run: docker compose -f ci/teamcity/compose.yaml ps
