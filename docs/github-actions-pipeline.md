@@ -64,7 +64,7 @@ teamcity-login-page
 - `headers.txt` — HTTP headers;
 - `readiness.txt` — человекочитаемая классификация состояния.
 
-Для ручного запуска `workflow_dispatch` есть input `debug_hold_seconds`. Он не открывает внешний доступ к TeamCity, но может задержать остановку контейнеров, чтобы успеть посмотреть live logs в GitHub Actions UI.
+Workflow можно запустить вручную через `Run workflow`; дополнительных параметров для запуска нет.
 
 ## Следующий этап
 
