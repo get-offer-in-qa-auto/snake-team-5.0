@@ -12,6 +12,13 @@ jobs:
     name: Start TeamCity
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      # Docker Compose пробрасывает порт 8111 на runner,
+      # поэтому CI-проверки обращаются к TeamCity через localhost.
+      TEAMCITY_URL: "http://localhost:8111/login.html"
+      TEAMCITY_WAIT_TIMEOUT_SECONDS: "300"
+      TEAMCITY_WAIT_INTERVAL_SECONDS: "2"
+      TEAMCITY_REQUEST_TIMEOUT_SECONDS: "5"
 
     steps:
       # Проверяем Docker в самом начале, чтобы быстро понять,
@@ -36,18 +43,21 @@ jobs:
         run: docker compose -f ci/teamcity/compose.yaml up -d
 
       - name: Wait for TeamCity web endpoint
-        run: python3 scripts/teamcity_start_smoke.py --url http://localhost:8111/login.html --timeout 300 --interval 2 --request-timeout 5
+        run: |
+          python3 scripts/teamcity_start_smoke.py \
+            --url "$TEAMCITY_URL" \
+            --timeout "$TEAMCITY_WAIT_TIMEOUT_SECONDS" \
+            --interval "$TEAMCITY_WAIT_INTERVAL_SECONDS" \
+            --request-timeout "$TEAMCITY_REQUEST_TIMEOUT_SECONDS"
 
       - name: Run TeamCity smoke tests
-        env:
-          TEAMCITY_URL: http://localhost:8111/login.html
         run: |
           mkdir -p artifacts/test-results
           python3 -m pytest -m smoke tests --junitxml=artifacts/test-results/teamcity-smoke.xml
 
       - name: Capture TeamCity login page
         if: always()
-        run: python3 scripts/teamcity_capture_page.py --url http://localhost:8111/login.html --output-dir artifacts/teamcity-page
+        run: python3 scripts/teamcity_capture_page.py --url "$TEAMCITY_URL" --output-dir artifacts/teamcity-page
 
       - name: Show container status
         if: always()
