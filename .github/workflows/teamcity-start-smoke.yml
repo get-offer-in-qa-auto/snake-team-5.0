@@ -14,6 +14,13 @@ jobs:
     timeout-minutes: 20
 
     steps:
+      # Проверяем Docker в самом начале, чтобы быстро понять,
+      # сможет ли runner запустить TeamCity Server и Agent в контейнерах.
+      - name: Check Docker availability
+        run: |
+          docker --version
+          docker compose version
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -24,11 +31,6 @@ jobs:
 
       - name: Install test dependencies
         run: python3 -m pip install -r requirements.txt
-
-      - name: Show Docker versions
-        run: |
-          docker --version
-          docker compose version
 
       - name: Start TeamCity server and agent
         run: docker compose -f ci/teamcity/compose.yaml up -d
