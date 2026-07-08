@@ -28,20 +28,27 @@ jobs:
           docker --version
           docker compose version
 
+      # Скачиваем код репозитория на GitHub runner,
+      # чтобы workflow мог видеть scripts, tests и compose-файл.
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Готовим Python 3.12 для запуска helper-скриптов и pytest smoke-тестов.
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+      # Устанавливаем зависимости тестового проекта из requirements.txt.
       - name: Install test dependencies
         run: python3 -m pip install -r requirements.txt
 
+      # Поднимаем TeamCity Server и Agent в Docker Compose в фоне.
       - name: Start TeamCity server and agent
         run: docker compose -f ci/teamcity/compose.yaml up -d
 
+      # Ждем, пока TeamCity начнет отвечать по HTTP,
+      # потому что контейнер может быть запущен раньше, чем готов web UI.
       - name: Wait for TeamCity web endpoint
         run: |
           python3 scripts/teamcity_start_smoke.py \
@@ -50,6 +57,7 @@ jobs:
             --interval "$TEAMCITY_WAIT_INTERVAL_SECONDS" \
             --request-timeout "$TEAMCITY_REQUEST_TIMEOUT_SECONDS"
 
+      # Запускаем минимальные pytest smoke-тесты и сохраняем JUnit XML результат.
       - name: Run TeamCity smoke tests
         run: |
           mkdir -p artifacts/test-results
@@ -67,6 +75,8 @@ jobs:
         if: always()
         run: docker compose -f ci/teamcity/compose.yaml ps
 
+      # Собираем состояние Docker Compose и логи контейнеров в файлы,
+      # чтобы их можно было скачать и разобрать после завершения workflow.
       - name: Collect TeamCity logs
         if: always()
         run: |
@@ -74,6 +84,7 @@ jobs:
           docker compose -f ci/teamcity/compose.yaml ps > artifacts/teamcity/docker-compose-ps.txt
           docker compose -f ci/teamcity/compose.yaml logs --no-color > artifacts/teamcity/docker-compose.log
 
+      # Загружаем логи TeamCity и Docker Compose как artifact GitHub Actions.
       - name: Upload TeamCity logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -82,6 +93,7 @@ jobs:
           path: artifacts/teamcity
           if-no-files-found: ignore
 
+      # Загружаем JUnit XML с результатами pytest smoke-тестов.
       - name: Upload smoke test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -90,6 +102,7 @@ jobs:
           path: artifacts/test-results
           if-no-files-found: ignore
 
+      # Загружаем сохраненный ответ login page как artifact для диагностики UI.
       - name: Upload TeamCity page snapshot
         if: always()
         uses: actions/upload-artifact@v4
@@ -98,6 +111,8 @@ jobs:
           path: artifacts/teamcity-page
           if-no-files-found: ignore
 
+      # Останавливаем контейнеры и удаляем временные volumes,
+      # чтобы следующий запуск CI стартовал с чистого TeamCity стенда.
       - name: Stop TeamCity
         if: always()
         run: docker compose -f ci/teamcity/compose.yaml down -v
