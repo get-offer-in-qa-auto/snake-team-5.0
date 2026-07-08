@@ -1,0 +1,110 @@
+name: TeamCity Start Smoke
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  workflow_dispatch:
+    inputs:
+      debug_hold_seconds:
+        description: "Optional seconds to keep TeamCity containers running after checks for log inspection"
+        required: false
+        default: "0"
+
+jobs:
+  teamcity-start-smoke:
+    name: Start TeamCity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: python3 -m pip install -r requirements.txt
+
+      - name: Show Docker versions
+        run: |
+          docker --version
+          docker compose version
+
+      - name: Start TeamCity server and agent
+        run: docker compose -f ci/teamcity/compose.yaml up -d
+
+      - name: Wait for TeamCity web endpoint
+        run: python3 scripts/teamcity_start_smoke.py --url http://localhost:8111/login.html --timeout 300 --interval 2 --request-timeout 5
+
+      - name: Run TeamCity smoke tests
+        env:
+          TEAMCITY_URL: http://localhost:8111/login.html
+        run: |
+          mkdir -p artifacts/test-results
+          python3 -m pytest -m smoke tests --junitxml=artifacts/test-results/teamcity-smoke.xml
+
+      - name: Capture TeamCity login page
+        if: always()
+        run: python3 scripts/teamcity_capture_page.py --url http://localhost:8111/login.html --output-dir artifacts/teamcity-page
+
+      - name: Show container status
+        if: always()
+        run: docker compose -f ci/teamcity/compose.yaml ps
+
+      - name: Collect TeamCity logs
+        if: always()
+        run: |
+          mkdir -p artifacts/teamcity
+          docker compose -f ci/teamcity/compose.yaml ps > artifacts/teamcity/docker-compose-ps.txt
+          docker compose -f ci/teamcity/compose.yaml logs --no-color > artifacts/teamcity/docker-compose.log
+
+      - name: Upload TeamCity logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teamcity-start-smoke-logs
+          path: artifacts/teamcity
+          if-no-files-found: ignore
+
+      - name: Upload smoke test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teamcity-smoke-test-results
+          path: artifacts/test-results
+          if-no-files-found: ignore
+
+      - name: Upload TeamCity page snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teamcity-login-page
+          path: artifacts/teamcity-page
+          if-no-files-found: ignore
+
+      - name: Debug hold
+        if: always() && github.event_name == 'workflow_dispatch'
+        env:
+          DEBUG_HOLD_SECONDS: ${{ inputs.debug_hold_seconds }}
+        run: |
+          seconds="${DEBUG_HOLD_SECONDS:-0}"
+          if ! [[ "$seconds" =~ ^[0-9]+$ ]]; then
+            echo "debug_hold_seconds must be a non-negative integer"
+            exit 1
+          fi
+          if [ "$seconds" -gt 0 ]; then
+            echo "Keeping TeamCity containers running for $seconds seconds."
+            sleep "$seconds"
+          else
+            echo "Debug hold disabled."
+          fi
+
+      - name: Stop TeamCity
+        if: always()
+        run: docker compose -f ci/teamcity/compose.yaml down -v
