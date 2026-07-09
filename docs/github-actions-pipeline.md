@@ -100,6 +100,8 @@ teamcity-regression-allure-results
 teamcity-regression-allure-report
 ```
 
+Перед генерацией HTML-report workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. Для этого используется ветка `gh-pages`: `smoke` берет историю только из прошлых `reports/smoke/...`, а `regression` только из прошлых `reports/regression/...`.
+
 GitHub Actions artifacts хранятся 7 дней:
 
 - TeamCity и Docker Compose logs;

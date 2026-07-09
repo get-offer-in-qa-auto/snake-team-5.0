@@ -237,6 +237,8 @@ allure generate artifacts/allure-results --clean -o artifacts/allure-report
 
 GitHub Actions artifacts хранятся 7 дней.
 
+Перед генерацией HTML-отчета workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. История `smoke` и `regression` хранится отдельно и не смешивается.
+
 После любого GitHub Actions запуска workflow также публикует Allure report в GitHub Pages:
 
 ```text

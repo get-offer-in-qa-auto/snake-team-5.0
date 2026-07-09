@@ -96,6 +96,31 @@ runs:
         distribution: temurin
         java-version: "17"
 
+    # Подкладываем history из последнего опубликованного отчета той же suite/job,
+    # чтобы Allure trend не смешивал smoke и regression между собой.
+    - name: Restore Allure history
+      if: always()
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        if [ ! -d artifacts/allure-results ] || [ "$(find artifacts/allure-results -type f | wc -l)" -eq 0 ]; then
+          echo "No Allure results found, skipping history restore."
+          exit 0
+        fi
+
+        remote_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        if git ls-remote --exit-code --heads "$remote_url" gh-pages >/dev/null 2>&1; then
+          rm -rf pages-history
+          git clone --depth=1 --branch gh-pages "$remote_url" pages-history
+          python3 .github/scripts/restore_allure_history.py \
+            --site-dir pages-history \
+            --suite "${{ inputs.test_label }}" \
+            --results-dir artifacts/allure-results
+        else
+          echo "No gh-pages branch found, skipping history restore."
+        fi
+
     # Устанавливаем Allure commandline и сразу собираем статический HTML-report.
     - name: Generate Allure report
       if: always()
