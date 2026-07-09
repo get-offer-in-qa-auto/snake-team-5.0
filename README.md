@@ -237,6 +237,8 @@ allure generate artifacts/allure-results --clean -o artifacts/allure-report
 
 GitHub Actions artifacts хранятся 7 дней.
 
+Перед генерацией HTML-отчета workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. История `smoke` и `regression` хранится отдельно и не смешивается.
+
 После любого GitHub Actions запуска workflow также публикует Allure report в GitHub Pages:
 
 ```text
@@ -247,6 +249,13 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/
 
 ```text
 https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/<suite>/<run_id>-attempt-<attempt>/
+```
+
+Для каждой suite/job также есть своя группа отчетов:
+
+```text
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/smoke/
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/regression/
 ```
 
 Чтобы старые ссылки не перезатирались, workflow хранит опубликованный Pages site в ветке `gh-pages` и добавляет каждый новый отчет в отдельный каталог. GitHub Actions artifacts хранятся 7 дней, а опубликованные Pages-отчеты остаются в `gh-pages`, пока их не удалить отдельной чисткой. Чтобы публикация работала, в настройках репозитория нужно включить GitHub Pages с source `GitHub Actions`. Ссылка на конкретный отчет появляется в workflow summary и в deployment environment `github-pages`.

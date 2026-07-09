@@ -100,6 +100,8 @@ teamcity-regression-allure-results
 teamcity-regression-allure-report
 ```
 
+Перед генерацией HTML-report workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. Для этого используется ветка `gh-pages`: `smoke` берет историю только из прошлых `reports/smoke/...`, а `regression` только из прошлых `reports/regression/...`.
+
 GitHub Actions artifacts хранятся 7 дней:
 
 - TeamCity и Docker Compose logs;
@@ -121,6 +123,13 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/
 
 ```text
 https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/<suite>/<run_id>-attempt-<attempt>/
+```
+
+У каждой suite/job есть отдельная группа отчетов:
+
+```text
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/smoke/
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/regression/
 ```
 
 Чтобы старые ссылки не перезатирались, workflow хранит опубликованный Pages site в ветке `gh-pages` и добавляет новый отчет в отдельный каталог. GitHub Actions artifacts хранятся 7 дней, а опубликованные Pages-отчеты остаются в `gh-pages`, пока их не удалить отдельной чисткой.
