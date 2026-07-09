@@ -100,6 +100,15 @@ teamcity-regression-allure-results
 teamcity-regression-allure-report
 ```
 
+GitHub Actions artifacts хранятся 7 дней:
+
+- TeamCity и Docker Compose logs;
+- JUnit XML test results;
+- Allure results;
+- Allure HTML-report;
+- TeamCity page snapshot;
+- GitHub Pages artifact.
+
 Кроме artifacts, workflow публикует последний готовый HTML-report в GitHub Pages для pull request, push и workflow_dispatch запусков.
 
 URL страницы отчета:
