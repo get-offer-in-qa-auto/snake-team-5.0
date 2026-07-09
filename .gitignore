@@ -6,4 +6,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# Test reports and CI artifacts
+/artifacts/
+/allure-results/
+/allure-report/
+
 /teamcity-local/

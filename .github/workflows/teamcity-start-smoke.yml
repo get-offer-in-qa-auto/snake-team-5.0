@@ -10,6 +10,10 @@ on:
 jobs:
   teamcity-start-smoke:
     name: Start TeamCity
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     # Общая логика запуска TeamCity и pytest вынесена в reusable workflow.
     uses: ./.github/workflows/teamcity-pytest.yml
     with:
@@ -20,3 +24,4 @@ jobs:
       logs_artifact_name: teamcity-start-smoke-logs
       results_artifact_name: teamcity-smoke-test-results
       page_artifact_name: teamcity-login-page
+      publish_pages: ${{ github.event_name != 'pull_request' }}

@@ -14,6 +14,9 @@
 - показать понятное readiness-состояние: `READY_LOGIN_PAGE`, `AUTH_REQUIRED` или `FIRST_START_REQUIRED`;
 - запустить smoke-test через `pytest -m smoke`;
 - сохранить JUnit XML test result;
+- сохранить Allure results;
+- сразу собрать Allure HTML-report;
+- опубликовать последний Allure HTML-report как GitHub Pages page для не-PR запусков;
 - сохранить snapshot реальной страницы `login.html`, headers и readiness summary;
 - сохранить Docker Compose status и logs как GitHub Actions artifacts;
 - остановить контейнеры и удалить временные volumes после проверки.
@@ -46,6 +49,8 @@ Pipeline считается успешным, если:
 - GitHub Step Summary показывает итоговое состояние TeamCity readiness;
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
+- Allure results и готовый Allure HTML-report собраны в artifacts.
+- для push/workflow_dispatch запуска опубликована ссылка на последний Allure report.
 - страница `login.html` сохранена в artifact `teamcity-login-page`.
 
 ## Debug artifacts
@@ -65,6 +70,51 @@ teamcity-login-page
 - `readiness.txt` — человекочитаемая классификация состояния.
 
 Workflow можно запустить вручную через `Run workflow`; дополнительных параметров для запуска нет.
+
+## Allure report
+
+Pytest автоматически пишет Allure results в:
+
+```text
+artifacts/allure-results
+```
+
+Reusable workflow после pytest-прогона устанавливает Allure commandline, генерирует статический HTML-report и загружает два artifacts:
+
+```text
+teamcity-<suite>-allure-results
+teamcity-<suite>-allure-report
+```
+
+Для smoke suite это будут:
+
+```text
+teamcity-smoke-allure-results
+teamcity-smoke-allure-report
+```
+
+Для regression suite:
+
+```text
+teamcity-regression-allure-results
+teamcity-regression-allure-report
+```
+
+Кроме artifacts, workflow публикует последний готовый HTML-report в GitHub Pages для запусков, которые не являются pull request. Pull request запускает тесты и сохраняет artifacts, но не публикует Pages site.
+
+URL страницы отчета:
+
+```text
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/
+```
+
+После деплоя ссылка также появляется в GitHub Actions workflow summary и в environment `github-pages`.
+
+Для первого запуска нужно один раз включить Pages в настройках репозитория:
+
+```text
+Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+```
 
 ## Следующий этап
 
