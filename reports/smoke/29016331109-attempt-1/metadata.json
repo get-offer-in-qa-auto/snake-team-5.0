@@ -1,0 +1,10 @@
+{
+  "branch": "main",
+  "event": "push",
+  "generated_at": "2026-07-09T11:55:27+00:00",
+  "report_id": "29016331109-attempt-1",
+  "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29016331109",
+  "sha": "64fc9a49f801c24f935ba88a046f0e40357a35bb",
+  "suite": "smoke",
+  "workflow": "TeamCity Start Smoke"
+}
