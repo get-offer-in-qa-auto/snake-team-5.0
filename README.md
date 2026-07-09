@@ -235,6 +235,8 @@ allure generate artifacts/allure-results --clean -o artifacts/allure-report
 - `teamcity-<suite>-allure-results`
 - `teamcity-<suite>-allure-report`
 
+GitHub Actions artifacts хранятся 7 дней.
+
 После любого GitHub Actions запуска workflow также публикует последний Allure report в GitHub Pages:
 
 ```text
