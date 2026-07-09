@@ -187,7 +187,7 @@ runs:
 
     # Загружаем Allure report в специальный Pages artifact.
     - name: Upload Allure report for GitHub Pages
-      if: ${{ always() && inputs.publish_pages == 'true' && github.event_name != 'pull_request' && steps.allure-pages.outputs.ready == 'true' }}
+      if: ${{ always() && inputs.publish_pages == 'true' && steps.allure-pages.outputs.ready == 'true' }}
       uses: actions/upload-pages-artifact@v5
       with:
         path: artifacts/allure-report

@@ -16,7 +16,7 @@
 - сохранить JUnit XML test result;
 - сохранить Allure results;
 - сразу собрать Allure HTML-report;
-- опубликовать последний Allure HTML-report как GitHub Pages page для не-PR запусков;
+- опубликовать последний Allure HTML-report как GitHub Pages page для любого запуска;
 - сохранить snapshot реальной страницы `login.html`, headers и readiness summary;
 - сохранить Docker Compose status и logs как GitHub Actions artifacts;
 - остановить контейнеры и удалить временные volumes после проверки.
@@ -50,7 +50,7 @@ Pipeline считается успешным, если:
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
 - Allure results и готовый Allure HTML-report собраны в artifacts.
-- для push/workflow_dispatch запуска опубликована ссылка на последний Allure report.
+- для pull_request, push и workflow_dispatch запуска опубликована ссылка на последний Allure report.
 - страница `login.html` сохранена в artifact `teamcity-login-page`.
 
 ## Debug artifacts
@@ -79,7 +79,7 @@ Pytest автоматически пишет Allure results в:
 artifacts/allure-results
 ```
 
-Reusable workflow после pytest-прогона устанавливает Allure commandline, генерирует статический HTML-report и загружает два artifacts:
+Local composite action после pytest-прогона устанавливает Allure commandline, генерирует статический HTML-report и загружает два artifacts:
 
 ```text
 teamcity-<suite>-allure-results
@@ -100,7 +100,7 @@ teamcity-regression-allure-results
 teamcity-regression-allure-report
 ```
 
-Кроме artifacts, workflow публикует последний готовый HTML-report в GitHub Pages для запусков, которые не являются pull request. Pull request запускает тесты и сохраняет artifacts, но не публикует Pages site.
+Кроме artifacts, workflow публикует последний готовый HTML-report в GitHub Pages для pull request, push и workflow_dispatch запусков.
 
 URL страницы отчета:
 
