@@ -1,0 +1,78 @@
+name: Publish Allure Pages
+description: Add an Allure report to persistent GitHub Pages history and upload the Pages artifact.
+
+inputs:
+  report_artifact_name:
+    description: GitHub Actions artifact name containing the generated Allure HTML report.
+    required: true
+  suite_name:
+    description: Test suite name used in the published report path.
+    required: true
+
+outputs:
+  report_path:
+    description: Path of the published report under the GitHub Pages site.
+    value: ${{ steps.update-pages.outputs.report_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Download Allure report artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.report_artifact_name }}
+        path: downloaded-allure-report
+
+    - name: Prepare Pages history branch
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        rm -rf pages-site
+        mkdir pages-site
+        git init pages-site
+        cd pages-site
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+        if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+          git fetch --depth=1 origin gh-pages
+          git checkout -B gh-pages FETCH_HEAD
+        else
+          git checkout --orphan gh-pages
+          git rm -rf . >/dev/null 2>&1 || true
+        fi
+
+    - name: Add Allure report to Pages history
+      id: update-pages
+      shell: bash
+      run: |
+        python3 .github/scripts/update_allure_pages.py \
+          --site-dir pages-site \
+          --report-dir downloaded-allure-report \
+          --suite "${{ inputs.suite_name }}" \
+          --report-id "${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}" \
+          --workflow "${GITHUB_WORKFLOW}" \
+          --event "${GITHUB_EVENT_NAME}" \
+          --branch "${GITHUB_REF_NAME}" \
+          --sha "${GITHUB_SHA}" \
+          --run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+    - name: Commit Pages history
+      shell: bash
+      run: |
+        cd pages-site
+        git add .
+        if git diff --cached --quiet; then
+          echo "No Pages history changes to commit."
+        else
+          git commit -m "Publish Allure report ${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git push origin HEAD:gh-pages
+        fi
+
+    - name: Upload GitHub Pages artifact
+      uses: actions/upload-pages-artifact@v5
+      with:
+        path: pages-site
+        retention-days: 7

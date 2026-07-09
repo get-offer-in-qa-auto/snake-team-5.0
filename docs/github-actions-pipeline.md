@@ -16,7 +16,7 @@
 - сохранить JUnit XML test result;
 - сохранить Allure results;
 - сразу собрать Allure HTML-report;
-- опубликовать последний Allure HTML-report как GitHub Pages page для любого запуска;
+- опубликовать Allure HTML-report как GitHub Pages page с постоянной ссылкой для любого запуска;
 - сохранить snapshot реальной страницы `login.html`, headers и readiness summary;
 - сохранить Docker Compose status и logs как GitHub Actions artifacts;
 - остановить контейнеры и удалить временные volumes после проверки.
@@ -50,7 +50,7 @@ Pipeline считается успешным, если:
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
 - Allure results и готовый Allure HTML-report собраны в artifacts.
-- для pull_request, push и workflow_dispatch запуска опубликована ссылка на последний Allure report.
+- для pull_request, push и workflow_dispatch запуска опубликована постоянная ссылка на конкретный Allure report.
 - страница `login.html` сохранена в artifact `teamcity-login-page`.
 
 ## Debug artifacts
@@ -109,15 +109,23 @@ GitHub Actions artifacts хранятся 7 дней:
 - TeamCity page snapshot;
 - GitHub Pages artifact.
 
-Кроме artifacts, workflow публикует последний готовый HTML-report в GitHub Pages для pull request, push и workflow_dispatch запусков.
+Кроме artifacts, workflow публикует готовый HTML-report в GitHub Pages для pull request, push и workflow_dispatch запусков.
 
-URL страницы отчета:
+URL индекса отчетов:
 
 ```text
 https://get-offer-in-qa-auto.github.io/snake-team-5.0/
 ```
 
-После деплоя ссылка также появляется в GitHub Actions workflow summary и в environment `github-pages`.
+Каждый запуск получает постоянный URL:
+
+```text
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/<suite>/<run_id>-attempt-<attempt>/
+```
+
+Чтобы старые ссылки не перезатирались, workflow хранит опубликованный Pages site в ветке `gh-pages` и добавляет новый отчет в отдельный каталог. GitHub Actions artifacts хранятся 7 дней, а опубликованные Pages-отчеты остаются в `gh-pages`, пока их не удалить отдельной чисткой.
+
+После деплоя ссылка на конкретный отчет также появляется в GitHub Actions workflow summary и в environment `github-pages`.
 
 Для первого запуска нужно один раз включить Pages в настройках репозитория:
 

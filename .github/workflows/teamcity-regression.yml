@@ -31,7 +31,6 @@ jobs:
           logs_artifact_name: teamcity-regression-logs
           results_artifact_name: teamcity-regression-test-results
           page_artifact_name: teamcity-regression-login-page
-          publish_pages: "true"
 
   deploy-allure-pages:
     name: Publish Allure report page
@@ -42,20 +41,36 @@ jobs:
       group: github-pages
       cancel-in-progress: false
     permissions:
+      actions: read
+      contents: write
       pages: write
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}${{ steps.pages.outputs.report_path }}/
     steps:
-      # Публикуем Allure HTML-report как GitHub Pages site.
+      # Скачиваем код, чтобы runner видел local action для обновления Pages history.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Добавляем текущий Allure HTML-report в уникальный каталог Pages site.
+      - name: Prepare persistent Allure report page
+        id: pages
+        uses: ./.github/actions/publish-allure-pages
+        with:
+          report_artifact_name: teamcity-regression-allure-report
+          suite_name: regression
+
+      # Публикуем накопленный Pages site с историей отчетов.
       - name: Deploy Allure report to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
 
-      # Добавляем кликабельную ссылку в summary текущего workflow run.
+      # Добавляем кликабельную ссылку на конкретный отчет в summary текущего workflow run.
       - name: Add Allure report page to summary
         run: |
           echo "## Allure report" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "[Open published Allure report](${{ steps.deployment.outputs.page_url }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Open this Allure report](${{ steps.deployment.outputs.page_url }}${{ steps.pages.outputs.report_path }}/)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Open all reports index](${{ steps.deployment.outputs.page_url }})" >> "$GITHUB_STEP_SUMMARY"

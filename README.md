@@ -237,13 +237,19 @@ allure generate artifacts/allure-results --clean -o artifacts/allure-report
 
 GitHub Actions artifacts хранятся 7 дней.
 
-После любого GitHub Actions запуска workflow также публикует последний Allure report в GitHub Pages:
+После любого GitHub Actions запуска workflow также публикует Allure report в GitHub Pages:
 
 ```text
 https://get-offer-in-qa-auto.github.io/snake-team-5.0/
 ```
 
-Чтобы публикация работала, в настройках репозитория нужно включить GitHub Pages с source `GitHub Actions`. Ссылка на опубликованный отчет появляется в workflow summary и в deployment environment `github-pages`.
+Корневая страница содержит индекс всех опубликованных отчетов. Каждый запуск получает постоянную ссылку:
+
+```text
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/<suite>/<run_id>-attempt-<attempt>/
+```
+
+Чтобы старые ссылки не перезатирались, workflow хранит опубликованный Pages site в ветке `gh-pages` и добавляет каждый новый отчет в отдельный каталог. GitHub Actions artifacts хранятся 7 дней, а опубликованные Pages-отчеты остаются в `gh-pages`, пока их не удалить отдельной чисткой. Чтобы публикация работала, в настройках репозитория нужно включить GitHub Pages с source `GitHub Actions`. Ссылка на конкретный отчет появляется в workflow summary и в deployment environment `github-pages`.
 
 ## 6. Защита main
 
