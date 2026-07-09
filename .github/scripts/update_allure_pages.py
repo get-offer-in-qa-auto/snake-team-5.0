@@ -75,12 +75,33 @@ def render_report_rows(reports: list[dict[str, str]], link_prefix: str = "") -> 
     return "\n".join(rows)
 
 
-def render_index(reports: list[dict[str, str]], title: str, link_prefix: str = "") -> str:
+def render_suite_links(reports: list[dict[str, str]], suite_link_prefix: str) -> str:
+    suites = sorted({report.get("suite", "unknown") for report in reports})
+    if not suites:
+        return ""
+
+    links = " ".join(
+        f'<a href="{html.escape(suite_link_prefix + suite + "/")}">{html.escape(suite)}</a>'
+        for suite in suites
+    )
+    return f'<p class="suite-links">Report groups: {links}</p>'
+
+
+def render_index(
+    reports: list[dict[str, str]],
+    title: str,
+    link_prefix: str = "",
+    suite_link_prefix: str | None = None,
+) -> str:
     latest = reports[0] if reports else None
     latest_link = ""
     if latest is not None:
         latest_path = html.escape(link_prefix + latest["path"] + "/")
         latest_link = f'<p class="latest"><a href="{latest_path}">Open latest report</a></p>'
+
+    suite_links = ""
+    if suite_link_prefix is not None:
+        suite_links = render_suite_links(reports, suite_link_prefix)
 
     rows = render_report_rows(reports, link_prefix=link_prefix)
     return f"""<!doctype html>
@@ -102,11 +123,13 @@ def render_index(reports: list[dict[str, str]], title: str, link_prefix: str = "
       th, td {{ border-bottom: 1px solid #d0d7de; padding: 10px 8px; text-align: left; }}
       th {{ background: #f6f8fa; font-weight: 600; }}
       .latest {{ font-size: 18px; }}
+      .suite-links a {{ display: inline-block; margin-right: 12px; }}
     </style>
   </head>
   <body>
     <h1>{html.escape(title)}</h1>
     {latest_link}
+    {suite_links}
     <table>
       <thead>
         <tr>
@@ -127,33 +150,70 @@ def render_index(reports: list[dict[str, str]], title: str, link_prefix: str = "
 """
 
 
+def render_redirect(target_url: str, title: str) -> str:
+    target = html.escape(target_url)
+    return (
+        "<!doctype html>\n"
+        "<html lang=\"en\">\n"
+        "  <head>\n"
+        "    <meta charset=\"utf-8\">\n"
+        f"    <meta http-equiv=\"refresh\" content=\"0; url={target}\">\n"
+        f"    <title>{html.escape(title)}</title>\n"
+        "  </head>\n"
+        "  <body>\n"
+        f"    <p><a href=\"{target}\">Open latest report</a></p>\n"
+        "  </body>\n"
+        "</html>\n"
+    )
+
+
 def write_indexes(site_dir: Path, reports: list[dict[str, str]]) -> None:
     (site_dir / "index.html").write_text(
-        render_index(reports, "TeamCity Allure Reports"),
+        render_index(
+            reports,
+            "TeamCity Allure Reports",
+            suite_link_prefix="reports/",
+        ),
         encoding="utf-8",
     )
     reports_dir = site_dir / "reports"
     reports_dir.mkdir(parents=True, exist_ok=True)
     (reports_dir / "index.html").write_text(
-        render_index(reports, "TeamCity Allure Reports", link_prefix="../"),
+        render_index(
+            reports,
+            "TeamCity Allure Reports",
+            link_prefix="../",
+            suite_link_prefix="",
+        ),
         encoding="utf-8",
     )
     if reports:
         latest = reports[0]["path"]
         (site_dir / "latest.html").write_text(
-            "<!doctype html>\n"
-            "<html lang=\"en\">\n"
-            "  <head>\n"
-            "    <meta charset=\"utf-8\">\n"
-            f"    <meta http-equiv=\"refresh\" content=\"0; url={html.escape(latest)}/\">\n"
-            "    <title>Latest Allure Report</title>\n"
-            "  </head>\n"
-            "  <body>\n"
-            f"    <p><a href=\"{html.escape(latest)}/\">Open latest report</a></p>\n"
-            "  </body>\n"
-            "</html>\n",
+            render_redirect(f"{latest}/", "Latest Allure Report"),
             encoding="utf-8",
         )
+
+    for suite in sorted({report.get("suite", "unknown") for report in reports}):
+        suite_reports = [report for report in reports if report.get("suite", "unknown") == suite]
+        suite_dir = reports_dir / suite
+        suite_dir.mkdir(parents=True, exist_ok=True)
+        suite_dir.joinpath("index.html").write_text(
+            render_index(
+                suite_reports,
+                f"TeamCity {suite} Allure Reports",
+                link_prefix="../../",
+            ),
+            encoding="utf-8",
+        )
+        if suite_reports:
+            latest_suite_report = suite_reports[0].get("report_id") or Path(
+                suite_reports[0]["path"]
+            ).name
+            suite_dir.joinpath("latest.html").write_text(
+                render_redirect(f"{latest_suite_report}/", f"Latest {suite} Allure Report"),
+                encoding="utf-8",
+            )
 
 
 def append_github_output(report_path: str) -> None:
