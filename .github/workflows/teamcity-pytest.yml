@@ -51,12 +51,19 @@ on:
         required: false
         type: string
         default: "5"
+      publish_pages:
+        description: Publish the generated Allure HTML report to GitHub Pages.
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   teamcity-pytest:
     name: Run TeamCity ${{ inputs.test_label }} tests
     runs-on: ubuntu-latest
     timeout-minutes: ${{ inputs.timeout_minutes }}
+    outputs:
+      allure_pages_ready: ${{ steps.allure-pages.outputs.ready }}
     env:
       # Docker Compose пробрасывает порт 8111 на runner,
       # поэтому CI-проверки обращаются к TeamCity через localhost.
@@ -104,10 +111,30 @@ jobs:
             --request-timeout "$TEAMCITY_REQUEST_TIMEOUT_SECONDS"
 
       # Запускаем только тесты с переданным pytest marker и сохраняем JUnit XML результат.
+      # Allure results создаются автоматически через pytest.ini.
       - name: Run TeamCity ${{ inputs.test_label }} tests
         run: |
           mkdir -p artifacts/test-results
           python3 -m pytest -m "${{ inputs.pytest_marker }}" tests --junitxml="artifacts/test-results/${{ inputs.junit_filename }}"
+
+      # Allure CLI требует Java, поэтому готовим JDK перед генерацией HTML-отчета.
+      - name: Set up Java for Allure
+        if: always()
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # Устанавливаем Allure commandline и сразу собираем статический HTML-report.
+      - name: Generate Allure report
+        if: always()
+        run: |
+          if [ -d artifacts/allure-results ] && [ "$(find artifacts/allure-results -type f | wc -l)" -gt 0 ]; then
+            npm install -g allure-commandline
+            allure generate artifacts/allure-results --clean -o artifacts/allure-report
+          else
+            echo "No Allure results found, skipping report generation."
+          fi
 
       # Сохраняем ответ login page даже при падении предыдущих шагов,
       # чтобы в artifacts было видно, что реально вернул TeamCity.
@@ -148,6 +175,42 @@ jobs:
           path: artifacts/test-results
           if-no-files-found: ignore
 
+      # Загружаем сырые Allure results, чтобы отчет можно было пересобрать при необходимости.
+      - name: Upload Allure results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teamcity-${{ inputs.test_label }}-allure-results
+          path: artifacts/allure-results
+          if-no-files-found: ignore
+
+      # Загружаем готовый Allure HTML-report как artifact GitHub Actions.
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: teamcity-${{ inputs.test_label }}-allure-report
+          path: artifacts/allure-report
+          if-no-files-found: ignore
+
+      # Проверяем, можно ли опубликовать готовый HTML-report как GitHub Pages site.
+      - name: Check Allure report for Pages
+        id: allure-pages
+        if: always()
+        run: |
+          if [ -f artifacts/allure-report/index.html ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Загружаем Allure report в специальный Pages artifact.
+      - name: Upload Allure report for GitHub Pages
+        if: ${{ always() && inputs.publish_pages && github.event_name != 'pull_request' && steps.allure-pages.outputs.ready == 'true' }}
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: artifacts/allure-report
+
       # Загружаем сохраненный ответ login page как artifact для диагностики UI.
       - name: Upload TeamCity page snapshot
         if: always()
@@ -162,3 +225,30 @@ jobs:
       - name: Stop TeamCity
         if: always()
         run: docker compose -f ci/teamcity/compose.yaml down -v
+
+  deploy-allure-pages:
+    name: Publish Allure report page
+    if: ${{ always() && inputs.publish_pages && github.event_name != 'pull_request' && needs.teamcity-pytest.outputs.allure_pages_ready == 'true' }}
+    needs: teamcity-pytest
+    runs-on: ubuntu-latest
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Публикуем Allure HTML-report как GitHub Pages site.
+      - name: Deploy Allure report to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      # Добавляем кликабельную ссылку в summary текущего workflow run.
+      - name: Add Allure report page to summary
+        run: |
+          echo "## Allure report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Open published Allure report](${{ steps.deployment.outputs.page_url }})" >> "$GITHUB_STEP_SUMMARY"

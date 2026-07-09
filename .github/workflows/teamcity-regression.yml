@@ -6,6 +6,10 @@ on:
 jobs:
   teamcity-regression:
     name: Run TeamCity regression
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     # Этот workflow запускается только вручную, но сам прогон переиспользует
     # общий TeamCity pytest runner с marker regression.
     uses: ./.github/workflows/teamcity-pytest.yml
@@ -17,3 +21,4 @@ jobs:
       logs_artifact_name: teamcity-regression-logs
       results_artifact_name: teamcity-regression-test-results
       page_artifact_name: teamcity-regression-login-page
+      publish_pages: true
