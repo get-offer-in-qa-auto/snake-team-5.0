@@ -1,0 +1,209 @@
+name: TeamCity Pytest
+description: Start TeamCity in Docker, run pytest, collect artifacts, and prepare an Allure report.
+
+inputs:
+  pytest_marker:
+    description: Pytest marker to run, for example smoke or regression.
+    required: true
+  test_label:
+    description: Human-readable test suite label used in step names.
+    required: true
+  junit_filename:
+    description: JUnit XML filename saved under artifacts/test-results.
+    required: true
+  logs_artifact_name:
+    description: Artifact name for TeamCity and Docker Compose logs.
+    required: true
+  results_artifact_name:
+    description: Artifact name for pytest JUnit XML results.
+    required: true
+  page_artifact_name:
+    description: Artifact name for captured TeamCity login page response.
+    required: true
+  teamcity_url:
+    description: TeamCity URL exposed to the runner through Docker port mapping.
+    required: false
+    default: http://localhost:8111/login.html
+  wait_timeout_seconds:
+    description: Maximum time to wait until TeamCity starts answering HTTP.
+    required: false
+    default: "300"
+  wait_interval_seconds:
+    description: Delay between TeamCity readiness checks.
+    required: false
+    default: "2"
+  request_timeout_seconds:
+    description: Timeout for one HTTP request to TeamCity.
+    required: false
+    default: "5"
+  publish_pages:
+    description: Upload the generated Allure HTML report as a GitHub Pages artifact.
+    required: false
+    default: "false"
+
+outputs:
+  allure_pages_ready:
+    description: "true when the generated Allure report has index.html and can be deployed to Pages."
+    value: ${{ steps.allure-pages.outputs.ready }}
+
+runs:
+  using: composite
+  steps:
+    # Проверяем Docker в самом начале, чтобы быстро понять,
+    # сможет ли runner запустить TeamCity Server и Agent в контейнерах.
+    - name: Check Docker availability
+      shell: bash
+      run: |
+        docker --version
+        docker compose version
+
+    # Готовим Python 3.12 для запуска helper-скриптов и pytest-тестов.
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    # Устанавливаем зависимости тестового проекта из requirements.txt.
+    - name: Install test dependencies
+      shell: bash
+      run: python3 -m pip install -r requirements.txt
+
+    # Поднимаем TeamCity Server и Agent в Docker Compose в фоне.
+    # В этом стенде нет внешней БД: TeamCity использует внутреннюю database в data directory.
+    - name: Start TeamCity server and agent
+      shell: bash
+      run: docker compose -f ci/teamcity/compose.yaml up -d
+
+    # Ждем, пока TeamCity начнет отвечать по HTTP,
+    # потому что контейнер может быть запущен раньше, чем готов web UI.
+    - name: Wait for TeamCity web endpoint
+      shell: bash
+      run: |
+        python3 scripts/teamcity_start_smoke.py \
+          --url "${{ inputs.teamcity_url }}" \
+          --timeout "${{ inputs.wait_timeout_seconds }}" \
+          --interval "${{ inputs.wait_interval_seconds }}" \
+          --request-timeout "${{ inputs.request_timeout_seconds }}"
+
+    # Запускаем только тесты с переданным pytest marker и сохраняем JUnit XML результат.
+    # Allure results создаются автоматически через pytest.ini.
+    - name: Run TeamCity ${{ inputs.test_label }} tests
+      shell: bash
+      run: |
+        mkdir -p artifacts/test-results
+        python3 -m pytest -m "${{ inputs.pytest_marker }}" tests --junitxml="artifacts/test-results/${{ inputs.junit_filename }}"
+
+    # Allure CLI требует Java, поэтому готовим JDK перед генерацией HTML-отчета.
+    - name: Set up Java for Allure
+      if: always()
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: "17"
+
+    # Устанавливаем Allure commandline и сразу собираем статический HTML-report.
+    - name: Generate Allure report
+      if: always()
+      shell: bash
+      run: |
+        if [ -d artifacts/allure-results ] && [ "$(find artifacts/allure-results -type f | wc -l)" -gt 0 ]; then
+          npm install -g allure-commandline
+          allure generate artifacts/allure-results --clean -o artifacts/allure-report
+        else
+          echo "No Allure results found, skipping report generation."
+        fi
+
+    # Сохраняем ответ login page даже при падении предыдущих шагов,
+    # чтобы в artifacts было видно, что реально вернул TeamCity.
+    - name: Capture TeamCity login page
+      if: always()
+      shell: bash
+      run: python3 scripts/teamcity_capture_page.py --url "${{ inputs.teamcity_url }}" --output-dir artifacts/teamcity-page
+
+    # Печатаем состояние контейнеров в лог CI,
+    # чтобы сразу видеть, запущены ли server и agent после проверки.
+    - name: Show container status
+      if: always()
+      shell: bash
+      run: docker compose -f ci/teamcity/compose.yaml ps
+
+    # Собираем состояние Docker Compose и логи контейнеров в файлы,
+    # чтобы их можно было скачать и разобрать после завершения workflow.
+    - name: Collect TeamCity logs
+      if: always()
+      shell: bash
+      run: |
+        mkdir -p artifacts/teamcity
+        docker compose -f ci/teamcity/compose.yaml ps > artifacts/teamcity/docker-compose-ps.txt
+        docker compose -f ci/teamcity/compose.yaml logs --no-color > artifacts/teamcity/docker-compose.log
+
+    # Загружаем логи TeamCity и Docker Compose как artifact GitHub Actions.
+    - name: Upload TeamCity logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.logs_artifact_name }}
+        path: artifacts/teamcity
+        if-no-files-found: ignore
+
+    # Загружаем JUnit XML с результатами pytest-тестов.
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.results_artifact_name }}
+        path: artifacts/test-results
+        if-no-files-found: ignore
+
+    # Загружаем сырые Allure results, чтобы отчет можно было пересобрать при необходимости.
+    - name: Upload Allure results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: teamcity-${{ inputs.test_label }}-allure-results
+        path: artifacts/allure-results
+        if-no-files-found: ignore
+
+    # Загружаем готовый Allure HTML-report как artifact GitHub Actions.
+    - name: Upload Allure report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: teamcity-${{ inputs.test_label }}-allure-report
+        path: artifacts/allure-report
+        if-no-files-found: ignore
+
+    # Проверяем, можно ли опубликовать готовый HTML-report как GitHub Pages site.
+    - name: Check Allure report for Pages
+      id: allure-pages
+      if: always()
+      shell: bash
+      run: |
+        if [ -f artifacts/allure-report/index.html ]; then
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    # Загружаем Allure report в специальный Pages artifact.
+    - name: Upload Allure report for GitHub Pages
+      if: ${{ always() && inputs.publish_pages == 'true' && github.event_name != 'pull_request' && steps.allure-pages.outputs.ready == 'true' }}
+      uses: actions/upload-pages-artifact@v5
+      with:
+        path: artifacts/allure-report
+
+    # Загружаем сохраненный ответ login page как artifact для диагностики UI.
+    - name: Upload TeamCity page snapshot
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.page_artifact_name }}
+        path: artifacts/teamcity-page
+        if-no-files-found: ignore
+
+    # Останавливаем контейнеры и удаляем временные volumes,
+    # чтобы следующий запуск CI стартовал с чистого TeamCity стенда.
+    - name: Stop TeamCity
+      if: always()
+      shell: bash
+      run: docker compose -f ci/teamcity/compose.yaml down -v

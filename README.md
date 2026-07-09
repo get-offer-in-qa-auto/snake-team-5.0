@@ -230,7 +230,7 @@ artifacts/allure-report
 allure generate artifacts/allure-results --clean -o artifacts/allure-report
 ```
 
-В GitHub Actions reusable workflow собирает Allure report автоматически после pytest-прогона и загружает artifacts:
+В GitHub Actions local composite action собирает Allure report автоматически после pytest-прогона и загружает artifacts:
 
 - `teamcity-<suite>-allure-results`
 - `teamcity-<suite>-allure-report`

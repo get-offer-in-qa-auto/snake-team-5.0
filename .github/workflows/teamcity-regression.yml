@@ -6,19 +6,56 @@ on:
 jobs:
   teamcity-regression:
     name: Run TeamCity regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     permissions:
       contents: read
       pages: write
       id-token: write
-    # Этот workflow запускается только вручную, но сам прогон переиспользует
-    # общий TeamCity pytest runner с marker regression.
-    uses: ./.github/workflows/teamcity-pytest.yml
-    with:
-      pytest_marker: regression
-      test_label: regression
-      timeout_minutes: 60
-      junit_filename: teamcity-regression.xml
-      logs_artifact_name: teamcity-regression-logs
-      results_artifact_name: teamcity-regression-test-results
-      page_artifact_name: teamcity-regression-login-page
-      publish_pages: true
+    outputs:
+      allure_pages_ready: ${{ steps.teamcity-pytest.outputs.allure_pages_ready }}
+    steps:
+      # Скачиваем код репозитория, чтобы runner видел local action, scripts, tests и compose-файл.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Этот workflow запускается только вручную, но сам прогон переиспользует
+      # общую local action с marker regression.
+      - name: Run TeamCity regression tests
+        id: teamcity-pytest
+        uses: ./.github/actions/teamcity-pytest
+        with:
+          pytest_marker: regression
+          test_label: regression
+          junit_filename: teamcity-regression.xml
+          logs_artifact_name: teamcity-regression-logs
+          results_artifact_name: teamcity-regression-test-results
+          page_artifact_name: teamcity-regression-login-page
+          publish_pages: "true"
+
+  deploy-allure-pages:
+    name: Publish Allure report page
+    if: ${{ always() && needs.teamcity-regression.outputs.allure_pages_ready == 'true' }}
+    needs: teamcity-regression
+    runs-on: ubuntu-latest
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Публикуем Allure HTML-report как GitHub Pages site.
+      - name: Deploy Allure report to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      # Добавляем кликабельную ссылку в summary текущего workflow run.
+      - name: Add Allure report page to summary
+        run: |
+          echo "## Allure report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Open published Allure report](${{ steps.deployment.outputs.page_url }})" >> "$GITHUB_STEP_SUMMARY"

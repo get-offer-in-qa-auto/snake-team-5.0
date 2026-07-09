@@ -10,18 +10,56 @@ on:
 jobs:
   teamcity-start-smoke:
     name: Start TeamCity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       pages: write
       id-token: write
-    # Общая логика запуска TeamCity и pytest вынесена в reusable workflow.
-    uses: ./.github/workflows/teamcity-pytest.yml
-    with:
-      pytest_marker: smoke
-      test_label: smoke
-      timeout_minutes: 20
-      junit_filename: teamcity-smoke.xml
-      logs_artifact_name: teamcity-start-smoke-logs
-      results_artifact_name: teamcity-smoke-test-results
-      page_artifact_name: teamcity-login-page
-      publish_pages: ${{ github.event_name != 'pull_request' }}
+    outputs:
+      allure_pages_ready: ${{ steps.teamcity-pytest.outputs.allure_pages_ready }}
+    steps:
+      # Скачиваем код репозитория, чтобы runner видел local action, scripts, tests и compose-файл.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Общая логика запуска TeamCity и pytest вынесена в local composite action,
+      # чтобы переиспользовать ее без отдельного workflow в GitHub Actions UI.
+      - name: Run TeamCity smoke tests
+        id: teamcity-pytest
+        uses: ./.github/actions/teamcity-pytest
+        with:
+          pytest_marker: smoke
+          test_label: smoke
+          junit_filename: teamcity-smoke.xml
+          logs_artifact_name: teamcity-start-smoke-logs
+          results_artifact_name: teamcity-smoke-test-results
+          page_artifact_name: teamcity-login-page
+          publish_pages: ${{ github.event_name != 'pull_request' }}
+
+  deploy-allure-pages:
+    name: Publish Allure report page
+    if: ${{ always() && github.event_name != 'pull_request' && needs.teamcity-start-smoke.outputs.allure_pages_ready == 'true' }}
+    needs: teamcity-start-smoke
+    runs-on: ubuntu-latest
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # Публикуем Allure HTML-report как GitHub Pages site.
+      - name: Deploy Allure report to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      # Добавляем кликабельную ссылку в summary текущего workflow run.
+      - name: Add Allure report page to summary
+        run: |
+          echo "## Allure report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Open published Allure report](${{ steps.deployment.outputs.page_url }})" >> "$GITHUB_STEP_SUMMARY"
