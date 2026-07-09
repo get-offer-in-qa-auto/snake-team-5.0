@@ -50,7 +50,7 @@ Pipeline считается успешным, если:
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
 - Allure results и готовый Allure HTML-report собраны в artifacts.
-- для pull_request, push и workflow_dispatch запуска опубликована постоянная ссылка на конкретный Allure report.
+- для pull_request и workflow_dispatch запуска опубликована постоянная ссылка на конкретный Allure report.
 - страница `login.html` сохранена в artifact `teamcity-login-page`.
 
 ## Debug artifacts
@@ -111,7 +111,7 @@ GitHub Actions artifacts хранятся 7 дней:
 - TeamCity page snapshot;
 - GitHub Pages artifact.
 
-Кроме artifacts, workflow публикует готовый HTML-report в GitHub Pages для pull request, push и workflow_dispatch запусков.
+Кроме artifacts, workflow публикует готовый HTML-report в GitHub Pages для pull request и workflow_dispatch запусков.
 
 URL индекса отчетов:
 

@@ -267,6 +267,7 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/regression/
 - прямой push в `main` запрещен;
 - изменения должны попадать через pull request;
 - правило применяется и к администраторам;
+- перед merge должны пройти required status checks: `Start TeamCity` и `Publish Allure report page`;
 - force push и удаление `main` запрещены;
 - перед merge должны быть решены все conversation threads.
 
