@@ -13,6 +13,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+KNOWN_SUITES = ("smoke", "regression")
+
+
 def slugify(value: str) -> str:
     slug = re.sub(r"[^a-zA-Z0-9._-]+", "-", value.strip()).strip("-").lower()
     if not slug:
@@ -52,6 +55,10 @@ def load_reports(site_dir: Path) -> list[dict[str, str]]:
     )
 
 
+def suite_names(reports: list[dict[str, str]]) -> list[str]:
+    return sorted(set(KNOWN_SUITES) | {report.get("suite", "unknown") for report in reports})
+
+
 def render_report_rows(reports: list[dict[str, str]], link_prefix: str = "") -> str:
     rows = []
     for report in reports:
@@ -72,11 +79,13 @@ def render_report_rows(reports: list[dict[str, str]], link_prefix: str = "") -> 
             f"<td>{short_sha}</td>"
             "</tr>"
         )
-    return "\n".join(rows)
+    if rows:
+        return "\n".join(rows)
+    return '      <tr><td colspan="6">No reports published yet.</td></tr>'
 
 
 def render_suite_links(reports: list[dict[str, str]], suite_link_prefix: str) -> str:
-    suites = sorted({report.get("suite", "unknown") for report in reports})
+    suites = suite_names(reports)
     if not suites:
         return ""
 
@@ -194,7 +203,7 @@ def write_indexes(site_dir: Path, reports: list[dict[str, str]]) -> None:
             encoding="utf-8",
         )
 
-    for suite in sorted({report.get("suite", "unknown") for report in reports}):
+    for suite in suite_names(reports):
         suite_reports = [report for report in reports if report.get("suite", "unknown") == suite]
         suite_dir = reports_dir / suite
         suite_dir.mkdir(parents=True, exist_ok=True)
