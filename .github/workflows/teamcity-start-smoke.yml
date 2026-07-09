@@ -35,11 +35,11 @@ jobs:
           logs_artifact_name: teamcity-start-smoke-logs
           results_artifact_name: teamcity-smoke-test-results
           page_artifact_name: teamcity-login-page
-          publish_pages: ${{ github.event_name != 'pull_request' }}
+          publish_pages: "true"
 
   deploy-allure-pages:
     name: Publish Allure report page
-    if: ${{ always() && github.event_name != 'pull_request' && needs.teamcity-start-smoke.outputs.allure_pages_ready == 'true' }}
+    if: ${{ always() && needs.teamcity-start-smoke.outputs.allure_pages_ready == 'true' }}
     needs: teamcity-start-smoke
     runs-on: ubuntu-latest
     concurrency:

@@ -235,7 +235,7 @@ allure generate artifacts/allure-results --clean -o artifacts/allure-report
 - `teamcity-<suite>-allure-results`
 - `teamcity-<suite>-allure-report`
 
-После запуска не из pull request workflow также публикует последний Allure report в GitHub Pages:
+После любого GitHub Actions запуска workflow также публикует последний Allure report в GitHub Pages:
 
 ```text
 https://get-offer-in-qa-auto.github.io/snake-team-5.0/
