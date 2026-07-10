@@ -78,7 +78,8 @@ runs:
           --url "${{ inputs.teamcity_url }}" \
           --timeout "${{ inputs.wait_timeout_seconds }}" \
           --interval "${{ inputs.wait_interval_seconds }}" \
-          --request-timeout "${{ inputs.request_timeout_seconds }}"
+          --request-timeout "${{ inputs.request_timeout_seconds }}" \
+          --auto-setup
 
     # Запускаем все тесты с переданным pytest marker и сохраняем JUnit XML результат.
     # Allure results создаются автоматически через pytest.ini.
