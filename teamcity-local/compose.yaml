@@ -7,7 +7,7 @@ services:
     ports:
       - "8111:8111"
     environment:
-      TEAMCITY_SERVER_OPTS: "-Dteamcity.superUser.token=autotestlocalsuperusertoken"
+      TEAMCITY_SERVER_OPTS: "-Dteamcity.superUser.token=autotestlocalsuperusertoken -Dteamcity.internal.accessTokens.enableCreationForOtherUsers=true"
     volumes:
       - ./teamcity-data:/data/teamcity_server/datadir
       - ./teamcity-logs:/opt/teamcity/logs
