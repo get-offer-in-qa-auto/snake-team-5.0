@@ -15,4 +15,5 @@ venv/
 /allure-results/
 /allure-report/
 
-/teamcity-local/
+/teamcity-local/*
+!/teamcity-local/compose.yaml

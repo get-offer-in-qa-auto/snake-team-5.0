@@ -36,11 +36,6 @@ inputs:
     description: Timeout for one HTTP request to TeamCity.
     required: false
     default: "5"
-  publish_pages:
-    description: Upload the generated Allure HTML report as a GitHub Pages artifact.
-    required: false
-    default: "false"
-
 outputs:
   allure_pages_ready:
     description: "true when the generated Allure report has index.html and can be deployed to Pages."
@@ -83,15 +78,16 @@ runs:
           --url "${{ inputs.teamcity_url }}" \
           --timeout "${{ inputs.wait_timeout_seconds }}" \
           --interval "${{ inputs.wait_interval_seconds }}" \
-          --request-timeout "${{ inputs.request_timeout_seconds }}"
+          --request-timeout "${{ inputs.request_timeout_seconds }}" \
+          --auto-setup
 
-    # Запускаем только тесты с переданным pytest marker и сохраняем JUnit XML результат.
+    # Запускаем все тесты с переданным pytest marker и сохраняем JUnit XML результат.
     # Allure results создаются автоматически через pytest.ini.
     - name: Run TeamCity ${{ inputs.test_label }} tests
       shell: bash
       run: |
         mkdir -p artifacts/test-results
-        python3 -m pytest -m "${{ inputs.pytest_marker }}" tests --junitxml="artifacts/test-results/${{ inputs.junit_filename }}"
+        python3 -m pytest -m "${{ inputs.pytest_marker }}" --junitxml="artifacts/test-results/${{ inputs.junit_filename }}"
 
     # Allure CLI требует Java, поэтому готовим JDK перед генерацией HTML-отчета.
     - name: Set up Java for Allure
@@ -100,6 +96,31 @@ runs:
       with:
         distribution: temurin
         java-version: "17"
+
+    # Подкладываем history из последнего опубликованного отчета той же suite/job,
+    # чтобы Allure trend не смешивал smoke и regression между собой.
+    - name: Restore Allure history
+      if: always()
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        if [ ! -d artifacts/allure-results ] || [ "$(find artifacts/allure-results -type f | wc -l)" -eq 0 ]; then
+          echo "No Allure results found, skipping history restore."
+          exit 0
+        fi
+
+        remote_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        if git ls-remote --exit-code --heads "$remote_url" gh-pages >/dev/null 2>&1; then
+          rm -rf pages-history
+          git clone --depth=1 --branch gh-pages "$remote_url" pages-history
+          python3 .github/scripts/restore_allure_history.py \
+            --site-dir pages-history \
+            --suite "${{ inputs.test_label }}" \
+            --results-dir artifacts/allure-results
+        else
+          echo "No gh-pages branch found, skipping history restore."
+        fi
 
     # Устанавливаем Allure commandline и сразу собираем статический HTML-report.
     - name: Generate Allure report
@@ -188,14 +209,6 @@ runs:
         else
           echo "ready=false" >> "$GITHUB_OUTPUT"
         fi
-
-    # Загружаем Allure report в специальный Pages artifact.
-    - name: Upload Allure report for GitHub Pages
-      if: ${{ always() && inputs.publish_pages == 'true' && steps.allure-pages.outputs.ready == 'true' }}
-      uses: actions/upload-pages-artifact@v5
-      with:
-        path: artifacts/allure-report
-        retention-days: 7
 
     # Загружаем сохраненный ответ login page как artifact для диагностики UI.
     - name: Upload TeamCity page snapshot

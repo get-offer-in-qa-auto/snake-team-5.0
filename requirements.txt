@@ -1,7 +1,7 @@
 # Test runner for smoke checks.
 pytest >= 8, < 9
 allure-pytest >= 2.13, < 3
-requests
+requests >= 2.32, < 3
 pydantic
 faker
 rstr

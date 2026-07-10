@@ -237,13 +237,28 @@ allure generate artifacts/allure-results --clean -o artifacts/allure-report
 
 GitHub Actions artifacts хранятся 7 дней.
 
-После любого GitHub Actions запуска workflow также публикует последний Allure report в GitHub Pages:
+Перед генерацией HTML-отчета workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. История `smoke` и `regression` хранится отдельно и не смешивается.
+
+После любого GitHub Actions запуска workflow также публикует Allure report в GitHub Pages:
 
 ```text
 https://get-offer-in-qa-auto.github.io/snake-team-5.0/
 ```
 
-Чтобы публикация работала, в настройках репозитория нужно включить GitHub Pages с source `GitHub Actions`. Ссылка на опубликованный отчет появляется в workflow summary и в deployment environment `github-pages`.
+Корневая страница содержит индекс всех опубликованных отчетов. Каждый запуск получает постоянную ссылку:
+
+```text
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/<suite>/<run_id>-attempt-<attempt>/
+```
+
+Для каждой suite/job также есть своя группа отчетов:
+
+```text
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/smoke/
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/regression/
+```
+
+Чтобы старые ссылки не перезатирались, workflow хранит опубликованный Pages site в ветке `gh-pages` и добавляет каждый новый отчет в отдельный каталог. GitHub Actions artifacts хранятся 7 дней, а опубликованные Pages-отчеты остаются в `gh-pages`, пока их не удалить отдельной чисткой. Чтобы публикация работала, в настройках репозитория нужно включить GitHub Pages с source `GitHub Actions`. Ссылка на конкретный отчет появляется в workflow summary и в deployment environment `github-pages`.
 
 ## 6. Защита main
 
@@ -252,6 +267,7 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/
 - прямой push в `main` запрещен;
 - изменения должны попадать через pull request;
 - правило применяется и к администраторам;
+- перед merge должны пройти required status checks: `Start TeamCity` и `Publish Allure report page`;
 - force push и удаление `main` запрещены;
 - перед merge должны быть решены все conversation threads.
 
@@ -260,6 +276,8 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/
 - Подробная инструкция по локальному стенду: `docs/local-teamcity-setup.md`
 - Стратегия окружений для автотестов: `docs/test-environments.md`
 - Группы автотестов: `docs/test-suites.md`
+- Postman collection для API-сценариев: `postman/teamcity-api-mvp.postman_collection.json`
+- Инструкция по импорту Postman: `postman/README.md`
 - Заметки по REST API и Swagger: `docs/rest-api.md`
 - Решение по версии TeamCity: `docs/teamcity-version.md`
 - Первый этап GitHub Actions pipeline: `docs/github-actions-pipeline.md`
