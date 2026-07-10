@@ -1,11 +1,10 @@
-from http import HTTPStatus
 from typing import Optional, TypeVar, Union
 import requests
 
-from src.main.api.configs.config import Config
 from src.main.api.models.base_model import BaseModel
 from src.main.api.requests.skeleton.http_request import HttpRequest
 from src.main.api.requests.skeleton.interfaces.crud_end_interface import CrudEndpointInterface
+from src.main.api.specs.request_specs import RequestSpecs
 
 T = TypeVar('T', bound=BaseModel)
 
@@ -13,13 +12,13 @@ T = TypeVar('T', bound=BaseModel)
 class CrudRequester(HttpRequest, CrudEndpointInterface):
     @property
     def base_url(self) -> str:
-        return f"{Config.get('server')}{Config.get('apiBasePath')}"
+        return RequestSpecs._base_url()
 
-    def post(self, model: Optional[T] = None) -> requests.Response:
+    def post(self, model: Optional[T] = None, id: Optional[Union[int, str]] = None) -> requests.Response:
         body = model.model_dump() if model is not None else ''
 
         response = requests.post(
-            url=f'{self.base_url}{self.endpoint.value.url}',
+            url=f'{self.base_url}{self.endpoint.value.url}{("/" + str(id)) if id is not None else ""}',
             headers=self.request_spec,
             json=body
         )
