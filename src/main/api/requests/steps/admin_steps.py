@@ -1,7 +1,9 @@
 from typing import List
 from src.main.api.models.comparison.model_assertions import ModelAssertions
+from src.main.api.models.create_project_request import CreateProjectRequest
 from src.main.api.requests.skeleton.requesters.validated_crud_requester import ValidatedCrudRequester
 from src.main.api.models.create_user_response import CreateUserResponse
+from src.main.api.models.project_response import ProjectResponse
 from src.main.api.requests.skeleton.endpoint import Endpoint
 from src.main.api.requests.skeleton.requesters.crud_requester import CrudRequester
 from src.main.api.requests.steps.base_steps import BaseSteps
@@ -27,3 +29,32 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_ok()
         ).get()
         return response
+
+    def create_project(self, project_request: CreateProjectRequest) -> ProjectResponse:
+        project_response: ProjectResponse = ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.CREATE_PROJECT,
+            ResponseSpecs.entity_was_created_or_ok()
+        ).post(project_request)
+
+        self.created_objects.append(project_response)
+        ModelAssertions(project_request, project_response).match()
+        return project_response
+
+    def get_project(self, project_id: str) -> ProjectResponse:
+        return ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.GET_PROJECT,
+            ResponseSpecs.request_returns_ok()
+        ).get(self._project_locator(project_id))
+
+    def delete_project(self, project_id: str):
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.DELETE_PROJECT,
+            ResponseSpecs.entity_was_deleted()
+        ).delete(self._project_locator(project_id))
+
+    @staticmethod
+    def _project_locator(project_id: str) -> str:
+        return project_id if ":" in project_id else f"id:{project_id}"
