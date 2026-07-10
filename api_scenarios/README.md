@@ -10,7 +10,7 @@ python3 -m pytest api_scenarios/test_server_readiness.py
 
 ## Auth Bootstrap
 
-Tests do not require a committed TeamCity token. Each scenario uses bootstrap admin credentials to:
+Tests do not require a committed TeamCity token. Each scenario uses either bootstrap admin credentials or the local test super-user token from `teamcity-local/compose.yaml` to:
 
 1. create a temporary TeamCity user;
 2. assign an admin role to that temporary user;
@@ -18,7 +18,7 @@ Tests do not require a committed TeamCity token. Each scenario uses bootstrap ad
 4. run the scenario with that bearer token;
 5. delete the temporary user in cleanup.
 
-Set bootstrap credentials before running tests:
+For a non-local TeamCity, set bootstrap credentials before running tests:
 
 ```bash
 export TEAMCITY_URL="http://localhost:8111"
@@ -26,7 +26,7 @@ export TEAMCITY_USERNAME="<username>"
 export TEAMCITY_PASSWORD="<password>"
 ```
 
-If these credentials are not set, API scenarios are skipped instead of failed.
+For local docker compose, no credentials are required. The tests use `TEAMCITY_SUPER_USER_TOKEN` when it is set, otherwise they use the local compose token value.
 
 `test_create_token.py` checks this temporary user token flow directly.
 

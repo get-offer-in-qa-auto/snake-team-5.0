@@ -13,10 +13,10 @@ from requests.auth import HTTPBasicAuth
 def create_test_user_token(base_url, timeout):
     admin_username = os.getenv("TEAMCITY_USERNAME")
     admin_password = os.getenv("TEAMCITY_PASSWORD")
-    if not admin_username or not admin_password:
-        pytest.skip("TEAMCITY_USERNAME and TEAMCITY_PASSWORD are not set; API scenario needs bootstrap admin credentials to create a temporary TeamCity user")
-
-    admin_auth = HTTPBasicAuth(admin_username, admin_password)
+    if admin_username and admin_password:
+        admin_auth = HTTPBasicAuth(admin_username, admin_password)
+    else:
+        admin_auth = HTTPBasicAuth("", os.getenv("TEAMCITY_SUPER_USER_TOKEN", "autotestlocalsuperusertoken"))
     api_headers = {"Accept": "application/json", "Content-Type": "application/json"}
     test_username = f"autotest_api_user_{int(time.time() * 1000)}{uuid.uuid4().hex[:6]}"
     test_password = f"Autotest-{test_username}!"
@@ -54,7 +54,7 @@ def create_test_user_token(base_url, timeout):
         with allure.step("Create token for temporary TeamCity user"):
             response = requests.post(
                 f"{base_url}/app/rest/users/{test_user_locator}/tokens?fields=name,value,creationTime",
-                auth=admin_auth,
+                auth=HTTPBasicAuth(test_username, test_password),
                 headers=api_headers,
                 json={"name": f"autotest-api-token-{int(time.time())}-{uuid.uuid4().hex[:6]}"},
                 timeout=timeout,
