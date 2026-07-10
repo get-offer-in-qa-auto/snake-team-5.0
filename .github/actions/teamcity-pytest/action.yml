@@ -78,15 +78,16 @@ runs:
           --url "${{ inputs.teamcity_url }}" \
           --timeout "${{ inputs.wait_timeout_seconds }}" \
           --interval "${{ inputs.wait_interval_seconds }}" \
-          --request-timeout "${{ inputs.request_timeout_seconds }}"
+          --request-timeout "${{ inputs.request_timeout_seconds }}" \
+          --auto-setup
 
-    # Запускаем только тесты с переданным pytest marker и сохраняем JUnit XML результат.
+    # Запускаем все тесты с переданным pytest marker и сохраняем JUnit XML результат.
     # Allure results создаются автоматически через pytest.ini.
     - name: Run TeamCity ${{ inputs.test_label }} tests
       shell: bash
       run: |
         mkdir -p artifacts/test-results
-        python3 -m pytest -m "${{ inputs.pytest_marker }}" tests --junitxml="artifacts/test-results/${{ inputs.junit_filename }}"
+        python3 -m pytest -m "${{ inputs.pytest_marker }}" --junitxml="artifacts/test-results/${{ inputs.junit_filename }}"
 
     # Allure CLI требует Java, поэтому готовим JDK перед генерацией HTML-отчета.
     - name: Set up Java for Allure

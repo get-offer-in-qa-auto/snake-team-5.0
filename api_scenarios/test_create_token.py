@@ -28,7 +28,14 @@ def test_create_token():
         admin_auth = HTTPBasicAuth(admin_username, admin_password)
     else:
         admin_auth = HTTPBasicAuth("", os.getenv("TEAMCITY_SUPER_USER_TOKEN", "autotestlocalsuperusertoken"))
-    headers = {"Accept": "application/json", "Content-Type": "application/json"}
+    api_headers = {"Accept": "application/json", "Content-Type": "application/json"}
+
+    with allure.step("Get TeamCity CSRF token for bootstrap requests"):
+        response = requests.get(f"{base_url}/authenticationTest.html?csrf", auth=admin_auth, timeout=timeout)
+        assert response.status_code == 200, response.text
+        csrf_token = response.text.strip()
+        assert csrf_token, "TeamCity did not return CSRF token"
+        api_headers["X-TC-CSRF-Token"] = csrf_token
     test_username = unique_id("autotest_api_user_")
     test_password = f"Autotest-{test_username}!"
     test_user_locator = f"username:{test_username}"
@@ -38,7 +45,7 @@ def test_create_token():
             response = requests.post(
                 f"{base_url}/app/rest/users?fields=username,name,email,roles(role(roleId,scope))",
                 auth=admin_auth,
-                headers=headers,
+                headers=api_headers,
                 json={
                     "username": test_username,
                     "name": "Autotest API User",
@@ -53,7 +60,7 @@ def test_create_token():
             response = requests.post(
                 f"{base_url}/app/rest/users/{test_user_locator}/roles",
                 auth=admin_auth,
-                headers=headers,
+                headers=api_headers,
                 json={
                     "roleId": os.getenv("TEAMCITY_TEST_USER_ROLE_ID", "SYSTEM_ADMIN"),
                     "scope": os.getenv("TEAMCITY_TEST_USER_ROLE_SCOPE", "g"),
@@ -65,8 +72,8 @@ def test_create_token():
         with allure.step("Create token for temporary TeamCity user"):
             response = requests.post(
                 f"{base_url}/app/rest/users/{test_user_locator}/tokens?fields=name,value,creationTime",
-                auth=HTTPBasicAuth(test_username, test_password),
-                headers=headers,
+                auth=admin_auth,
+                headers=api_headers,
                 json={"name": unique_id("autotest-api-token-")},
                 timeout=timeout,
             )
@@ -86,7 +93,7 @@ def test_create_token():
             response = requests.delete(
                 f"{base_url}/app/rest/users/{test_user_locator}",
                 auth=admin_auth,
-                headers={"Accept": "application/json"},
+                headers=api_headers,
                 timeout=timeout,
             )
             assert response.status_code in (200, 202, 204, 404), response.text
