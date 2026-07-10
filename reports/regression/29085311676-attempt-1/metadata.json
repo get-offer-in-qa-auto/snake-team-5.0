@@ -1,0 +1,10 @@
+{
+  "branch": "ekonchina/fix-allure-ci-scope",
+  "event": "workflow_dispatch",
+  "generated_at": "2026-07-10T10:08:54+00:00",
+  "report_id": "29085311676-attempt-1",
+  "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29085311676",
+  "sha": "5335668572dbe319f71e3120efda7118299a0904",
+  "suite": "regression",
+  "workflow": "TeamCity Regression"
+}
