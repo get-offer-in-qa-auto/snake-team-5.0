@@ -8,16 +8,17 @@ Each scenario is a separate pytest file with Allure steps. Files are intentional
 python3 -m pytest api_scenarios/test_server_readiness.py
 ```
 
-## Auth
+## Auth Bootstrap
 
-Use an existing TeamCity token:
+Tests do not require a committed TeamCity token. Each scenario uses bootstrap admin credentials to:
 
-```bash
-export TEAMCITY_URL="http://localhost:8111"
-export TEAMCITY_TOKEN="<token>"
-```
+1. create a temporary TeamCity user;
+2. assign an admin role to that temporary user;
+3. create a bearer token for that temporary user;
+4. run the scenario with that bearer token;
+5. delete the temporary user in cleanup.
 
-Or let scripts create a token from username/password:
+Set bootstrap credentials before running tests:
 
 ```bash
 export TEAMCITY_URL="http://localhost:8111"
@@ -25,7 +26,7 @@ export TEAMCITY_USERNAME="<username>"
 export TEAMCITY_PASSWORD="<password>"
 ```
 
-`test_create_token.py` checks that a token is available or can be created from username/password.
+`test_create_token.py` checks this temporary user token flow directly.
 
 ## Scenarios
 
@@ -50,5 +51,7 @@ Useful optional variables:
 
 - `TEAMCITY_BUILD_TIMEOUT`, default `300`
 - `TEAMCITY_BUILD_POLL_INTERVAL`, default `3`
+- `TEAMCITY_TEST_USER_ROLE_ID`, default `SYSTEM_ADMIN`
+- `TEAMCITY_TEST_USER_ROLE_SCOPE`, default `g`
 - `TEAMCITY_REPOSITORY_URL`, default this GitHub repository over HTTPS
 - `TEAMCITY_REPOSITORY_BRANCH`, default `refs/heads/main`
