@@ -29,4 +29,5 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           TELEGRAM_THREAD_ID: ${{ secrets.TELEGRAM_THREAD_ID }}
+          ALLURE_PAGES_URL: ${{ vars.ALLURE_PAGES_URL }}
         run: python3 .github/scripts/send_telegram_ci_notification.py
