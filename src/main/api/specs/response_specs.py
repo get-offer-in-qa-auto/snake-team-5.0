@@ -1,4 +1,3 @@
-from typing import Callable
 from http import HTTPStatus
 from typing import Callable
 from requests import Response
@@ -23,8 +22,16 @@ class ResponseSpecs:
         return ResponseSpecs._make_status_checker([HTTPStatus.CREATED])
 
     @staticmethod
+    def entity_was_created_or_ok() -> Callable[[Response], None]:
+        return ResponseSpecs._make_status_checker([HTTPStatus.OK, HTTPStatus.CREATED])
+
+    @staticmethod
     def entity_was_deleted() -> Callable[[Response], None]:
-        return ResponseSpecs._make_status_checker([HTTPStatus.OK, HTTPStatus.NO_CONTENT])
+        return ResponseSpecs._make_status_checker([
+            HTTPStatus.OK,
+            HTTPStatus.ACCEPTED,
+            HTTPStatus.NO_CONTENT,
+        ])
 
     @staticmethod
     def request_returns_bad_request(

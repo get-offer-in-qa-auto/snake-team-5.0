@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any
 
@@ -12,15 +13,16 @@ class Config:
             config_path = Path(__file__).parents[4] / 'resources' / 'config.properties'
             if not config_path.exists():
                 raise FileNotFoundError(f'config.properties file not found at {config_path}')
-            with open(config_path, 'r') as f:
+            with open(config_path, 'r', encoding='utf-8') as f:
                 for line in f:
-                    if '=' in line:
+                    stripped = line.strip()
+                    if stripped and not stripped.startswith('#') and '=' in stripped:
                         key, value = line.strip().split('=', 1)
                         cls._properties[key] = value
         return cls._instance
 
     @staticmethod
     def get(key: str, default_value: Any = None) -> Any:
-        return Config()._properties.get(key, default_value)
+        return os.getenv(key, Config()._properties.get(key, default_value))
 
 
