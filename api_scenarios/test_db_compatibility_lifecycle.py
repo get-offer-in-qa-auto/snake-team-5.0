@@ -127,6 +127,17 @@ def ensure_ready_agent(base_url, headers, timeout):
 @allure.feature("DB Compatibility")
 @allure.story("Database compatibility lifecycle")
 @allure.title("Basic API lifecycle passes on selected DB environment")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Авторизовать connected TeamCity agent при необходимости.
+    3. Создать project, build configuration и успешный Command Line step.
+    4. Запустить build через REST API.
+    5. Дождаться статуса SUCCESS на текущем database окружении.
+    6. Удалить сгенерированные build data и временного API-пользователя.
+    """
+)
 @pytest.mark.regression
 def test_db_compatibility_lifecycle():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -221,5 +232,40 @@ def test_db_compatibility_lifecycle():
         delete_test_user(base_url, request_timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_db_compatibility_lifecycle()
+@allure.epic("TeamCity REST API")
+@allure.feature("DB Compatibility")
+@allure.story("Database compatibility lifecycle")
+@allure.title("DB lifecycle rejects build queue for missing build configuration")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Сгенерировать id build configuration, которой нет в текущем DB окружении.
+    3. Попробовать поставить build в очередь для отсутствующей build configuration.
+    4. Проверить, что TeamCity отклоняет запрос.
+    5. Удалить временного API-пользователя.
+    """
+)
+@pytest.mark.regression
+def test_db_compatibility_rejects_missing_build_configuration_queue():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    request_timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+    api_token, api_user_locator, admin_auth, admin_headers = create_test_user_token(base_url, request_timeout)
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    missing_build_type_id = unique_id("MissingAutotestApiBuild")
+
+    try:
+        with allure.step("Try to queue build for missing build configuration"):
+            response = requests.post(
+                f"{base_url}/app/rest/buildQueue",
+                headers=headers,
+                json={"buildType": {"id": missing_build_type_id}},
+                timeout=request_timeout,
+            )
+            assert response.status_code in (400, 404), response.text
+    finally:
+        delete_test_user(base_url, request_timeout, admin_auth, admin_headers, api_user_locator)

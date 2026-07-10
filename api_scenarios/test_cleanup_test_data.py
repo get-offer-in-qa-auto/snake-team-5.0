@@ -127,6 +127,17 @@ def ensure_ready_agent(base_url, headers, timeout):
 @allure.feature("Cleanup")
 @allure.story("Cleanup test data")
 @allure.title("Cleanup removes generated TeamCity test data")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Авторизовать connected TeamCity agent при необходимости.
+    3. Создать project, build configuration, VCS root и build step.
+    4. Прикрепить VCS root к build configuration и запустить build.
+    5. Удалить build, build configuration, VCS root и project.
+    6. Проверить, что удаленный project больше не доступен, затем удалить пользователя.
+    """
+)
 @pytest.mark.regression
 def test_cleanup_test_data():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -276,5 +287,43 @@ def test_cleanup_test_data():
         delete_test_user(base_url, request_timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_cleanup_test_data()
+@allure.epic("TeamCity REST API")
+@allure.feature("Cleanup")
+@allure.story("Cleanup test data")
+@allure.title("Cleanup of missing generated project is safe")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Сгенерировать id project, который не создавался.
+    3. Выполнить DELETE для отсутствующего generated project.
+    4. Проверить через GET, что project отсутствует.
+    5. Удалить временного API-пользователя.
+    """
+)
+@pytest.mark.regression
+def test_cleanup_missing_project_is_safe():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    request_timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+    api_token, api_user_locator, admin_auth, admin_headers = create_test_user_token(base_url, request_timeout)
+    headers = {"Authorization": f"Bearer {api_token}", "Accept": "application/json"}
+    missing_project_id = unique_id("MissingAutotestApiProject")
+
+    try:
+        with allure.step("DELETE missing project"):
+            response = requests.delete(
+                f"{base_url}/app/rest/projects/id:{missing_project_id}",
+                headers=headers,
+                timeout=request_timeout,
+            )
+            assert response.status_code in (204, 404), response.text
+
+        with allure.step("GET missing project after cleanup"):
+            response = requests.get(
+                f"{base_url}/app/rest/projects/id:{missing_project_id}",
+                headers=headers,
+                timeout=request_timeout,
+            )
+            assert response.status_code == 404, response.text
+    finally:
+        delete_test_user(base_url, request_timeout, admin_auth, admin_headers, api_user_locator)

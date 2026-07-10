@@ -18,6 +18,17 @@ def unique_id(prefix):
 @allure.feature("Authorization")
 @allure.story("Token bootstrap")
 @allure.title("Create token for temporary TeamCity user")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Получить CSRF-токен TeamCity для bootstrap-запросов.
+    2. Создать временного пользователя TeamCity.
+    3. Назначить временному пользователю роль из TEAMCITY_TEST_USER_ROLE_ID.
+    4. Создать bearer token для временного пользователя.
+    5. Выполнить GET /app/rest/server с новым token и проверить доступ.
+    6. Удалить временного пользователя.
+    """
+)
 @pytest.mark.smoke
 def test_create_token():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -99,5 +110,27 @@ def test_create_token():
             assert response.status_code in (200, 202, 204, 404), response.text
 
 
-if __name__ == "__main__":
-    test_create_token()
+@allure.epic("TeamCity REST API")
+@allure.feature("Authorization")
+@allure.story("Token bootstrap")
+@allure.title("Invalid bearer token cannot access TeamCity REST API")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Сформировать заведомо невалидный bearer token.
+    2. Выполнить GET /app/rest/server с этим token.
+    3. Проверить, что TeamCity отклоняет запрос как неавторизованный.
+    """
+)
+@pytest.mark.regression
+def test_invalid_bearer_token_cannot_access_server():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+
+    with allure.step("GET /app/rest/server with invalid bearer token"):
+        response = requests.get(
+            f"{base_url}/app/rest/server?fields=version,buildNumber",
+            headers={"Authorization": "Bearer invalid-autotest-token", "Accept": "application/json"},
+            timeout=timeout,
+        )
+        assert response.status_code in (401, 403), response.text

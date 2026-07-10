@@ -97,6 +97,17 @@ def unique_id(prefix):
 @allure.feature("Projects")
 @allure.story("Create project")
 @allure.title("Create TeamCity project through REST API")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Сгенерировать уникальные id и name для тестового проекта.
+    3. Создать project через POST /app/rest/projects.
+    4. Прочитать созданный project через GET /app/rest/projects/id:<project_id>.
+    5. Проверить id, name и href созданного project.
+    6. Удалить тестовый project и временного API-пользователя.
+    """
+)
 @pytest.mark.regression
 def test_create_project():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -137,5 +148,51 @@ def test_create_project():
         delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_create_project()
+@allure.epic("TeamCity REST API")
+@allure.feature("Projects")
+@allure.story("Create project")
+@allure.title("Duplicate project id is rejected")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Создать project с уникальным id.
+    3. Повторно отправить POST /app/rest/projects с тем же id.
+    4. Проверить, что TeamCity отклоняет duplicate project id.
+    5. Удалить тестовый project и временного API-пользователя.
+    """
+)
+@pytest.mark.regression
+def test_create_project_rejects_duplicate_id():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+    api_token, api_user_locator, admin_auth, admin_headers = create_test_user_token(base_url, timeout)
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    project_id = unique_id("AutotestApiProject")
+
+    try:
+        with allure.step("Create project"):
+            response = requests.post(
+                f"{base_url}/app/rest/projects",
+                headers=headers,
+                json={"id": project_id, "name": project_id, "parentProject": {"locator": "_Root"}},
+                timeout=timeout,
+            )
+            assert response.status_code in (200, 201), response.text
+
+        with allure.step("Try to create project with duplicate id"):
+            response = requests.post(
+                f"{base_url}/app/rest/projects",
+                headers=headers,
+                json={"id": project_id, "name": project_id, "parentProject": {"locator": "_Root"}},
+                timeout=timeout,
+            )
+            assert response.status_code in (400, 409), response.text
+    finally:
+        with allure.step("DELETE test project"):
+            requests.delete(f"{base_url}/app/rest/projects/id:{project_id}", headers=headers, timeout=timeout)
+        delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)

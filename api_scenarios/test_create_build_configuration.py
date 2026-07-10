@@ -97,6 +97,17 @@ def unique_id(prefix):
 @allure.feature("Build Configuration")
 @allure.story("Create build configuration")
 @allure.title("Create build configuration inside project")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Создать тестовый project.
+    3. Создать build configuration внутри project через REST API.
+    4. Прочитать созданную build configuration по id.
+    5. Проверить id, name, project и href build configuration.
+    6. Удалить build configuration, project и временного API-пользователя.
+    """
+)
 @pytest.mark.regression
 def test_create_build_configuration():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -148,5 +159,41 @@ def test_create_build_configuration():
         delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_create_build_configuration()
+@allure.epic("TeamCity REST API")
+@allure.feature("Build Configuration")
+@allure.story("Create build configuration")
+@allure.title("Build configuration cannot be created in missing project")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Сгенерировать id project, который не существует.
+    3. Попробовать создать build configuration внутри отсутствующего project.
+    4. Проверить, что TeamCity отклоняет запрос.
+    5. Удалить временного API-пользователя.
+    """
+)
+@pytest.mark.regression
+def test_create_build_configuration_rejects_missing_project():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+    api_token, api_user_locator, admin_auth, admin_headers = create_test_user_token(base_url, timeout)
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    missing_project_id = unique_id("MissingAutotestApiProject")
+    build_type_id = unique_id("AutotestApiBuild")
+
+    try:
+        with allure.step("Try to create build configuration in missing project"):
+            response = requests.post(
+                f"{base_url}/app/rest/projects/id:{missing_project_id}/buildTypes?fields=id,name,project(id,name),href",
+                headers=headers,
+                json={"id": build_type_id, "name": build_type_id},
+                timeout=timeout,
+            )
+            assert response.status_code in (400, 404), response.text
+    finally:
+        delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)

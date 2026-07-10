@@ -127,6 +127,17 @@ def ensure_ready_agent(base_url, headers, timeout):
 @allure.feature("Build Metadata")
 @allure.story("Check build metadata")
 @allure.title("Successful build exposes expected metadata")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Авторизовать connected TeamCity agent при необходимости.
+    3. Создать project, build configuration и успешный Command Line step.
+    4. Запустить build и дождаться SUCCESS.
+    5. Получить metadata последнего build из истории build configuration.
+    6. Проверить номер, статус, даты, webUrl и удалить тестовые данные.
+    """
+)
 @pytest.mark.regression
 def test_check_build_metadata():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -234,5 +245,34 @@ def test_check_build_metadata():
         delete_test_user(base_url, request_timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_check_build_metadata()
+@allure.epic("TeamCity REST API")
+@allure.feature("Build Metadata")
+@allure.story("Check build metadata")
+@allure.title("Missing build configuration has no metadata")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Запросить build history metadata для отсутствующей build configuration.
+    3. Проверить, что TeamCity возвращает not found.
+    4. Удалить временного API-пользователя.
+    """
+)
+@pytest.mark.regression
+def test_check_build_metadata_rejects_missing_build_configuration():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    request_timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+    api_token, api_user_locator, admin_auth, admin_headers = create_test_user_token(base_url, request_timeout)
+    headers = {"Authorization": f"Bearer {api_token}", "Accept": "application/json"}
+    missing_build_type_id = unique_id("MissingAutotestApiBuild")
+
+    try:
+        with allure.step("GET build history metadata for missing build configuration"):
+            response = requests.get(
+                f"{base_url}/app/rest/buildTypes/id:{missing_build_type_id}/builds?locator=count:1&fields=build(id,status,state,number,finishDate,webUrl)",
+                headers=headers,
+                timeout=request_timeout,
+            )
+            assert response.status_code == 404, response.text
+    finally:
+        delete_test_user(base_url, request_timeout, admin_auth, admin_headers, api_user_locator)

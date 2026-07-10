@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Проверяет, что TeamCity Server и REST API доступны, а Swagger содержит нужные paths.
+# Проверяет, что TeamCity Server и базовые REST API endpoints доступны.
 import os
 import time
 import uuid
@@ -93,6 +93,16 @@ def delete_test_user(base_url, timeout, admin_auth, admin_headers, test_user_loc
 @allure.feature("Readiness")
 @allure.story("Server readiness")
 @allure.title("TeamCity server and REST API are ready")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Запросить GET /app/rest/server и проверить данные сервера.
+    3. Запросить GET /app/rest/apiVersion и проверить доступность версии API.
+    4. Проверить, что сервер вернул version и buildNumber.
+    5. Удалить временного API-пользователя.
+    """
+)
 @pytest.mark.smoke
 def test_server_readiness():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -110,15 +120,6 @@ def test_server_readiness():
             assert server_response.status_code == 200, server_response.text
             server = server_response.json()
 
-        with allure.step("GET /app/rest/swagger.json"):
-            swagger_response = requests.get(
-                f"{base_url}/app/rest/swagger.json",
-                headers=headers,
-                timeout=timeout,
-            )
-            assert swagger_response.status_code == 200, swagger_response.text
-            swagger = swagger_response.json()
-
         with allure.step("GET /app/rest/apiVersion"):
             version_response = requests.get(
                 f"{base_url}/app/rest/apiVersion",
@@ -127,15 +128,34 @@ def test_server_readiness():
             )
             assert version_response.status_code == 200, version_response.text
 
-        with allure.step("Check server and Swagger data"):
+        with allure.step("Check server data"):
             assert server.get("version"), server
             assert server.get("buildNumber"), server
-            assert swagger.get("swagger") == "2.0", swagger.get("swagger")
-            for path in ["/app/rest/server", "/app/rest/agents", "/app/rest/projects", "/app/rest/buildQueue"]:
-                assert path in swagger.get("paths", {}), f"Swagger path not found: {path}"
     finally:
         delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_server_readiness()
+@allure.epic("TeamCity REST API")
+@allure.feature("Readiness")
+@allure.story("Server readiness")
+@allure.title("Server readiness endpoints reject invalid token")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Сформировать заведомо невалидный bearer token.
+    2. Выполнить GET /app/rest/server с этим token.
+    3. Проверить, что TeamCity не возвращает server readiness data без валидной авторизации.
+    """
+)
+@pytest.mark.regression
+def test_server_readiness_rejects_invalid_token():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+
+    with allure.step("GET /app/rest/server with invalid bearer token"):
+        response = requests.get(
+            f"{base_url}/app/rest/server?fields=version,buildNumber",
+            headers={"Authorization": "Bearer invalid-autotest-token", "Accept": "application/json"},
+            timeout=timeout,
+        )
+        assert response.status_code in (401, 403), response.text

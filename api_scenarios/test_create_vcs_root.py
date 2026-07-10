@@ -97,6 +97,17 @@ def unique_id(prefix):
 @allure.feature("VCS Roots")
 @allure.story("Create VCS root")
 @allure.title("Create Git VCS root through REST API")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Создать тестовый project для VCS root.
+    3. Создать Git VCS root через POST /app/rest/vcs-roots.
+    4. Прочитать созданный VCS root через GET /app/rest/vcs-roots/id:<vcs_root_id>.
+    5. Проверить id, name, vcsName и сохраненные properties VCS root.
+    6. Удалить VCS root, project и временного API-пользователя.
+    """
+)
 @pytest.mark.regression
 def test_create_vcs_root():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -167,5 +178,53 @@ def test_create_vcs_root():
         delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_create_vcs_root()
+@allure.epic("TeamCity REST API")
+@allure.feature("VCS Roots")
+@allure.story("Create VCS root")
+@allure.title("VCS root cannot be created for missing project")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Сгенерировать id project, который не существует.
+    3. Попробовать создать Git VCS root для отсутствующего project.
+    4. Проверить, что TeamCity отклоняет запрос.
+    5. Удалить временного API-пользователя.
+    """
+)
+@pytest.mark.regression
+def test_create_vcs_root_rejects_missing_project():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+    api_token, api_user_locator, admin_auth, admin_headers = create_test_user_token(base_url, timeout)
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    missing_project_id = unique_id("MissingAutotestApiProject")
+    vcs_root_id = unique_id("AutotestApiVcs")
+
+    try:
+        with allure.step("Try to create VCS root for missing project"):
+            response = requests.post(
+                f"{base_url}/app/rest/vcs-roots?fields=id,name,vcsName,project(id,name),properties(property(name,value))",
+                headers=headers,
+                json={
+                    "id": vcs_root_id,
+                    "name": vcs_root_id,
+                    "vcsName": "jetbrains.git",
+                    "project": {"id": missing_project_id},
+                    "properties": {
+                        "property": [
+                            {"name": "url", "value": "https://github.com/get-offer-in-qa-auto/snake-team-5.0.git"},
+                            {"name": "branch", "value": "refs/heads/main"},
+                            {"name": "authMethod", "value": "ANONYMOUS"},
+                        ]
+                    },
+                },
+                timeout=timeout,
+            )
+            assert response.status_code in (400, 404), response.text
+    finally:
+        delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)
