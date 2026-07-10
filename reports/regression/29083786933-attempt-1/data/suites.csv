@@ -1,0 +1,2 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","43","TeamCity web endpoint is opened","tests.smoke","2026-07-10","passed","2026-07-10","","test_teamcity_opened","",""

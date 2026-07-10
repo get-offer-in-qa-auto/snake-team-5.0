@@ -1,0 +1,10 @@
+{
+  "branch": "ekonchina/teamcity-api-postman",
+  "event": "workflow_dispatch",
+  "generated_at": "2026-07-10T09:41:12+00:00",
+  "report_id": "29083786933-attempt-1",
+  "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29083786933",
+  "sha": "89d5e2cc0d560c347c51085fb6ff7b46944f08b4",
+  "suite": "regression",
+  "workflow": "TeamCity Regression"
+}
