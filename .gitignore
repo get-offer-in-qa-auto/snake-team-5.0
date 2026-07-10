@@ -6,6 +6,10 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+venv/
+
+.idea/
+
 # Test reports and CI artifacts
 /artifacts/
 /allure-results/
