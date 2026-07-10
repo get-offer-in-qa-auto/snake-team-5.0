@@ -1,0 +1,5 @@
+"BROKEN","EPIC","FAILED","FEATURE","PASSED","SKIPPED","STORY","UNKNOWN"
+"0","TeamCity REST API","0","Agent","1","0","Agent readiness","0"
+"0","TeamCity REST API","0","Authorization","1","0","Token bootstrap","0"
+"0","TeamCity REST API","0","Readiness","1","0","Server readiness","0"
+"0","TeamCity","0","Readiness","1","0","Web endpoint","0"
