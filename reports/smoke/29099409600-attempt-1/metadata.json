@@ -1,0 +1,10 @@
+{
+  "branch": "22/merge",
+  "event": "pull_request",
+  "generated_at": "2026-07-10T14:23:15+00:00",
+  "report_id": "29099409600-attempt-1",
+  "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29099409600",
+  "sha": "a15312d1d57fca36c5a384dc56ecd232eddffd85",
+  "suite": "smoke",
+  "workflow": "TeamCity Start Smoke"
+}
