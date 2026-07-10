@@ -1,0 +1,31 @@
+name: teamcity-autotests
+
+services:
+  teamcity-server:
+    image: jetbrains/teamcity-server:2026.1.1
+    container_name: teamcity-server-local
+    ports:
+      - "8111:8111"
+    environment:
+      TEAMCITY_SERVER_OPTS: "-Dteamcity.superUser.token=autotestlocalsuperusertoken"
+    volumes:
+      - ./teamcity-data:/data/teamcity_server/datadir
+      - ./teamcity-logs:/opt/teamcity/logs
+    restart: unless-stopped
+
+  teamcity-agent:
+    image: jetbrains/teamcity-agent:2026.1.1
+    container_name: teamcity-agent-local
+    depends_on:
+      - teamcity-server
+    environment:
+      SERVER_URL: http://teamcity-server:8111
+      AGENT_NAME: local-agent-1
+    volumes:
+      - ./teamcity-agent-conf:/data/teamcity_agent/conf
+      - ./teamcity-agent-work:/opt/buildagent/work
+      - ./teamcity-agent-system:/opt/buildagent/system
+      - ./teamcity-agent-temp:/opt/buildagent/temp
+      - ./teamcity-agent-tools:/opt/buildagent/tools
+      - ./teamcity-agent-plugins:/opt/buildagent/plugins
+    restart: unless-stopped
