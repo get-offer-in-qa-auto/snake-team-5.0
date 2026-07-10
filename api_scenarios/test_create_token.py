@@ -24,7 +24,8 @@ def test_create_token():
     timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
     admin_username = os.getenv("TEAMCITY_USERNAME")
     admin_password = os.getenv("TEAMCITY_PASSWORD")
-    assert admin_username and admin_password, "Set TEAMCITY_USERNAME and TEAMCITY_PASSWORD so the test can create a temporary TeamCity user"
+    if not admin_username or not admin_password:
+        pytest.skip("TEAMCITY_USERNAME and TEAMCITY_PASSWORD are not set; API scenario needs bootstrap admin credentials to create a temporary TeamCity user")
 
     admin_auth = HTTPBasicAuth(admin_username, admin_password)
     headers = {"Accept": "application/json", "Content-Type": "application/json"}

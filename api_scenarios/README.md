@@ -26,6 +26,8 @@ export TEAMCITY_USERNAME="<username>"
 export TEAMCITY_PASSWORD="<password>"
 ```
 
+If these credentials are not set, API scenarios are skipped instead of failed.
+
 `test_create_token.py` checks this temporary user token flow directly.
 
 ## Scenarios
