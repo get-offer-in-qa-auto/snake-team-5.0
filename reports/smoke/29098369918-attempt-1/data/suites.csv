@@ -1,0 +1,28 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Получить список TeamCity agents через REST API.
+    3. Авторизовать connected agent, если он еще не authorized.
+    4. Выбрать agent в состоянии authorized + connected + enabled.
+    5. Запросить детали выбранного agent и проверить его состояние.
+    6. Удалить временного API-пользователя.
+    ","1147","Authorized connected agent is available","api_scenarios","2026-07-10","passed","2026-07-10","","test_agent_readiness","",""
+"","78","TeamCity web endpoint is opened","tests.smoke","2026-07-10","passed","2026-07-10","","test_teamcity_opened","",""
+"
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Запросить GET /app/rest/server и проверить данные сервера.
+    3. Запросить GET /app/rest/apiVersion и проверить доступность версии API.
+    4. Проверить, что сервер вернул version и buildNumber.
+    5. Удалить временного API-пользователя.
+    ","197","TeamCity server and REST API are ready","api_scenarios","2026-07-10","passed","2026-07-10","","test_server_readiness","",""
+"
+    Шаги сценария:
+    1. Получить CSRF-токен TeamCity для bootstrap-запросов.
+    2. Создать временного пользователя TeamCity.
+    3. Назначить временному пользователю роль из TEAMCITY_TEST_USER_ROLE_ID.
+    4. Создать bearer token для временного пользователя.
+    5. Выполнить GET /app/rest/server с новым token и проверить доступ.
+    6. Удалить временного пользователя.
+    ","252","Create token for temporary TeamCity user","api_scenarios","2026-07-10","passed","2026-07-10","","test_create_token","",""
