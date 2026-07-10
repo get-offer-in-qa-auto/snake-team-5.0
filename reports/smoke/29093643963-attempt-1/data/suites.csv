@@ -1,0 +1,5 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","1018","Authorized connected agent is available","api_scenarios","2026-07-10","passed","2026-07-10","","test_agent_readiness","",""
+"","9163","TeamCity server and REST API are ready","api_scenarios","2026-07-10","passed","2026-07-10","","test_server_readiness","",""
+"","197","Create token for temporary TeamCity user","api_scenarios","2026-07-10","passed","2026-07-10","","test_create_token","",""
+"","72","TeamCity web endpoint is opened","tests.smoke","2026-07-10","passed","2026-07-10","","test_teamcity_opened","",""
