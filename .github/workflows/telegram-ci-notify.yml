@@ -2,6 +2,9 @@ name: Telegram CI Notify
 
 on:
   workflow_run:
+    workflows:
+      - TeamCity Start Smoke
+      - TeamCity Regression
     types:
       - completed
 
