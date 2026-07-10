@@ -6,7 +6,7 @@ from src.main.api.configs.config import Config
 class RequestSpecs:
     @staticmethod
     def _base_url() -> str:
-        return f"{Config.get('server')}{Config.get('apiVersion')}"
+        return f"{Config.get('server')}{Config.get('apiBasePath')}"
 
     @staticmethod
     def default_req_headers() -> Dict[str, str]:
