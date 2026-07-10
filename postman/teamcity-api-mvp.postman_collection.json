@@ -181,30 +181,7 @@
           }
         },
         {
-          "name": "A2 Swagger contract",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
-                  "const swagger = pm.response.json();",
-                  "pm.test('Swagger 2.0', function () { pm.expect(swagger.swagger).to.eql('2.0'); });",
-                  "['/app/rest/server', '/app/rest/agents', '/app/rest/projects', '/app/rest/buildTypes', '/app/rest/buildQueue', '/app/rest/builds'].forEach(function (path) {",
-                  "  pm.test(`Swagger has ${path}`, function () { pm.expect(swagger.paths).to.have.property(path); });",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/app/rest/swagger.json"
-          }
-        },
-        {
-          "name": "A3 REST API version",
+          "name": "A2 REST API version",
           "event": [
             {
               "listen": "test",

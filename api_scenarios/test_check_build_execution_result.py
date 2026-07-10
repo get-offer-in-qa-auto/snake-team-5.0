@@ -127,6 +127,17 @@ def ensure_ready_agent(base_url, headers, timeout):
 @allure.feature("Build Result")
 @allure.story("Check build execution result")
 @allure.title("Successful build reaches finished SUCCESS state")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Авторизовать connected TeamCity agent при необходимости.
+    3. Создать project, build configuration и успешный Command Line step.
+    4. Поставить build в очередь через REST API.
+    5. Дождаться состояния finished и статуса SUCCESS.
+    6. Удалить сгенерированные build data и временного API-пользователя.
+    """
+)
 @pytest.mark.regression
 def test_check_build_execution_result():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -221,5 +232,33 @@ def test_check_build_execution_result():
         delete_test_user(base_url, request_timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_check_build_execution_result()
+@allure.epic("TeamCity REST API")
+@allure.feature("Build Result")
+@allure.story("Check build execution result")
+@allure.title("Missing build result returns not found")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Запросить build result по заведомо несуществующему build id.
+    3. Проверить, что TeamCity возвращает not found вместо build execution result.
+    4. Удалить временного API-пользователя.
+    """
+)
+@pytest.mark.regression
+def test_check_build_execution_result_rejects_missing_build():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    request_timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+    api_token, api_user_locator, admin_auth, admin_headers = create_test_user_token(base_url, request_timeout)
+    headers = {"Authorization": f"Bearer {api_token}", "Accept": "application/json"}
+
+    try:
+        with allure.step("GET missing build result"):
+            response = requests.get(
+                f"{base_url}/app/rest/builds/id:999999999?fields=id,state,status,statusText",
+                headers=headers,
+                timeout=request_timeout,
+            )
+            assert response.status_code == 404, response.text
+    finally:
+        delete_test_user(base_url, request_timeout, admin_auth, admin_headers, api_user_locator)

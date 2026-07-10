@@ -99,6 +99,17 @@ def unique_id(prefix):
 @allure.feature("Authorization")
 @allure.story("Negative authorization")
 @allure.title("Protected endpoints reject missing or invalid token")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token для контрольной проверки.
+    2. Проверить отказ GET /app/rest/server без авторизации.
+    3. Проверить отказ POST /app/rest/projects без авторизации.
+    4. Проверить отказ POST /app/rest/projects с невалидным bearer token.
+    5. Проверить отказ POST /app/rest/buildQueue с невалидным bearer token.
+    6. Убедиться контрольным token, что проект из негативного запроса не создан.
+    """
+)
 @pytest.mark.regression
 def test_negative_authorization():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -159,7 +170,3 @@ def test_negative_authorization():
             assert admin_check.status_code == 404, admin_check.text
     finally:
         delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)
-
-
-if __name__ == "__main__":
-    test_negative_authorization()

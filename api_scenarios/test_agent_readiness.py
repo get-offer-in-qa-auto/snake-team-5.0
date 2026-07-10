@@ -125,6 +125,17 @@ def ensure_ready_agent(base_url, headers, timeout):
 @allure.feature("Agent")
 @allure.story("Agent readiness")
 @allure.title("Authorized connected agent is available")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Получить список TeamCity agents через REST API.
+    3. Авторизовать connected agent, если он еще не authorized.
+    4. Выбрать agent в состоянии authorized + connected + enabled.
+    5. Запросить детали выбранного agent и проверить его состояние.
+    6. Удалить временного API-пользователя.
+    """
+)
 @pytest.mark.smoke
 def test_agent_readiness():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -153,5 +164,27 @@ def test_agent_readiness():
         delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_agent_readiness()
+@allure.epic("TeamCity REST API")
+@allure.feature("Agent")
+@allure.story("Agent readiness")
+@allure.title("Agent API rejects invalid token")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Сформировать заведомо невалидный bearer token.
+    2. Выполнить GET /app/rest/agents с этим token.
+    3. Проверить, что TeamCity не возвращает список agents без валидной авторизации.
+    """
+)
+@pytest.mark.regression
+def test_agent_readiness_rejects_invalid_token():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+
+    with allure.step("GET /app/rest/agents with invalid bearer token"):
+        response = requests.get(
+            f"{base_url}/app/rest/agents?fields=agent(id,name,authorized,connected,enabled)",
+            headers={"Authorization": "Bearer invalid-autotest-token", "Accept": "application/json"},
+            timeout=timeout,
+        )
+        assert response.status_code in (401, 403), response.text

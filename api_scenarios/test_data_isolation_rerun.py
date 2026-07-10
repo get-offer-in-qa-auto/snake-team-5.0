@@ -97,6 +97,17 @@ def unique_id(prefix):
 @allure.feature("Data Isolation")
 @allure.story("Data isolation and rerun")
 @allure.title("Generated test data can be recreated without conflicts")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Создать первый project с уникальным id.
+    3. Удалить первый project и проверить, что он больше не доступен.
+    4. Создать второй project с другим уникальным id.
+    5. Прочитать второй project и проверить его id.
+    6. Удалить второй project и временного API-пользователя.
+    """
+)
 @pytest.mark.regression
 def test_data_isolation_rerun():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -158,5 +169,51 @@ def test_data_isolation_rerun():
         delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_data_isolation_rerun()
+@allure.epic("TeamCity REST API")
+@allure.feature("Data Isolation")
+@allure.story("Data isolation and rerun")
+@allure.title("Generated project id cannot be reused before cleanup")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Создать project с уникальным generated id.
+    3. До cleanup повторно создать project с тем же id.
+    4. Проверить, что TeamCity отклоняет повторное использование id.
+    5. Удалить project и временного API-пользователя.
+    """
+)
+@pytest.mark.regression
+def test_data_isolation_rejects_duplicate_project_before_cleanup():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+    api_token, api_user_locator, admin_auth, admin_headers = create_test_user_token(base_url, timeout)
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    project_id = unique_id("AutotestApiProject")
+
+    try:
+        with allure.step("Create project"):
+            response = requests.post(
+                f"{base_url}/app/rest/projects",
+                headers=headers,
+                json={"id": project_id, "name": project_id, "parentProject": {"locator": "_Root"}},
+                timeout=timeout,
+            )
+            assert response.status_code in (200, 201), response.text
+
+        with allure.step("Try to create second project with same id before cleanup"):
+            response = requests.post(
+                f"{base_url}/app/rest/projects",
+                headers=headers,
+                json={"id": project_id, "name": project_id, "parentProject": {"locator": "_Root"}},
+                timeout=timeout,
+            )
+            assert response.status_code in (400, 409), response.text
+    finally:
+        with allure.step("DELETE project"):
+            requests.delete(f"{base_url}/app/rest/projects/id:{project_id}", headers=headers, timeout=timeout)
+        delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)

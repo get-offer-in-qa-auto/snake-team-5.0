@@ -127,6 +127,17 @@ def ensure_ready_agent(base_url, headers, timeout):
 @allure.feature("Build Result")
 @allure.story("Failed build result")
 @allure.title("Failing command produces build FAILURE")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Авторизовать connected TeamCity agent при необходимости.
+    3. Создать project и build configuration.
+    4. Добавить Command Line build step, который завершается ошибкой.
+    5. Запустить build и дождаться статуса FAILURE.
+    6. Удалить сгенерированные build data и временного API-пользователя.
+    """
+)
 @pytest.mark.regression
 def test_failed_build_result():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -221,5 +232,33 @@ def test_failed_build_result():
         delete_test_user(base_url, request_timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_failed_build_result()
+@allure.epic("TeamCity REST API")
+@allure.feature("Build Result")
+@allure.story("Failed build result")
+@allure.title("Missing failed build result returns not found")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Запросить результат build по заведомо несуществующему id.
+    3. Проверить, что TeamCity возвращает not found вместо FAILURE/SUCCESS result.
+    4. Удалить временного API-пользователя.
+    """
+)
+@pytest.mark.regression
+def test_failed_build_result_rejects_missing_build():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    request_timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+    api_token, api_user_locator, admin_auth, admin_headers = create_test_user_token(base_url, request_timeout)
+    headers = {"Authorization": f"Bearer {api_token}", "Accept": "application/json"}
+
+    try:
+        with allure.step("GET missing build result"):
+            response = requests.get(
+                f"{base_url}/app/rest/builds/id:999999999?fields=id,state,status,statusText,webUrl",
+                headers=headers,
+                timeout=request_timeout,
+            )
+            assert response.status_code == 404, response.text
+    finally:
+        delete_test_user(base_url, request_timeout, admin_auth, admin_headers, api_user_locator)

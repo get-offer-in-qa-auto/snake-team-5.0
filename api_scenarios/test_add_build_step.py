@@ -97,6 +97,17 @@ def unique_id(prefix):
 @allure.feature("Build Steps")
 @allure.story("Add build step")
 @allure.title("Add Command Line build step")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Создать тестовый project и build configuration.
+    3. Добавить Command Line build step через REST API.
+    4. Получить список build steps для build configuration.
+    5. Проверить, что Command Line step сохранен с ожидаемыми properties.
+    6. Удалить build configuration, project и временного API-пользователя.
+    """
+)
 @pytest.mark.regression
 def test_add_build_step():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -171,5 +182,52 @@ def test_add_build_step():
         delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)
 
 
-if __name__ == "__main__":
-    test_add_build_step()
+@allure.epic("TeamCity REST API")
+@allure.feature("Build Steps")
+@allure.story("Add build step")
+@allure.title("Build step cannot be added to missing build configuration")
+@allure.description(
+    """
+    Шаги негативного сценария:
+    1. Создать временного API-пользователя и bearer token.
+    2. Сгенерировать id build configuration, которой не существует.
+    3. Попробовать добавить Command Line build step в отсутствующую build configuration.
+    4. Проверить, что TeamCity отклоняет запрос.
+    5. Удалить временного API-пользователя.
+    """
+)
+@pytest.mark.regression
+def test_add_build_step_rejects_missing_build_configuration():
+    base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
+    timeout = int(os.getenv("TEAMCITY_REQUEST_TIMEOUT", "20"))
+    api_token, api_user_locator, admin_auth, admin_headers = create_test_user_token(base_url, timeout)
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+    }
+    missing_build_type_id = unique_id("MissingAutotestApiBuild")
+    step_id = unique_id("AutotestApiStep")
+
+    try:
+        with allure.step("Try to add Command Line build step to missing build configuration"):
+            response = requests.post(
+                f"{base_url}/app/rest/buildTypes/id:{missing_build_type_id}/steps?fields=id,name,type,properties(property(name,value))",
+                headers=headers,
+                json={
+                    "id": step_id,
+                    "name": step_id,
+                    "type": "simpleRunner",
+                    "properties": {
+                        "property": [
+                            {"name": "script.content", "value": "echo autotest"},
+                            {"name": "use.custom.script", "value": "true"},
+                            {"name": "teamcity.step.mode", "value": "default"},
+                        ]
+                    },
+                },
+                timeout=timeout,
+            )
+            assert response.status_code in (400, 404), response.text
+    finally:
+        delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)

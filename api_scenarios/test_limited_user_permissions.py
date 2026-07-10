@@ -97,6 +97,17 @@ def unique_id(prefix):
 @allure.feature("Permissions")
 @allure.story("Limited user permissions")
 @allure.title("Limited user cannot create project without permissions")
+@allure.description(
+    """
+    Шаги сценария:
+    1. Создать временного API-пользователя с admin-ролью для подготовки данных.
+    2. Создать reference project как admin.
+    3. Создать ограниченного пользователя без admin-роли.
+    4. Создать token для ограниченного пользователя.
+    5. Попробовать создать project от имени ограниченного пользователя.
+    6. Проверить отказ по правам и удалить созданные тестовые данные.
+    """
+)
 @pytest.mark.regression
 def test_limited_user_permissions():
     base_url = os.getenv("TEAMCITY_URL", os.getenv("TEAMCITY_BASE_URL", "http://localhost:8111")).rstrip("/")
@@ -166,7 +177,3 @@ def test_limited_user_permissions():
             requests.delete(f"{base_url}/app/rest/users/{limited_locator}", headers=admin_headers, timeout=timeout)
             requests.delete(f"{base_url}/app/rest/projects/id:{project_id}", headers=admin_headers, timeout=timeout)
         delete_test_user(base_url, timeout, admin_auth, admin_headers, api_user_locator)
-
-
-if __name__ == "__main__":
-    test_limited_user_permissions()
