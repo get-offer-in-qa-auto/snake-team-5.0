@@ -18,8 +18,8 @@ class ValidatedCrudRequester(HttpRequest):
         )
         self._adapter = TypeAdapter(self.endpoint.value.response_model)
 
-    def post(self, model: Optional[T] = None):
-        response = self.crud_requester.post(model)
+    def post(self, model: Optional[T] = None, path: Optional[str] = None):
+        response = self.crud_requester.post(model, path=path)
         return self._adapter.validate_python(response.json())
 
     def get(self, id: Optional[Union[int, str]] = None):

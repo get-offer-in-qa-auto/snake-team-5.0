@@ -8,6 +8,9 @@ class ResponseError(str, Enum):
     PROJECT_ID_ALREADY_USED = "already used"
     PROJECT_NAME_ALREADY_EXISTS = "with this name already exists"
     PROJECT_NOT_FOUND = "No project found"
+    BUILD_CONFIGURATION_ID_ALREADY_USED = "already used"
+    BUILD_CONFIGURATION_NAME_ALREADY_EXISTS = "already exists in project"
+    BUILD_CONFIGURATION_NOT_FOUND = "No build type nor template is found"
 
 
 class ResponseSpecs:

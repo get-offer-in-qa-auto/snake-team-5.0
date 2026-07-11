@@ -3,6 +3,8 @@ from enum import Enum
 from typing import Any, List
 
 from src.main.api.models.create_project_request import CreateProjectRequest
+from src.main.api.models.create_build_configuration_request import CreateBuildConfigurationRequest
+from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.project_response import ProjectResponse
 
@@ -35,6 +37,24 @@ class Endpoint(Enum):
 
     DELETE_PROJECT = EndpointConfig(
         url='/projects',
+        request_model=None,
+        response_model=None
+    )
+
+    CREATE_BUILD_CONFIGURATION = EndpointConfig(
+        url='/projects',
+        request_model=CreateBuildConfigurationRequest,
+        response_model=BuildConfigurationResponse
+    )
+
+    GET_BUILD_CONFIGURATION = EndpointConfig(
+        url='/buildTypes',
+        request_model=None,
+        response_model=BuildConfigurationResponse
+    )
+
+    DELETE_BUILD_CONFIGURATION = EndpointConfig(
+        url='/buildTypes',
         request_model=None,
         response_model=None
     )

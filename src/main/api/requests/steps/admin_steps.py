@@ -1,5 +1,7 @@
 from typing import List
 from src.main.api.models.create_project_request import CreateProjectRequest
+from src.main.api.models.create_build_configuration_request import CreateBuildConfigurationRequest
+from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.requests.skeleton.requesters.validated_crud_requester import ValidatedCrudRequester
 from src.main.api.models.create_user_response import CreateUserResponse
 from src.main.api.models.project_response import ProjectResponse
@@ -94,6 +96,105 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_deleted()
         ).delete(self._project_locator(project_id))
 
+    def create_build_configuration(
+        self,
+        project_id: str,
+        configuration_request: CreateBuildConfigurationRequest
+    ) -> BuildConfigurationResponse:
+        configuration_response: BuildConfigurationResponse = ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.CREATE_BUILD_CONFIGURATION,
+            ResponseSpecs.entity_was_created_or_ok()
+        ).post(
+            configuration_request,
+            path=f"{self._project_locator(project_id)}/buildTypes"
+        )
+
+        self.created_objects.append(configuration_response)
+        return configuration_response
+
+    def create_build_configuration_bad_request(
+        self,
+        project_id: str,
+        configuration_request: CreateBuildConfigurationRequest,
+        error_text: ResponseError
+    ):
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.CREATE_BUILD_CONFIGURATION,
+            ResponseSpecs.request_returns_bad_request_with_text(error_text)
+        ).post(
+            configuration_request,
+            path=f"{self._project_locator(project_id)}/buildTypes"
+        )
+
+    def create_build_configuration_not_found(
+        self,
+        project_id: str,
+        configuration_request: CreateBuildConfigurationRequest,
+        error_text: ResponseError
+    ):
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.CREATE_BUILD_CONFIGURATION,
+            ResponseSpecs.request_returns_not_found_with_text(error_text)
+        ).post(
+            configuration_request,
+            path=f"{self._project_locator(project_id)}/buildTypes"
+        )
+
+    def create_build_configuration_without_authorization(
+        self,
+        project_id: str,
+        configuration_request: CreateBuildConfigurationRequest
+    ):
+        CrudRequester(
+            RequestSpecs.unauth_spec(),
+            Endpoint.CREATE_BUILD_CONFIGURATION,
+            ResponseSpecs.request_returns_unauthorized()
+        ).post(
+            configuration_request,
+            path=f"{self._project_locator(project_id)}/buildTypes",
+            allow_redirects=False
+        )
+
+    def get_build_configuration(
+        self,
+        build_configuration_id: str
+    ) -> BuildConfigurationResponse:
+        return ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.GET_BUILD_CONFIGURATION,
+            ResponseSpecs.request_returns_ok()
+        ).get(self._build_configuration_locator(build_configuration_id))
+
+    def check_build_configuration_does_not_exist(
+        self,
+        build_configuration_id: str
+    ):
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.GET_BUILD_CONFIGURATION,
+            ResponseSpecs.request_returns_not_found_with_text(
+                ResponseError.BUILD_CONFIGURATION_NOT_FOUND
+            )
+        ).get(self._build_configuration_locator(build_configuration_id))
+
+    def delete_build_configuration(self, build_configuration_id: str):
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.DELETE_BUILD_CONFIGURATION,
+            ResponseSpecs.entity_was_deleted()
+        ).delete(self._build_configuration_locator(build_configuration_id))
+
     @staticmethod
     def _project_locator(project_id: str) -> str:
         return project_id if ":" in project_id else f"id:{project_id}"
+
+    @staticmethod
+    def _build_configuration_locator(build_configuration_id: str) -> str:
+        return (
+            build_configuration_id
+            if ":" in build_configuration_id
+            else f"id:{build_configuration_id}"
+        )

@@ -18,12 +18,16 @@ class CrudRequester(HttpRequest, CrudEndpointInterface):
     def post(
         self,
         model: Optional[T] = None,
+        path: Optional[str] = None,
         allow_redirects: bool = True
     ) -> requests.Response:
         body = model.model_dump() if model is not None else ''
 
         response = requests.post(
-            url=f'{self.base_url}{self.endpoint.value.url}',
+            url=(
+                f'{self.base_url}{self.endpoint.value.url}'
+                f'{("/" + path) if path is not None else ""}'
+            ),
             headers=self.request_spec,
             json=body,
             allow_redirects=allow_redirects

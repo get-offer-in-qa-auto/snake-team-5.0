@@ -27,3 +27,8 @@ def project_request_factory():
 @pytest.fixture(scope="function")
 def project_request(project_request_factory) -> CreateProjectRequest:
     return project_request_factory()
+
+
+@pytest.fixture(scope="function")
+def project(api_manager, project_request):
+    return api_manager.admin_steps.create_project(project_request)
