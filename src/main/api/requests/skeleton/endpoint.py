@@ -7,6 +7,11 @@ from src.main.api.models.create_build_configuration_request import CreateBuildCo
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.create_user_response import CreateUserResponse
+from src.main.api.models.user_token import (
+    CreateUserTokenRequest,
+    UserTokenResponse,
+    UserTokensResponse,
+)
 from src.main.api.models.project_response import ProjectResponse
 
 
@@ -55,6 +60,24 @@ class Endpoint(Enum):
     )
 
     DELETE_USER = EndpointConfig(
+        url='/users',
+        request_model=None,
+        response_model=None
+    )
+
+    CREATE_USER_TOKEN = EndpointConfig(
+        url='/users',
+        request_model=CreateUserTokenRequest,
+        response_model=UserTokenResponse
+    )
+
+    GET_USER_TOKENS = EndpointConfig(
+        url='/users',
+        request_model=None,
+        response_model=UserTokensResponse
+    )
+
+    DELETE_USER_TOKEN = EndpointConfig(
         url='/users',
         request_model=None,
         response_model=None

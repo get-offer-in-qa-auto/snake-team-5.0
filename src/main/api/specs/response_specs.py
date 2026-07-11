@@ -137,3 +137,7 @@ class ResponseSpecs:
             HTTPStatus.UNAUTHORIZED,
             expected_error
         )
+
+    @staticmethod
+    def request_returns_unauthorized_status() -> Callable[[Response], None]:
+        return ResponseSpecs._make_status_checker([HTTPStatus.UNAUTHORIZED])

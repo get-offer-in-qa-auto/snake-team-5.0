@@ -1,5 +1,94 @@
+from src.main.api.models.create_user_request import CreateUserRequest
+from src.main.api.models.create_user_response import CreateUserResponse
+from src.main.api.models.user_token import (
+    CreateUserTokenRequest,
+    UserTokenResponse,
+    UserTokensResponse,
+)
+from src.main.api.requests.skeleton.endpoint import Endpoint
+from src.main.api.requests.skeleton.requesters.crud_requester import CrudRequester
+from src.main.api.requests.skeleton.requesters.validated_crud_requester import (
+    ValidatedCrudRequester,
+)
 from src.main.api.requests.steps.base_steps import BaseSteps
+from src.main.api.specs.request_specs import RequestSpecs
+from src.main.api.specs.response_specs import ResponseSpecs
 
 
 class UserSteps(BaseSteps):
-    pass
+    def create_user_token(
+        self,
+        user_request: CreateUserRequest,
+        token_request: CreateUserTokenRequest
+    ) -> UserTokenResponse:
+        token_response: UserTokenResponse = ValidatedCrudRequester(
+            RequestSpecs.auth_as_user(
+                user_request.username,
+                user_request.password,
+                csrf=True
+            ),
+            Endpoint.CREATE_USER_TOKEN,
+            ResponseSpecs.entity_was_created_or_ok()
+        ).post(
+            token_request,
+            path=f"username:{user_request.username}/tokens"
+        )
+        token_response = token_response.model_copy(
+            update={
+                "username": user_request.username,
+                "password": user_request.password,
+            }
+        )
+
+        self.created_objects.append(token_response)
+        return token_response
+
+    def get_user_tokens(
+        self,
+        user_request: CreateUserRequest
+    ) -> UserTokensResponse:
+        return ValidatedCrudRequester(
+            RequestSpecs.auth_as_user(
+                user_request.username,
+                user_request.password
+            ),
+            Endpoint.GET_USER_TOKENS,
+            ResponseSpecs.request_returns_ok()
+        ).get(f"username:{user_request.username}/tokens")
+
+    def delete_user_token(
+        self,
+        username: str,
+        password: str,
+        token_name: str
+    ):
+        CrudRequester(
+            RequestSpecs.auth_as_user(username, password, csrf=True),
+            Endpoint.DELETE_USER_TOKEN,
+            ResponseSpecs.entity_was_deleted()
+        ).delete(f"username:{username}/tokens/{token_name}")
+
+    def get_user_with_token(
+        self,
+        username: str,
+        token: str
+    ) -> CreateUserResponse:
+        return ValidatedCrudRequester(
+            RequestSpecs.auth_with_token(token),
+            Endpoint.GET_USER,
+            ResponseSpecs.request_returns_ok()
+        ).get(f"username:{username}")
+
+    def check_request_without_token(self, username: str):
+        CrudRequester(
+            RequestSpecs.unauth_spec(),
+            Endpoint.GET_USER,
+            ResponseSpecs.request_returns_unauthorized()
+        ).get(f"username:{username}")
+
+    def check_token_cannot_authenticate(self, username: str, token: str):
+        CrudRequester(
+            RequestSpecs.auth_with_token(token),
+            Endpoint.GET_USER,
+            ResponseSpecs.request_returns_unauthorized_status()
+        ).get(f"username:{username}")
