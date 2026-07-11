@@ -6,6 +6,7 @@ from src.main.api.models.create_project_request import CreateProjectRequest
 from src.main.api.models.create_build_configuration_request import CreateBuildConfigurationRequest
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.create_user_request import CreateUserRequest
+from src.main.api.models.create_user_response import CreateUserResponse
 from src.main.api.models.project_response import ProjectResponse
 
 
@@ -37,6 +38,24 @@ class Endpoint(Enum):
 
     DELETE_PROJECT = EndpointConfig(
         url='/projects',
+        request_model=None,
+        response_model=None
+    )
+
+    CREATE_USER = EndpointConfig(
+        url='/users',
+        request_model=CreateUserRequest,
+        response_model=CreateUserResponse
+    )
+
+    GET_USER = EndpointConfig(
+        url='/users',
+        request_model=None,
+        response_model=CreateUserResponse
+    )
+
+    DELETE_USER = EndpointConfig(
+        url='/users',
         request_model=None,
         response_model=None
     )

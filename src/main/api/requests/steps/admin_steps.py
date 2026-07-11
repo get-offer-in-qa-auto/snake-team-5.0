@@ -15,13 +15,86 @@ from src.main.api.specs.response_specs import ResponseError, ResponseSpecs
 
 class AdminSteps(BaseSteps):
     def create_user(self, user_request: CreateUserRequest):
-        pass
+        user_response: CreateUserResponse = ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.CREATE_USER,
+            ResponseSpecs.entity_was_created_or_ok()
+        ).post(user_request)
 
-    def create_invalid_user(self, user_request: CreateUserRequest, error_key: str, error_value: str):
-        pass
+        self.created_objects.append(user_response)
+        return user_response
 
-    def delete_user(self, user_id: int):
-        pass
+    def create_user_bad_request(
+        self,
+        user_request: CreateUserRequest,
+        error_text: ResponseError
+    ):
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.CREATE_USER,
+            ResponseSpecs.request_returns_bad_request_with_text(error_text)
+        ).post(user_request)
+
+    def create_user_without_authorization(
+        self,
+        user_request: CreateUserRequest
+    ):
+        CrudRequester(
+            RequestSpecs.unauth_spec(),
+            Endpoint.CREATE_USER,
+            ResponseSpecs.request_returns_unauthorized()
+        ).post(user_request, allow_redirects=False)
+
+    def get_user(self, username: str) -> CreateUserResponse:
+        return ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.GET_USER,
+            ResponseSpecs.request_returns_ok()
+        ).get(self._user_locator(username))
+
+    def get_user_as(
+        self,
+        user_request: CreateUserRequest
+    ) -> CreateUserResponse:
+        return ValidatedCrudRequester(
+            RequestSpecs.auth_as_user(
+                user_request.username,
+                user_request.password
+            ),
+            Endpoint.GET_USER,
+            ResponseSpecs.request_returns_ok()
+        ).get(self._user_locator(user_request.username))
+
+    def check_user_does_not_exist(self, username: str):
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.GET_USER,
+            ResponseSpecs.request_returns_not_found_with_text(
+                ResponseError.USER_NOT_FOUND
+            )
+        ).get(self._user_locator(username))
+
+    def check_user_cannot_authenticate(
+        self,
+        user_request: CreateUserRequest
+    ):
+        CrudRequester(
+            RequestSpecs.auth_as_user(
+                user_request.username,
+                user_request.password
+            ),
+            Endpoint.GET_USER,
+            ResponseSpecs.request_returns_unauthorized_with_text(
+                ResponseError.INCORRECT_USERNAME_OR_PASSWORD
+            )
+        ).get(self._user_locator(user_request.username))
+
+    def delete_user(self, user_id: int | str):
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.DELETE_USER,
+            ResponseSpecs.entity_was_deleted()
+        ).delete(self._user_locator(user_id))
 
     def get_all_users(self) -> List[CreateUserRequest]:
         response = ValidatedCrudRequester(
@@ -197,4 +270,14 @@ class AdminSteps(BaseSteps):
             build_configuration_id
             if ":" in build_configuration_id
             else f"id:{build_configuration_id}"
+        )
+
+    @staticmethod
+    def _user_locator(user_id_or_username: int | str) -> str:
+        if isinstance(user_id_or_username, int):
+            return f"id:{user_id_or_username}"
+        return (
+            user_id_or_username
+            if ":" in user_id_or_username
+            else f"username:{user_id_or_username}"
         )

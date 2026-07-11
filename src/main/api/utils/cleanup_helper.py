@@ -11,10 +11,7 @@ from src.main.api.classes.api_manager import ApiManager
 def cleanup_objects(objects: List[Any]):
     api_manager = ApiManager(objects)
     for obj in reversed(objects):
-        if isinstance(obj, CreateUserRequest):
-            user_profile = api_manager.user_steps.get_profile(obj)
-            api_manager.admin_steps.delete_user(user_profile.id)
-        elif isinstance(obj, CreateUserResponse):
+        if isinstance(obj, CreateUserResponse):
             api_manager.admin_steps.delete_user(obj.id)
         elif isinstance(obj, BuildConfigurationResponse):
             api_manager.admin_steps.delete_build_configuration(obj.id)

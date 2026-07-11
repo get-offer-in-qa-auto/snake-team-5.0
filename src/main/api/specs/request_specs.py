@@ -36,6 +36,15 @@ class RequestSpecs:
         return RequestSpecs.default_req_headers()
 
     @staticmethod
+    def auth_as_user(username: str, password: str) -> Dict[str, str]:
+        headers = RequestSpecs.default_req_headers()
+        headers["Authorization"] = RequestSpecs._basic_auth_header(
+            username,
+            password
+        )
+        return headers
+
+    @staticmethod
     def _basic_auth_header(username: str, password: str) -> str:
         raw_token = f"{username}:{password}".encode("utf-8")
         return f"Basic {base64.b64encode(raw_token).decode('ascii')}"

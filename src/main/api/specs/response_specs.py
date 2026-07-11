@@ -11,6 +11,9 @@ class ResponseError(str, Enum):
     BUILD_CONFIGURATION_ID_ALREADY_USED = "already used"
     BUILD_CONFIGURATION_NAME_ALREADY_EXISTS = "already exists in project"
     BUILD_CONFIGURATION_NOT_FOUND = "No build type nor template is found"
+    USERNAME_ALREADY_EXISTS = "already exists"
+    USER_NOT_FOUND = "User not found"
+    INCORRECT_USERNAME_OR_PASSWORD = "Incorrect username or password"
 
 
 class ResponseSpecs:
@@ -120,3 +123,17 @@ class ResponseSpecs:
                 f"but got '{response.text}'."
             )
         return check
+
+    @staticmethod
+    def request_returns_unauthorized_with_text(
+        error_text: ResponseError | str
+    ) -> Callable[[Response], None]:
+        expected_error = (
+            error_text.value
+            if isinstance(error_text, ResponseError)
+            else str(error_text)
+        )
+        return ResponseSpecs.request_returns_status_with_text(
+            HTTPStatus.UNAUTHORIZED,
+            expected_error
+        )
