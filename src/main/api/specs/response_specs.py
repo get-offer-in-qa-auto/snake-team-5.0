@@ -141,3 +141,7 @@ class ResponseSpecs:
     @staticmethod
     def request_returns_unauthorized_status() -> Callable[[Response], None]:
         return ResponseSpecs._make_status_checker([HTTPStatus.UNAUTHORIZED])
+
+    @staticmethod
+    def request_returns_forbidden() -> Callable[[Response], None]:
+        return ResponseSpecs._make_status_checker([HTTPStatus.FORBIDDEN])

@@ -9,6 +9,11 @@ from src.main.api.requests.skeleton.endpoint import Endpoint
 from src.main.api.requests.skeleton.requesters.crud_requester import CrudRequester
 from src.main.api.requests.steps.base_steps import BaseSteps
 from src.main.api.models.create_user_request import CreateUserRequest
+from src.main.api.models.role_assignment import (
+    RoleAssignmentRequest,
+    RoleAssignmentResponse,
+    RoleAssignmentsResponse,
+)
 from src.main.api.specs.request_specs import RequestSpecs
 from src.main.api.specs.response_specs import ResponseError, ResponseSpecs
 
@@ -95,6 +100,32 @@ class AdminSteps(BaseSteps):
             Endpoint.DELETE_USER,
             ResponseSpecs.entity_was_deleted()
         ).delete(self._user_locator(user_id))
+
+    def assign_user_role(
+        self,
+        username: str,
+        role_id: str,
+        scope: str
+    ) -> RoleAssignmentResponse:
+        role_request = RoleAssignmentRequest(
+            roleId=role_id,
+            scope=scope
+        )
+        return ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.ASSIGN_USER_ROLE,
+            ResponseSpecs.entity_was_created_or_ok()
+        ).post(
+            role_request,
+            path=f"{self._user_locator(username)}/roles"
+        )
+
+    def get_user_roles(self, username: str) -> RoleAssignmentsResponse:
+        return ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.GET_USER_ROLES,
+            ResponseSpecs.request_returns_ok()
+        ).get(f"{self._user_locator(username)}/roles")
 
     def get_all_users(self) -> List[CreateUserRequest]:
         response = ValidatedCrudRequester(

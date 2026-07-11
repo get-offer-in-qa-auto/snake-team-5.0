@@ -1,5 +1,13 @@
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.create_user_response import CreateUserResponse
+from src.main.api.models.create_project_request import CreateProjectRequest
+from src.main.api.models.project_response import ProjectResponse
+from src.main.api.models.create_build_configuration_request import (
+    CreateBuildConfigurationRequest,
+)
+from src.main.api.models.build_configuration_response import (
+    BuildConfigurationResponse,
+)
 from src.main.api.models.user_token import (
     CreateUserTokenRequest,
     UserTokenResponse,
@@ -92,3 +100,77 @@ class UserSteps(BaseSteps):
             Endpoint.GET_USER,
             ResponseSpecs.request_returns_unauthorized_status()
         ).get(f"username:{username}")
+
+    def create_project(
+        self,
+        user_request: CreateUserRequest,
+        project_request: CreateProjectRequest
+    ) -> ProjectResponse:
+        project_response: ProjectResponse = ValidatedCrudRequester(
+            RequestSpecs.auth_as_user(
+                user_request.username,
+                user_request.password,
+                csrf=True
+            ),
+            Endpoint.CREATE_PROJECT,
+            ResponseSpecs.entity_was_created_or_ok()
+        ).post(project_request)
+
+        self.created_objects.append(project_response)
+        return project_response
+
+    def create_project_forbidden(
+        self,
+        user_request: CreateUserRequest,
+        project_request: CreateProjectRequest
+    ):
+        CrudRequester(
+            RequestSpecs.auth_as_user(
+                user_request.username,
+                user_request.password,
+                csrf=True
+            ),
+            Endpoint.CREATE_PROJECT,
+            ResponseSpecs.request_returns_forbidden()
+        ).post(project_request)
+
+    def create_build_configuration(
+        self,
+        user_request: CreateUserRequest,
+        project_id: str,
+        configuration_request: CreateBuildConfigurationRequest
+    ) -> BuildConfigurationResponse:
+        configuration_response: BuildConfigurationResponse = ValidatedCrudRequester(
+            RequestSpecs.auth_as_user(
+                user_request.username,
+                user_request.password,
+                csrf=True
+            ),
+            Endpoint.CREATE_BUILD_CONFIGURATION,
+            ResponseSpecs.entity_was_created_or_ok()
+        ).post(
+            configuration_request,
+            path=f"id:{project_id}/buildTypes"
+        )
+
+        self.created_objects.append(configuration_response)
+        return configuration_response
+
+    def create_build_configuration_forbidden(
+        self,
+        user_request: CreateUserRequest,
+        project_id: str,
+        configuration_request: CreateBuildConfigurationRequest
+    ):
+        CrudRequester(
+            RequestSpecs.auth_as_user(
+                user_request.username,
+                user_request.password,
+                csrf=True
+            ),
+            Endpoint.CREATE_BUILD_CONFIGURATION,
+            ResponseSpecs.request_returns_forbidden()
+        ).post(
+            configuration_request,
+            path=f"id:{project_id}/buildTypes"
+        )

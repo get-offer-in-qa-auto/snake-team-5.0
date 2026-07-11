@@ -12,6 +12,11 @@ from src.main.api.models.user_token import (
     UserTokenResponse,
     UserTokensResponse,
 )
+from src.main.api.models.role_assignment import (
+    RoleAssignmentRequest,
+    RoleAssignmentResponse,
+    RoleAssignmentsResponse,
+)
 from src.main.api.models.project_response import ProjectResponse
 
 
@@ -81,6 +86,18 @@ class Endpoint(Enum):
         url='/users',
         request_model=None,
         response_model=None
+    )
+
+    ASSIGN_USER_ROLE = EndpointConfig(
+        url='/users',
+        request_model=RoleAssignmentRequest,
+        response_model=RoleAssignmentResponse
+    )
+
+    GET_USER_ROLES = EndpointConfig(
+        url='/users',
+        request_model=None,
+        response_model=RoleAssignmentsResponse
     )
 
     CREATE_BUILD_CONFIGURATION = EndpointConfig(
