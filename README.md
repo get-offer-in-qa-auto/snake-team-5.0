@@ -276,8 +276,6 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/regression/
 - Подробная инструкция по локальному стенду: `docs/local-teamcity-setup.md`
 - Стратегия окружений для автотестов: `docs/test-environments.md`
 - Группы автотестов: `docs/test-suites.md`
-- Postman collection для API-сценариев: `postman/teamcity-api-mvp.postman_collection.json`
-- Инструкция по импорту Postman: `postman/README.md`
 - Заметки по REST API: `docs/rest-api.md`
 - Решение по версии TeamCity: `docs/teamcity-version.md`
 - Первый этап GitHub Actions pipeline: `docs/github-actions-pipeline.md`
