@@ -7,6 +7,7 @@ from src.main.api.specs.response_specs import ResponseError
 
 
 @pytest.mark.api
+@pytest.mark.smoke
 @pytest.mark.regression
 def test_create_user(
     api_manager: ApiManager,

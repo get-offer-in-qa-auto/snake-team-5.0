@@ -7,6 +7,7 @@ from src.main.api.specs.response_specs import ResponseError
 
 
 @pytest.mark.api
+@pytest.mark.smoke
 @pytest.mark.regression
 def test_create_project(api_manager: ApiManager, project_request: CreateProjectRequest):
     project_response = api_manager.admin_steps.create_project(project_request)

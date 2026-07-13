@@ -58,6 +58,33 @@
 - обработка ошибок авторизации;
 - работа с access token.
 
+## Smoke Suite
+
+Smoke suite — короткий набор проверок, который быстро отвечает на вопрос: стенд поднялся и базовые API-сценарии работают.
+
+В текущем наборе к `smoke` относятся:
+
+- `tests/smoke/test_teamcity_opened.py::test_teamcity_web_endpoint_is_opened`;
+- `tests/api/project_test.py::test_create_project`;
+- `tests/api/build_configuration_test.py::test_create_build_configuration`;
+- `tests/api/user_test/user_test.py::test_create_user`;
+- `tests/api/user_test/token_test.py::test_create_user_token`.
+
+Эти тесты также помечены `regression`, потому что smoke является частью полного regression-прогона.
+
+## Regression Suite
+
+Regression suite — полный набор текущих API и smoke проверок.
+
+К `regression` относятся все текущие тесты проекта:
+
+- базовая доступность TeamCity;
+- happy-path REST API сценарии;
+- негативные проверки валидации;
+- проверки авторизации;
+- роли и права;
+- удаление project, build configuration, user и token.
+
 ## Roles / Permissions
 
 Проверки критичного функционала с учетом ролей и прав доступа.

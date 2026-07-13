@@ -7,6 +7,7 @@ from src.main.api.models.user_token import CreateUserTokenRequest
 
 
 @pytest.mark.api
+@pytest.mark.smoke
 @pytest.mark.regression
 def test_create_user_token(
     api_manager: ApiManager,
