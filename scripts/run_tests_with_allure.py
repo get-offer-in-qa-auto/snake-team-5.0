@@ -26,7 +26,7 @@ def run_pytest(marker: str | None, results_dir: Path, pytest_args: list[str]) ->
     if marker:
         command.extend(["-m", marker])
 
-    command.extend(pytest_args or ["tests", "api_scenarios"])
+    command.extend(pytest_args or ["tests"])
 
     return subprocess.run(command, check=False).returncode
 

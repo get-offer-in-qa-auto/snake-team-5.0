@@ -4,9 +4,9 @@
 
 ## Текущий этап
 
-Первый CI-этап проверяет запуск TeamCity стенда и выполняет один минимальный smoke-test.
+Первый CI-этап проверяет запуск TeamCity стенда и выполняет минимальный smoke-test.
 
-На текущем этапе pipeline запускает один минимальный pytest smoke-test с marker `smoke`: TeamCity login page должна открыть HTTP-соединение и вернуть ожидаемый ответ без авторизации.
+На текущем этапе pipeline запускает pytest smoke-test с marker `smoke`: TeamCity login page должна открыть HTTP-соединение и вернуть ожидаемый ответ без авторизации.
 
 - поднять TeamCity Server;
 - поднять TeamCity Agent;
