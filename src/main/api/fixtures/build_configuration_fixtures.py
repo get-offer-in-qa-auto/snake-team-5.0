@@ -9,8 +9,7 @@ from src.main.api.models.create_build_configuration_request import (
 @pytest.fixture(scope="function")
 def build_configuration_request_factory():
     def create_build_configuration_request(
-        build_configuration_id: str | None = None,
-        name: str | None = None
+        build_configuration_id: str | None = None, name: str | None = None
     ) -> CreateBuildConfigurationRequest:
         generated_configuration = RandomModelGenerator.generate(
             CreateBuildConfigurationRequest
@@ -29,6 +28,6 @@ def build_configuration_request_factory():
 
 @pytest.fixture(scope="function")
 def build_configuration_request(
-    build_configuration_request_factory
+    build_configuration_request_factory,
 ) -> CreateBuildConfigurationRequest:
     return build_configuration_request_factory()

@@ -9,9 +9,8 @@ import json
 import os
 import re
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
 
 KNOWN_SUITES = ("smoke", "regression")
 
@@ -25,7 +24,9 @@ def slugify(value: str) -> str:
 
 def copy_report(report_dir: Path, destination: Path) -> None:
     if not (report_dir / "index.html").is_file():
-        raise FileNotFoundError(f"Allure report index.html was not found in {report_dir}")
+        raise FileNotFoundError(
+            f"Allure report index.html was not found in {report_dir}"
+        )
     if destination.exists():
         shutil.rmtree(destination)
     shutil.copytree(report_dir, destination)
@@ -56,7 +57,9 @@ def load_reports(site_dir: Path) -> list[dict[str, str]]:
 
 
 def suite_names(reports: list[dict[str, str]]) -> list[str]:
-    return sorted(set(KNOWN_SUITES) | {report.get("suite", "unknown") for report in reports})
+    return sorted(
+        set(KNOWN_SUITES) | {report.get("suite", "unknown") for report in reports}
+    )
 
 
 def render_report_rows(reports: list[dict[str, str]], link_prefix: str = "") -> str:
@@ -71,11 +74,11 @@ def render_report_rows(reports: list[dict[str, str]], link_prefix: str = "") -> 
         short_sha = html.escape(report.get("sha", "")[:12])
         rows.append(
             "      <tr>"
-            f"<td><a href=\"{path}\">{generated_at}</a></td>"
+            f'<td><a href="{path}">{generated_at}</a></td>'
             f"<td>{suite}</td>"
             f"<td>{event}</td>"
             f"<td>{branch}</td>"
-            f"<td><a href=\"{run_url}\">run</a></td>"
+            f'<td><a href="{run_url}">run</a></td>'
             f"<td>{short_sha}</td>"
             "</tr>"
         )
@@ -106,7 +109,9 @@ def render_index(
     latest_link = ""
     if latest is not None:
         latest_path = html.escape(link_prefix + latest["path"] + "/")
-        latest_link = f'<p class="latest"><a href="{latest_path}">Open latest report</a></p>'
+        latest_link = (
+            f'<p class="latest"><a href="{latest_path}">Open latest report</a></p>'
+        )
 
     suite_links = ""
     if suite_link_prefix is not None:
@@ -163,14 +168,14 @@ def render_redirect(target_url: str, title: str) -> str:
     target = html.escape(target_url)
     return (
         "<!doctype html>\n"
-        "<html lang=\"en\">\n"
+        '<html lang="en">\n'
         "  <head>\n"
-        "    <meta charset=\"utf-8\">\n"
-        f"    <meta http-equiv=\"refresh\" content=\"0; url={target}\">\n"
+        '    <meta charset="utf-8">\n'
+        f'    <meta http-equiv="refresh" content="0; url={target}">\n'
         f"    <title>{html.escape(title)}</title>\n"
         "  </head>\n"
         "  <body>\n"
-        f"    <p><a href=\"{target}\">Open latest report</a></p>\n"
+        f'    <p><a href="{target}">Open latest report</a></p>\n'
         "  </body>\n"
         "</html>\n"
     )
@@ -204,7 +209,9 @@ def write_indexes(site_dir: Path, reports: list[dict[str, str]]) -> None:
         )
 
     for suite in suite_names(reports):
-        suite_reports = [report for report in reports if report.get("suite", "unknown") == suite]
+        suite_reports = [
+            report for report in reports if report.get("suite", "unknown") == suite
+        ]
         suite_dir = reports_dir / suite
         suite_dir.mkdir(parents=True, exist_ok=True)
         suite_dir.joinpath("index.html").write_text(
@@ -216,11 +223,13 @@ def write_indexes(site_dir: Path, reports: list[dict[str, str]]) -> None:
             encoding="utf-8",
         )
         if suite_reports:
-            latest_suite_report = suite_reports[0].get("report_id") or Path(
-                suite_reports[0]["path"]
-            ).name
+            latest_suite_report = (
+                suite_reports[0].get("report_id") or Path(suite_reports[0]["path"]).name
+            )
             suite_dir.joinpath("latest.html").write_text(
-                render_redirect(f"{latest_suite_report}/", f"Latest {suite} Allure Report"),
+                render_redirect(
+                    f"{latest_suite_report}/", f"Latest {suite} Allure Report"
+                ),
                 encoding="utf-8",
             )
 
@@ -262,7 +271,7 @@ def main() -> None:
     metadata = {
         "branch": args.branch,
         "event": args.event,
-        "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "generated_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "report_id": report_id,
         "run_url": args.run_url,
         "sha": args.sha,

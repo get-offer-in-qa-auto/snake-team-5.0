@@ -1,6 +1,5 @@
 import base64
 import os
-from typing import Dict
 
 import requests
 
@@ -25,48 +24,43 @@ class RequestSpecs:
         return f"{RequestSpecs._server_url()}{Config.get('apiBasePath')}"
 
     @staticmethod
-    def default_req_headers() -> Dict[str, str]:
-        return {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-        }
+    def default_req_headers() -> dict[str, str]:
+        return {"Content-Type": "application/json", "Accept": "application/json"}
 
     @staticmethod
-    def unauth_spec() -> Dict[str, str]:
+    def unauth_spec() -> dict[str, str]:
         return RequestSpecs.default_req_headers()
 
     @staticmethod
     def auth_as_user(
-        username: str,
-        password: str,
-        csrf: bool = False
-    ) -> Dict[str, str]:
+        username: str, password: str, csrf: bool = False
+    ) -> dict[str, str]:
         headers = RequestSpecs.default_req_headers()
-        auth_header = RequestSpecs._basic_auth_header(
-            username,
-            password
-        )
+        auth_header = RequestSpecs._basic_auth_header(username, password)
         headers["Authorization"] = auth_header
         if csrf:
             headers["X-TC-CSRF-Token"] = RequestSpecs._csrf_token(auth_header)
         return headers
 
     @staticmethod
-    def auth_with_token(token: str) -> Dict[str, str]:
+    def auth_with_token(token: str) -> dict[str, str]:
         headers = RequestSpecs.default_req_headers()
         headers["Authorization"] = f"Bearer {token}"
         return headers
 
     @staticmethod
     def _basic_auth_header(username: str, password: str) -> str:
-        raw_token = f"{username}:{password}".encode("utf-8")
+        raw_token = f"{username}:{password}".encode()
         return f"Basic {base64.b64encode(raw_token).decode('ascii')}"
 
     @staticmethod
     def _admin_auth_headers() -> list[str]:
         headers = []
         configured_header = Config.get("ADMIN_AUTH_HEADER")
-        if configured_header and configured_header != RequestSpecs._PLACEHOLDER_AUTH_HEADER:
+        if (
+            configured_header
+            and configured_header != RequestSpecs._PLACEHOLDER_AUTH_HEADER
+        ):
             headers.append(configured_header)
 
         username = os.getenv("TEAMCITY_USERNAME")
@@ -77,7 +71,9 @@ class RequestSpecs:
         admin_username = Config.get("ADMIN_USERNAME")
         admin_password = Config.get("ADMIN_PASSWORD")
         if admin_username and admin_password:
-            headers.append(RequestSpecs._basic_auth_header(admin_username, admin_password))
+            headers.append(
+                RequestSpecs._basic_auth_header(admin_username, admin_password)
+            )
 
         super_user_token = Config.get(
             "TEAMCITY_SUPER_USER_TOKEN",

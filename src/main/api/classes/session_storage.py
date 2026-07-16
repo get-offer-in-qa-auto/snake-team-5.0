@@ -1,14 +1,13 @@
 from __future__ import annotations
-from typing import List
 
 from src.main.api.models.create_user_request import CreateUserRequest
 
 
 class SessionStorage:
-    _users: List[CreateUserRequest] = []
+    _users: list[CreateUserRequest] = []
 
     @classmethod
-    def add_users(cls, users: List[CreateUserRequest]) -> None:
+    def add_users(cls, users: list[CreateUserRequest]) -> None:
         for user in list(users):
             cls._users.append(user)
 

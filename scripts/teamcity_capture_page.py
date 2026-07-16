@@ -11,7 +11,10 @@ try:
         format_readiness_message,
     )
 except ModuleNotFoundError:
-    from teamcity_start_smoke import classify_teamcity_response, format_readiness_message
+    from teamcity_start_smoke import (
+        classify_teamcity_response,
+        format_readiness_message,
+    )
 
 
 def fetch_page(url: str, timeout: int) -> tuple[int | None, str, str]:
@@ -30,7 +33,9 @@ def fetch_page(url: str, timeout: int) -> tuple[int | None, str, str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Capture TeamCity page response for CI artifacts.")
+    parser = argparse.ArgumentParser(
+        description="Capture TeamCity page response for CI artifacts."
+    )
     parser.add_argument("--url", default="http://localhost:8111/login.html")
     parser.add_argument("--output-dir", default="artifacts/teamcity-page")
     parser.add_argument("--request-timeout", type=int, default=10)
