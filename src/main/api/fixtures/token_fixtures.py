@@ -6,9 +6,7 @@ from src.main.api.models.user_token import CreateUserTokenRequest
 
 @pytest.fixture(scope="function")
 def user_token_request_factory():
-    def create_user_token_request(
-        name: str | None = None
-    ) -> CreateUserTokenRequest:
+    def create_user_token_request(name: str | None = None) -> CreateUserTokenRequest:
         generated_token = RandomModelGenerator.generate(CreateUserTokenRequest)
         return CreateUserTokenRequest(
             name=name if name is not None else generated_token.name

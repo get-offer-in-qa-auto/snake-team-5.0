@@ -1,7 +1,9 @@
 from typing import Any
 
 from src.main.api.models.comparison.model_comparator import ModelComparator
-from src.main.api.models.comparison.model_comparison_configuration import ModelComparisonConfigLoader
+from src.main.api.models.comparison.model_comparison_configuration import (
+    ModelComparisonConfigLoader,
+)
 
 
 class ModelAssertions:
@@ -9,8 +11,8 @@ class ModelAssertions:
         self.request = request
         self.response = response
 
-    def match(self) -> 'ModelAssertions':
-        config_loader = ModelComparisonConfigLoader('model-comparison.properties')
+    def match(self) -> "ModelAssertions":
+        config_loader = ModelComparisonConfigLoader("model-comparison.properties")
         rule = config_loader.get_rule_for(self.request)
 
         if rule is not None:
@@ -19,8 +21,12 @@ class ModelAssertions:
             )
 
             if not result.is_success():
-                raise AssertionError(f'Model comparison failed with mismatches fields: \n{result.mismatches}')
+                raise AssertionError(
+                    f"Model comparison failed with mismatches fields: \n{result.mismatches}"
+                )
 
         else:
-            raise AssertionError(f'No comparion rule found for class {self.request.__class__.__name__}')
+            raise AssertionError(
+                f"No comparion rule found for class {self.request.__class__.__name__}"
+            )
         return self

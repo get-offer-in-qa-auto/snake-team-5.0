@@ -1,5 +1,5 @@
-from typing import Dict, Any, List
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -10,20 +10,20 @@ class Mismatch:
 
 
 class ComparisonResult:
-    def __init__(self, mismatches: List[Mismatch]):
+    def __init__(self, mismatches: list[Mismatch]):
         self._mismatches = mismatches
 
     def is_success(self) -> bool:
         return not self.mismatches
 
     @property
-    def mismatches(self) -> List[Mismatch]:
+    def mismatches(self) -> list[Mismatch]:
         return self._mismatches
 
 
 class ModelComparator:
     @staticmethod
-    def compare_fields(request: Any, response: Any, field_mapping: Dict[str, str]):
+    def compare_fields(request: Any, response: Any, field_mapping: dict[str, str]):
         mismatches = []
 
         for request_field, response_field in field_mapping.items():
@@ -31,7 +31,13 @@ class ModelComparator:
             response_value = ModelComparator._get_field_value(response, response_field)
 
             if str(request_value) != str(response_value):
-                mismatches.append(Mismatch(f'{request_field} -> {response_field}', request_value, response_value))
+                mismatches.append(
+                    Mismatch(
+                        f"{request_field} -> {response_field}",
+                        request_value,
+                        response_value,
+                    )
+                )
 
         return ComparisonResult(mismatches)
 
@@ -43,4 +49,6 @@ class ModelComparator:
                 return getattr(obj, field_name)
             current_class = current_class.__base__
 
-        raise AttributeError(f'Field {field_name} not found in class {obj.__class__.__name__}')
+        raise AttributeError(
+            f"Field {field_name} not found in class {obj.__class__.__name__}"
+        )

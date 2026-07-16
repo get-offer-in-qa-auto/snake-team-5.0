@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
 import argparse
-import http.cookiejar
 import http.client
+import http.cookiejar
 import os
 import re
 import sys
 import time
 from dataclasses import dataclass
-from urllib.parse import urlencode, urlsplit, urlunsplit
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode, urlsplit, urlunsplit
 from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
-
 
 FIRST_START_MARKERS = (
     "startup confirmation",
@@ -23,6 +22,7 @@ FIRST_START_MARKERS = (
 CSRF_HEADER_RE = re.compile(r'name="csrf-header-name"\s+content="([^"]+)"')
 CSRF_TOKEN_RE = re.compile(r'name="tc-csrf-token"\s+content="([^"]+)"')
 MAINTENANCE_STAGE_RE = re.compile(r"Stage:\s*([A-Z_]+)")
+
 
 @dataclass(frozen=True)
 class TeamCityReadiness:
@@ -111,11 +111,15 @@ def post_maintenance_command(
         headers=extract_csrf_headers(body),
     )
     if status != 200 or response_body.strip() != "OK":
-        raise RuntimeError(f"TeamCity maintenance command {command} failed: HTTP {status}. {response_body[:500]}")
+        raise RuntimeError(
+            f"TeamCity maintenance command {command} failed: HTTP {status}. {response_body[:500]}"
+        )
     return status, response_body
 
 
-def complete_first_start_setup(url: str, timeout: int, interval: int, max_wait: int) -> bool:
+def complete_first_start_setup(
+    url: str, timeout: int, interval: int, max_wait: int
+) -> bool:
     base_url = get_base_url(url)
     opener = build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
     status, body = request_with_session(opener, url, timeout)
@@ -138,7 +142,10 @@ def complete_first_start_setup(url: str, timeout: int, interval: int, max_wait: 
         status, body = request_with_session(opener, f"{base_url}/mnt", timeout)
         stage = get_maintenance_stage(body)
 
-        if stage == "FIRST_START_SCREEN" and "goNewInstallation" not in completed_commands:
+        if (
+            stage == "FIRST_START_SCREEN"
+            and "goNewInstallation" not in completed_commands
+        ):
             print("Auto setup: confirming fresh TeamCity installation.")
             post_maintenance_command(
                 opener,
@@ -149,7 +156,9 @@ def complete_first_start_setup(url: str, timeout: int, interval: int, max_wait: 
                 data={"restore": "false"},
             )
             completed_commands.add("goNewInstallation")
-        elif stage == "DB_SETTINGS_SCREEN" and "goNewDatabase" not in completed_commands:
+        elif (
+            stage == "DB_SETTINGS_SCREEN" and "goNewDatabase" not in completed_commands
+        ):
             print("Auto setup: selecting internal TeamCity database.")
             post_maintenance_command(
                 opener,
@@ -160,7 +169,10 @@ def complete_first_start_setup(url: str, timeout: int, interval: int, max_wait: 
                 data={"dbType": "HSQLDB2"},
             )
             completed_commands.add("goNewDatabase")
-        elif stage == "LICENSE_AGREEMENT_SCREEN" and "acceptLicenseAgreement" not in completed_commands:
+        elif (
+            stage == "LICENSE_AGREEMENT_SCREEN"
+            and "acceptLicenseAgreement" not in completed_commands
+        ):
             print("Auto setup: accepting TeamCity license agreement.")
             post_maintenance_command(
                 opener,
@@ -179,7 +191,10 @@ def complete_first_start_setup(url: str, timeout: int, interval: int, max_wait: 
 
         time.sleep(interval)
 
-    print("Auto setup: timed out while completing TeamCity first-start setup.", file=sys.stderr)
+    print(
+        "Auto setup: timed out while completing TeamCity first-start setup.",
+        file=sys.stderr,
+    )
     return False
 
 
@@ -233,7 +248,9 @@ def classify_teamcity_response(status: int | None, body: str) -> TeamCityReadine
 
 
 def format_readiness_message(readiness: TeamCityReadiness, url: str) -> str:
-    status = "no HTTP response" if readiness.status is None else f"HTTP {readiness.status}"
+    status = (
+        "no HTTP response" if readiness.status is None else f"HTTP {readiness.status}"
+    )
     return f"{readiness.code}: {readiness.message} Endpoint: {url}. Status: {status}."
 
 
@@ -242,7 +259,9 @@ def append_github_step_summary(readiness: TeamCityReadiness, url: str) -> None:
     if not summary_path:
         return
 
-    status = "no HTTP response" if readiness.status is None else f"HTTP {readiness.status}"
+    status = (
+        "no HTTP response" if readiness.status is None else f"HTTP {readiness.status}"
+    )
     result = "Ready" if readiness.opened else "Not ready"
     with open(summary_path, "a", encoding="utf-8") as summary:
         summary.write("## TeamCity Readiness\n\n")
@@ -287,7 +306,9 @@ def main() -> int:
 
         if readiness.code == "FIRST_START_REQUIRED" and args.auto_setup:
             print(f"{message} Running automatic first-start setup.")
-            if complete_first_start_setup(args.url, args.request_timeout, args.interval, args.timeout):
+            if complete_first_start_setup(
+                args.url, args.request_timeout, args.interval, args.timeout
+            ):
                 time.sleep(args.interval)
                 continue
             append_github_step_summary(readiness, args.url)

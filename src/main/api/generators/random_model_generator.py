@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
-import uuid
-import rstr
 import random
-from typing import Any, Annotated, get_type_hints, get_origin, get_args
+import uuid
+from datetime import datetime, timedelta
+from typing import Annotated, Any, get_args, get_origin, get_type_hints
+
+import rstr
 
 from src.main.api.generators.generating_rule import GeneratingRule
 
@@ -23,7 +24,9 @@ class RandomModelGenerator:
                     if isinstance(ann, GeneratingRule):
                         rule = ann
             if rule:
-                value = RandomModelGenerator._generate_from_regex(rule.regex, actual_type)
+                value = RandomModelGenerator._generate_from_regex(
+                    rule.regex, actual_type
+                )
             else:
                 value = RandomModelGenerator._generate_value(actual_type)
 
@@ -53,7 +56,7 @@ class RandomModelGenerator:
         elif field_type is datetime:
             return datetime.now() - timedelta(seconds=random.randint(0, 100000))
         elif field_type is list:
-            return [str(uuid.uuid4())[:5] for _ in random.randint(3, 10)]
+            return [str(uuid.uuid4())[:5] for _ in range(random.randint(3, 10))]
         elif isinstance(field_type, type):
             return RandomModelGenerator.generate(field_type)
         return

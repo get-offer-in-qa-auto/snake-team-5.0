@@ -2,36 +2,28 @@ import pytest
 
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.classes.session_storage import SessionStorage
-from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.generators.random_model_generator import RandomModelGenerator
+from src.main.api.models.create_user_request import CreateUserRequest
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def user_request_factory():
     def create_user_request(
         username: str | None = None,
         password: str | None = None,
-        name: str | None = None
+        name: str | None = None,
     ) -> CreateUserRequest:
         generated_user = RandomModelGenerator.generate(CreateUserRequest)
         return CreateUserRequest(
-            username=(
-                username
-                if username is not None
-                else generated_user.username
-            ),
-            password=(
-                password
-                if password is not None
-                else generated_user.password
-            ),
+            username=(username if username is not None else generated_user.username),
+            password=(password if password is not None else generated_user.password),
             name=name if name is not None else generated_user.name,
         )
 
     return create_user_request
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def user_request(user_request_factory):
     return user_request_factory()
 
@@ -49,4 +41,4 @@ def user_factory(api_manager: ApiManager, user_request_factory):
 
 @pytest.fixture
 def admin_user_request():
-    return CreateUserRequest(username='admin', password='admin', name='Admin User')
+    return CreateUserRequest(username="admin", password="admin", name="Admin User")

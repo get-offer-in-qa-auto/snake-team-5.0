@@ -9,9 +9,7 @@ def rbac_admin_user_request(api_manager: ApiManager, user_request_factory):
     user_request = user_request_factory()
     api_manager.admin_steps.create_user(user_request)
     api_manager.admin_steps.assign_user_role(
-        user_request.username,
-        Role.SYSTEM_ADMIN,
-        RoleScope.GLOBAL
+        user_request.username, Role.SYSTEM_ADMIN, RoleScope.GLOBAL
     )
     return user_request
 
@@ -22,9 +20,7 @@ def limited_user_factory(api_manager: ApiManager, user_request_factory):
         user_request = user_request_factory()
         api_manager.admin_steps.create_user(user_request)
         api_manager.admin_steps.assign_user_role(
-            user_request.username,
-            Role.PROJECT_VIEWER,
-            RoleScope.project(project_id)
+            user_request.username, Role.PROJECT_VIEWER, RoleScope.project(project_id)
         )
         return user_request
 

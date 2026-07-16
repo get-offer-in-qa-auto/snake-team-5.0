@@ -12,7 +12,7 @@ def project_request_factory():
     def create_project_request(
         project_id: str | None = None,
         name: str | None = None,
-        parent_locator: str = "_Root"
+        parent_locator: str = "_Root",
     ) -> CreateProjectRequest:
         generated_project = RandomModelGenerator.generate(CreateProjectRequest)
         return CreateProjectRequest(

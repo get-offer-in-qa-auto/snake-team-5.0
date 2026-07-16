@@ -1,8 +1,8 @@
 import pytest
 from playwright.sync_api import Page
-
 from src.main.api.utils.normalize_browsers import norm_browser_name
 from src.main.ui.pages.login_page import LoginPage
+
 from src.main.api.classes.session_storage import SessionStorage
 from src.main.api.models.create_user_request import CreateUserRequest
 
@@ -24,9 +24,7 @@ def user_session_extension(request, page, user_factory):
 
 @pytest.fixture(autouse=True)
 def admin_session_autologin(
-    request: pytest.FixtureRequest,
-    page: Page,
-    admin_user_request: CreateUserRequest
+    request: pytest.FixtureRequest, page: Page, admin_user_request: CreateUserRequest
 ):
     mark = request.node.get_closest_marker("admin_session")
     if not mark:

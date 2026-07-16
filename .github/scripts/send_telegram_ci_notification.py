@@ -14,7 +14,6 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-
 HTTP_TIMEOUT_SECONDS = 20
 LOGGER = logging.getLogger("telegram-ci-notify")
 
@@ -101,7 +100,9 @@ class GitHubClient:
             return []
 
         try:
-            payload = self.get_json(add_query_params(artifacts_url, {"per_page": "100"}))
+            payload = self.get_json(
+                add_query_params(artifacts_url, {"per_page": "100"})
+            )
         except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as error:
             LOGGER.warning("Could not load workflow artifacts: %s", error)
             return []
@@ -110,7 +111,11 @@ class GitHubClient:
         if not isinstance(artifacts, list):
             return []
 
-        return [parse_artifact(artifact) for artifact in artifacts if isinstance(artifact, dict)]
+        return [
+            parse_artifact(artifact)
+            for artifact in artifacts
+            if isinstance(artifact, dict)
+        ]
 
     def get_json(self, url: str) -> dict[str, Any]:
         request = urllib.request.Request(
@@ -131,7 +136,9 @@ class AllureClient:
         request = urllib.request.Request(summary_url)
 
         try:
-            with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
+            with urllib.request.urlopen(
+                request, timeout=HTTP_TIMEOUT_SECONDS
+            ) as response:
                 payload = json.load(response)
         except (
             urllib.error.HTTPError,
@@ -167,7 +174,9 @@ class TelegramClient:
         )
 
         try:
-            with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT_SECONDS) as response:
+            with urllib.request.urlopen(
+                request, timeout=HTTP_TIMEOUT_SECONDS
+            ) as response:
                 response_payload = json.load(response)
         except urllib.error.HTTPError as error:
             body = error.read().decode("utf-8", errors="replace")
@@ -320,7 +329,11 @@ def pull_request_line(run: WorkflowRun) -> str:
         pr_url = f"https://github.com/{run.repository}/pull/{run.pr_number}"
 
     label = f"PR #{run.pr_number}"
-    return f"Pull request: {html_link(pr_url, label)}" if pr_url else f"Pull request: {html_escape(label)}"
+    return (
+        f"Pull request: {html_link(pr_url, label)}"
+        if pr_url
+        else f"Pull request: {html_escape(label)}"
+    )
 
 
 def job_lines(jobs: list[WorkflowJob]) -> list[str]:
@@ -401,7 +414,9 @@ def allure_lines(report: AllureReport | None) -> list[str]:
     )
     lines = [line]
     if report.summary is not None:
-        lines.append(f"Allure tests: {html_escape(allure_summary_text(report.summary))}")
+        lines.append(
+            f"Allure tests: {html_escape(allure_summary_text(report.summary))}"
+        )
 
     return lines
 
@@ -463,7 +478,9 @@ def main() -> int:
 
     LOGGER.info("Sending Telegram notification.")
     telegram = TelegramClient(config.telegram_token)
-    if telegram.send_message(config.telegram_chat_id, config.telegram_thread_id, message):
+    if telegram.send_message(
+        config.telegram_chat_id, config.telegram_thread_id, message
+    ):
         LOGGER.info("Telegram notification sent.")
         return 0
 

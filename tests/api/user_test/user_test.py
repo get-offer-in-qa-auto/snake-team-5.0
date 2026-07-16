@@ -9,10 +9,7 @@ from src.main.api.specs.response_specs import ResponseError
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
-def test_create_user(
-    api_manager: ApiManager,
-    user_request: CreateUserRequest
-):
+def test_create_user(api_manager: ApiManager, user_request: CreateUserRequest):
     user = api_manager.admin_steps.create_user(user_request)
     stored_user = api_manager.admin_steps.get_user(user.username)
 
@@ -25,18 +22,13 @@ def test_create_user(
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_user_with_existing_username(
-    api_manager: ApiManager,
-    user_request: CreateUserRequest,
-    user_request_factory
+    api_manager: ApiManager, user_request: CreateUserRequest, user_request_factory
 ):
     api_manager.admin_steps.create_user(user_request)
-    duplicate_request = user_request_factory(
-        username=user_request.username
-    )
+    duplicate_request = user_request_factory(username=user_request.username)
 
     api_manager.admin_steps.create_user_bad_request(
-        duplicate_request,
-        ResponseError.USERNAME_ALREADY_EXISTS
+        duplicate_request, ResponseError.USERNAME_ALREADY_EXISTS
     )
 
     stored_user = api_manager.admin_steps.get_user(user_request.username)
@@ -46,8 +38,7 @@ def test_create_user_with_existing_username(
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_user_without_authorization(
-    api_manager: ApiManager,
-    user_request: CreateUserRequest
+    api_manager: ApiManager, user_request: CreateUserRequest
 ):
     api_manager.admin_steps.create_user_without_authorization(user_request)
 
@@ -57,9 +48,7 @@ def test_create_user_without_authorization(
 @pytest.mark.api
 @pytest.mark.regression
 def test_delete_user(
-    api_manager: ApiManager,
-    user_request: CreateUserRequest,
-    created_objects: list
+    api_manager: ApiManager, user_request: CreateUserRequest, created_objects: list
 ):
     user = api_manager.admin_steps.create_user(user_request)
 
@@ -72,9 +61,7 @@ def test_delete_user(
 @pytest.mark.api
 @pytest.mark.regression
 def test_deleted_user_cannot_authenticate(
-    api_manager: ApiManager,
-    user_request: CreateUserRequest,
-    created_objects: list
+    api_manager: ApiManager, user_request: CreateUserRequest, created_objects: list
 ):
     user = api_manager.admin_steps.create_user(user_request)
     authenticated_user = api_manager.admin_steps.get_user_as(user_request)

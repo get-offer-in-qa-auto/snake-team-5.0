@@ -1,10 +1,11 @@
-from enum import Enum
+from collections.abc import Callable
+from enum import StrEnum
 from http import HTTPStatus
-from typing import Callable
+
 from requests import Response
 
 
-class ResponseError(str, Enum):
+class ResponseError(StrEnum):
     PROJECT_ID_ALREADY_USED = "already used"
     PROJECT_NAME_ALREADY_EXISTS = "with this name already exists"
     PROJECT_NOT_FOUND = "No project found"
@@ -18,12 +19,15 @@ class ResponseError(str, Enum):
 
 class ResponseSpecs:
     @staticmethod
-    def _make_status_checker(expected_statuses: list[HTTPStatus]) -> Callable[[Response], None]:
+    def _make_status_checker(
+        expected_statuses: list[HTTPStatus],
+    ) -> Callable[[Response], None]:
         def check(response: Response):
             assert response.status_code in expected_statuses, (
                 f"Expected status {expected_statuses}, but got {response.status_code}. "
                 f"Response body: {response.text}"
             )
+
         return check
 
     @staticmethod
@@ -40,16 +44,17 @@ class ResponseSpecs:
 
     @staticmethod
     def entity_was_deleted() -> Callable[[Response], None]:
-        return ResponseSpecs._make_status_checker([
-            HTTPStatus.OK,
-            HTTPStatus.ACCEPTED,
-            HTTPStatus.NO_CONTENT,
-        ])
+        return ResponseSpecs._make_status_checker(
+            [
+                HTTPStatus.OK,
+                HTTPStatus.ACCEPTED,
+                HTTPStatus.NO_CONTENT,
+            ]
+        )
 
     @staticmethod
     def request_returns_bad_request(
-        error_key: str,
-        error_value: str
+        error_key: str, error_value: str
     ) -> Callable[[Response], None]:
         def check(response: Response):
             assert response.status_code == HTTPStatus.BAD_REQUEST, (
@@ -65,12 +70,12 @@ class ResponseSpecs:
             assert error_value in actual_value, (
                 f"Expected error field '{error_key}' to be '{error_value}', but got '{actual_value}'."
             )
+
         return check
 
     @staticmethod
     def request_returns_status_with_text(
-        expected_status: HTTPStatus,
-        expected_text: str
+        expected_status: HTTPStatus, expected_text: str
     ) -> Callable[[Response], None]:
         def check(response: Response):
             assert response.status_code == expected_status, (
@@ -81,11 +86,12 @@ class ResponseSpecs:
                 f"Expected response text to contain '{expected_text}', "
                 f"but got '{response.text}'."
             )
+
         return check
 
     @staticmethod
     def request_returns_bad_request_with_text(
-        error_text: ResponseError | str
+        error_text: ResponseError | str,
     ) -> Callable[[Response], None]:
         expected_error = (
             error_text.value
@@ -93,13 +99,12 @@ class ResponseSpecs:
             else str(error_text)
         )
         return ResponseSpecs.request_returns_status_with_text(
-            HTTPStatus.BAD_REQUEST,
-            expected_error
+            HTTPStatus.BAD_REQUEST, expected_error
         )
 
     @staticmethod
     def request_returns_not_found_with_text(
-        error_text: ResponseError | str
+        error_text: ResponseError | str,
     ) -> Callable[[Response], None]:
         expected_error = (
             error_text.value
@@ -107,8 +112,7 @@ class ResponseSpecs:
             else str(error_text)
         )
         return ResponseSpecs.request_returns_status_with_text(
-            HTTPStatus.NOT_FOUND,
-            expected_error
+            HTTPStatus.NOT_FOUND, expected_error
         )
 
     @staticmethod
@@ -119,14 +123,14 @@ class ResponseSpecs:
                 f"Response: {response.text}"
             )
             assert "Authentication required" in response.text, (
-                "Expected TeamCity authentication error, "
-                f"but got '{response.text}'."
+                f"Expected TeamCity authentication error, but got '{response.text}'."
             )
+
         return check
 
     @staticmethod
     def request_returns_unauthorized_with_text(
-        error_text: ResponseError | str
+        error_text: ResponseError | str,
     ) -> Callable[[Response], None]:
         expected_error = (
             error_text.value
@@ -134,8 +138,7 @@ class ResponseSpecs:
             else str(error_text)
         )
         return ResponseSpecs.request_returns_status_with_text(
-            HTTPStatus.UNAUTHORIZED,
-            expected_error
+            HTTPStatus.UNAUTHORIZED, expected_error
         )
 
     @staticmethod

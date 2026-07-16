@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class Role(str, Enum):
+class Role(StrEnum):
     PROJECT_VIEWER = "PROJECT_VIEWER"
     SYSTEM_ADMIN = "SYSTEM_ADMIN"
 

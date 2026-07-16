@@ -6,4 +6,6 @@ from src.main.api.models.base_model import BaseModel
 
 class CreateBuildConfigurationRequest(BaseModel):
     id: Annotated[str, GeneratingRule(regex=r"^AutotestApiBuild[A-Za-z0-9]{8}$")]
-    name: Annotated[str, GeneratingRule(regex=r"^[A-Za-z]{4}[0-9]{2} [A-Za-z]{4} [0-9]{2}$")]
+    name: Annotated[
+        str, GeneratingRule(regex=r"^[A-Za-z]{4}[0-9]{2} [A-Za-z]{4} [0-9]{2}$")
+    ]

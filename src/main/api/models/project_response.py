@@ -1,16 +1,14 @@
-from typing import Optional
-
 from src.main.api.models.base_model import BaseModel
 
 
 class ProjectReferenceResponse(BaseModel):
-    id: Optional[str] = None
-    name: Optional[str] = None
-    locator: Optional[str] = None
+    id: str | None = None
+    name: str | None = None
+    locator: str | None = None
 
 
 class ProjectResponse(BaseModel):
     id: str
     name: str
-    href: Optional[str] = None
-    parentProject: Optional[ProjectReferenceResponse] = None
+    href: str | None = None
+    parentProject: ProjectReferenceResponse | None = None
