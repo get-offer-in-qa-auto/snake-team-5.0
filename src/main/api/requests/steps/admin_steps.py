@@ -1,3 +1,5 @@
+import allure
+
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
@@ -22,6 +24,7 @@ from src.main.api.specs.response_specs import ResponseError, ResponseSpecs
 
 
 class AdminSteps(BaseSteps):
+    @allure.step("Create user as administrator")
     def create_user(self, user_request: CreateUserRequest):
         user_response: CreateUserResponse = ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -38,6 +41,7 @@ class AdminSteps(BaseSteps):
         self.created_objects.append(user_response)
         return user_response
 
+    @allure.step("Verify user cannot be created: {error_text}")
     def create_user_bad_request(
         self, user_request: CreateUserRequest, error_text: ResponseError
     ):
@@ -47,6 +51,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_bad_request_with_text(error_text),
         ).post(user_request)
 
+    @allure.step("Verify user cannot be created without authorization")
     def create_user_without_authorization(self, user_request: CreateUserRequest):
         CrudRequester(
             RequestSpecs.unauth_spec(),
@@ -54,6 +59,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_unauthorized(),
         ).post(user_request, allow_redirects=False)
 
+    @allure.step("Get user {username} as administrator")
     def get_user(self, username: str) -> CreateUserResponse:
         return ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -61,6 +67,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_ok(),
         ).get(self._user_locator(username))
 
+    @allure.step("Get current user")
     def get_user_as(self, user_request: CreateUserRequest) -> CreateUserResponse:
         return ValidatedCrudRequester(
             RequestSpecs.auth_as_user(user_request.username, user_request.password),
@@ -68,6 +75,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_ok(),
         ).get(self._user_locator(user_request.username))
 
+    @allure.step("Verify user {username} does not exist")
     def check_user_does_not_exist(self, username: str):
         CrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -77,6 +85,7 @@ class AdminSteps(BaseSteps):
             ),
         ).get(self._user_locator(username))
 
+    @allure.step("Verify user cannot authenticate")
     def check_user_cannot_authenticate(self, user_request: CreateUserRequest):
         CrudRequester(
             RequestSpecs.auth_as_user(user_request.username, user_request.password),
@@ -86,6 +95,7 @@ class AdminSteps(BaseSteps):
             ),
         ).get(self._user_locator(user_request.username))
 
+    @allure.step("Delete user {user_id}")
     def delete_user(self, user_id: int | str):
         CrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -93,6 +103,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._user_locator(user_id))
 
+    @allure.step("Assign role {role_id} with scope {scope} to user {username}")
     def assign_user_role(
         self, username: str, role_id: str, scope: str
     ) -> RoleAssignmentResponse:
@@ -103,6 +114,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_created_or_ok(),
         ).post(role_request, path=f"{self._user_locator(username)}/roles")
 
+    @allure.step("Get roles for user {username}")
     def get_user_roles(self, username: str) -> RoleAssignmentsResponse:
         return ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -110,6 +122,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_ok(),
         ).get(f"{self._user_locator(username)}/roles")
 
+    @allure.step("Get all users as administrator")
     def get_all_users(self) -> list[CreateUserRequest]:
         response = ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -118,6 +131,7 @@ class AdminSteps(BaseSteps):
         ).get()
         return response
 
+    @allure.step("Create project as administrator")
     def create_project(self, project_request: CreateProjectRequest) -> ProjectResponse:
         project_response: ProjectResponse = ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -128,6 +142,7 @@ class AdminSteps(BaseSteps):
         self.created_objects.append(project_response)
         return project_response
 
+    @allure.step("Verify project cannot be created: {error_text}")
     def create_project_bad_request(
         self, project_request: CreateProjectRequest, error_text: ResponseError
     ):
@@ -137,6 +152,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_bad_request_with_text(error_text),
         ).post(project_request)
 
+    @allure.step("Verify project cannot be created: {error_text}")
     def create_project_not_found(
         self, project_request: CreateProjectRequest, error_text: ResponseError
     ):
@@ -146,6 +162,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_not_found_with_text(error_text),
         ).post(project_request)
 
+    @allure.step("Verify project cannot be created without authorization")
     def create_project_without_authorization(
         self, project_request: CreateProjectRequest
     ):
@@ -155,6 +172,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_unauthorized(),
         ).post(project_request, allow_redirects=False)
 
+    @allure.step("Get project {project_id} as administrator")
     def get_project(self, project_id: str) -> ProjectResponse:
         return ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -162,6 +180,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_ok(),
         ).get(self._project_locator(project_id))
 
+    @allure.step("Verify project {project_id} does not exist")
     def check_project_does_not_exist(self, project_id: str):
         CrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -171,6 +190,7 @@ class AdminSteps(BaseSteps):
             ),
         ).get(self._project_locator(project_id))
 
+    @allure.step("Delete project {project_id}")
     def delete_project(self, project_id: str):
         CrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -178,6 +198,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._project_locator(project_id))
 
+    @allure.step("Create build configuration in project {project_id}")
     def create_build_configuration(
         self, project_id: str, configuration_request: CreateBuildConfigurationRequest
     ) -> BuildConfigurationResponse:
@@ -193,6 +214,7 @@ class AdminSteps(BaseSteps):
         self.created_objects.append(configuration_response)
         return configuration_response
 
+    @allure.step("Verify build configuration cannot be created: {error_text}")
     def create_build_configuration_bad_request(
         self,
         project_id: str,
@@ -208,6 +230,7 @@ class AdminSteps(BaseSteps):
             path=f"{self._project_locator(project_id)}/buildTypes",
         )
 
+    @allure.step("Verify build configuration cannot be created: {error_text}")
     def create_build_configuration_not_found(
         self,
         project_id: str,
@@ -223,6 +246,7 @@ class AdminSteps(BaseSteps):
             path=f"{self._project_locator(project_id)}/buildTypes",
         )
 
+    @allure.step("Verify build configuration cannot be created without authorization")
     def create_build_configuration_without_authorization(
         self, project_id: str, configuration_request: CreateBuildConfigurationRequest
     ):
@@ -236,6 +260,7 @@ class AdminSteps(BaseSteps):
             allow_redirects=False,
         )
 
+    @allure.step("Get build configuration {build_configuration_id} as administrator")
     def get_build_configuration(
         self, build_configuration_id: str
     ) -> BuildConfigurationResponse:
@@ -245,6 +270,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_ok(),
         ).get(self._build_configuration_locator(build_configuration_id))
 
+    @allure.step("Verify build configuration {build_configuration_id} does not exist")
     def check_build_configuration_does_not_exist(self, build_configuration_id: str):
         CrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -254,6 +280,7 @@ class AdminSteps(BaseSteps):
             ),
         ).get(self._build_configuration_locator(build_configuration_id))
 
+    @allure.step("Delete build configuration {build_configuration_id}")
     def delete_build_configuration(self, build_configuration_id: str):
         CrudRequester(
             RequestSpecs.admin_auth_spec(),

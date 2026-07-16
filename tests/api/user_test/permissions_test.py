@@ -1,3 +1,4 @@
+import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
@@ -11,6 +12,8 @@ from src.main.api.models.project_response import ProjectResponse
 from src.main.api.models.role import Role, RoleScope
 
 
+@allure.title("Assign role to user")
+@allure.tag("api", "regression", "permissions", "user")
 @pytest.mark.api
 @pytest.mark.regression
 def test_assign_role_to_user(api_manager: ApiManager, user_request: CreateUserRequest):
@@ -30,6 +33,8 @@ def test_assign_role_to_user(api_manager: ApiManager, user_request: CreateUserRe
     )
 
 
+@allure.title("Administrator user can create project")
+@allure.tag("api", "regression", "permissions", "project")
 @pytest.mark.api
 @pytest.mark.regression
 def test_admin_can_create_project(
@@ -45,6 +50,8 @@ def test_admin_can_create_project(
     ModelAssertions(project_request, stored_project).match()
 
 
+@allure.title("Limited user cannot create project")
+@allure.tag("api", "regression", "permissions", "project", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_limited_user_cannot_create_project(
@@ -57,6 +64,8 @@ def test_limited_user_cannot_create_project(
     api_manager.admin_steps.check_project_does_not_exist(project_request.id)
 
 
+@allure.title("Administrator user can create build configuration")
+@allure.tag("api", "regression", "permissions", "build-configuration")
 @pytest.mark.api
 @pytest.mark.regression
 def test_admin_can_create_build_configuration(
@@ -77,6 +86,8 @@ def test_admin_can_create_build_configuration(
     assert stored_configuration.project.id == project.id
 
 
+@allure.title("Limited user cannot create build configuration")
+@allure.tag("api", "regression", "permissions", "build-configuration", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_limited_user_cannot_create_build_configuration(

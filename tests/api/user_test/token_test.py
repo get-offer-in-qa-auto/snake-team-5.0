@@ -1,3 +1,4 @@
+import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
@@ -6,6 +7,8 @@ from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.user_token import CreateUserTokenRequest
 
 
+@allure.title("Create user token")
+@allure.tag("api", "smoke", "regression", "token", "user")
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
@@ -26,6 +29,8 @@ def test_create_user_token(
     assert stored_token.value is None
 
 
+@allure.title("Request with valid token is authorized")
+@allure.tag("api", "regression", "token", "authorization")
 @pytest.mark.api
 @pytest.mark.regression
 def test_request_with_valid_token(
@@ -43,6 +48,8 @@ def test_request_with_valid_token(
     ModelAssertions(user_request, authenticated_user).match()
 
 
+@allure.title("Request without token is rejected")
+@allure.tag("api", "regression", "token", "authorization", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_request_without_token(
@@ -53,6 +60,8 @@ def test_request_without_token(
     api_manager.user_steps.check_request_without_token(user_request.username)
 
 
+@allure.title("Request with invalid token is rejected")
+@allure.tag("api", "regression", "token", "authorization", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_request_with_invalid_token(
@@ -65,6 +74,8 @@ def test_request_with_invalid_token(
     )
 
 
+@allure.title("Request with revoked token is rejected")
+@allure.tag("api", "regression", "token", "authorization", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_request_with_revoked_token(
@@ -87,6 +98,8 @@ def test_request_with_revoked_token(
     )
 
 
+@allure.title("Deleting user revokes its tokens")
+@allure.tag("api", "regression", "token", "user")
 @pytest.mark.api
 @pytest.mark.regression
 def test_delete_user_revokes_its_tokens(

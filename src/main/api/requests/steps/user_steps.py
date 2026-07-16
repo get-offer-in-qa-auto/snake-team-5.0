@@ -1,3 +1,5 @@
+import allure
+
 from src.main.api.models.build_configuration_response import (
     BuildConfigurationResponse,
 )
@@ -24,6 +26,7 @@ from src.main.api.specs.response_specs import ResponseSpecs
 
 
 class UserSteps(BaseSteps):
+    @allure.step("Create user token")
     def create_user_token(
         self, user_request: CreateUserRequest, token_request: CreateUserTokenRequest
     ) -> UserTokenResponse:
@@ -44,6 +47,7 @@ class UserSteps(BaseSteps):
         self.created_objects.append(token_response)
         return token_response
 
+    @allure.step("Get user tokens")
     def get_user_tokens(self, user_request: CreateUserRequest) -> UserTokensResponse:
         return ValidatedCrudRequester(
             RequestSpecs.auth_as_user(user_request.username, user_request.password),
@@ -51,6 +55,7 @@ class UserSteps(BaseSteps):
             ResponseSpecs.request_returns_ok(),
         ).get(f"username:{user_request.username}/tokens")
 
+    @allure.step("Delete token {token_name} for user {username}")
     def delete_user_token(self, username: str, password: str, token_name: str):
         CrudRequester(
             RequestSpecs.auth_as_user(username, password, csrf=True),
@@ -58,6 +63,7 @@ class UserSteps(BaseSteps):
             ResponseSpecs.entity_was_deleted(),
         ).delete(f"username:{username}/tokens/{token_name}")
 
+    @allure.step("Get user {username} with token")
     def get_user_with_token(self, username: str, token: str) -> CreateUserResponse:
         return ValidatedCrudRequester(
             RequestSpecs.auth_with_token(token),
@@ -65,6 +71,7 @@ class UserSteps(BaseSteps):
             ResponseSpecs.request_returns_ok(),
         ).get(f"username:{username}")
 
+    @allure.step("Verify request for user {username} without token is rejected")
     def check_request_without_token(self, username: str):
         CrudRequester(
             RequestSpecs.unauth_spec(),
@@ -72,6 +79,7 @@ class UserSteps(BaseSteps):
             ResponseSpecs.request_returns_unauthorized(),
         ).get(f"username:{username}")
 
+    @allure.step("Verify token cannot authenticate user {username}")
     def check_token_cannot_authenticate(self, username: str, token: str):
         CrudRequester(
             RequestSpecs.auth_with_token(token),
@@ -79,6 +87,7 @@ class UserSteps(BaseSteps):
             ResponseSpecs.request_returns_unauthorized_status(),
         ).get(f"username:{username}")
 
+    @allure.step("Create project as user")
     def create_project(
         self, user_request: CreateUserRequest, project_request: CreateProjectRequest
     ) -> ProjectResponse:
@@ -93,6 +102,7 @@ class UserSteps(BaseSteps):
         self.created_objects.append(project_response)
         return project_response
 
+    @allure.step("Verify user cannot create project")
     def create_project_forbidden(
         self, user_request: CreateUserRequest, project_request: CreateProjectRequest
     ):
@@ -104,6 +114,7 @@ class UserSteps(BaseSteps):
             ResponseSpecs.request_returns_forbidden(),
         ).post(project_request)
 
+    @allure.step("Create build configuration as user in project {project_id}")
     def create_build_configuration(
         self,
         user_request: CreateUserRequest,
@@ -121,6 +132,9 @@ class UserSteps(BaseSteps):
         self.created_objects.append(configuration_response)
         return configuration_response
 
+    @allure.step(
+        "Verify user cannot create build configuration in project {project_id}"
+    )
     def create_build_configuration_forbidden(
         self,
         user_request: CreateUserRequest,
