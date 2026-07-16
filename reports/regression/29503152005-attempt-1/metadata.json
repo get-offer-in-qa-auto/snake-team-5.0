@@ -1,0 +1,10 @@
+{
+  "branch": "main",
+  "event": "workflow_dispatch",
+  "generated_at": "2026-07-16T13:42:41+00:00",
+  "report_id": "29503152005-attempt-1",
+  "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29503152005",
+  "sha": "65b8cb82784a109b95cd25851d90962f97cfd2b2",
+  "suite": "regression",
+  "workflow": "TeamCity Regression"
+}
