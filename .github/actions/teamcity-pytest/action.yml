@@ -5,6 +5,10 @@ inputs:
   pytest_marker:
     description: Pytest marker to run, for example smoke or regression.
     required: true
+  pytest_workers:
+    description: Number of pytest-xdist workers. Use 0 for serial execution or auto for one worker per CPU core.
+    required: false
+    default: "3"
   test_label:
     description: Human-readable test suite label used in step names.
     required: true
@@ -81,13 +85,17 @@ runs:
           --request-timeout "${{ inputs.request_timeout_seconds }}" \
           --auto-setup
 
-    # Запускаем все тесты с переданным pytest marker и сохраняем JUnit XML результат.
+    # Запускаем выбранную suite параллельно через pytest-xdist и сохраняем
+    # JUnit XML. Значение 0 отключает xdist и полезно при диагностике.
     # Allure results создаются автоматически через pytest.ini.
     - name: Run TeamCity ${{ inputs.test_label }} tests
       shell: bash
       run: |
         mkdir -p artifacts/test-results
-        python3 -m pytest -m "${{ inputs.pytest_marker }}" --junitxml="artifacts/test-results/${{ inputs.junit_filename }}"
+        python3 -m pytest \
+          -m "${{ inputs.pytest_marker }}" \
+          -n "${{ inputs.pytest_workers }}" \
+          --junitxml="artifacts/test-results/${{ inputs.junit_filename }}"
 
     # Allure CLI требует Java, поэтому готовим JDK перед генерацией HTML-отчета.
     - name: Set up Java for Allure

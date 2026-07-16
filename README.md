@@ -206,6 +206,19 @@ python3 -m pip install -r requirements.txt
 
 В `requirements.txt` уже входит `allure-pytest`, который позволяет pytest сохранять Allure results.
 
+`pytest-xdist` запускает тесты параллельно. В GitHub Actions для smoke и regression можно выбрать параметр `pytest_workers` при ручном запуске workflow:
+
+- `3` — значение по умолчанию для smoke и regression;
+- `4` — более быстрый прогон при достаточных ресурсах runner-а;
+- `auto` — worker на каждое доступное CPU-ядро;
+- `0` — последовательный запуск для диагностики flaky-тестов.
+
+В pull request smoke использует 2 worker’а. Локально количество workers задаётся так:
+
+```bash
+python3 -m pytest -m regression -n 2
+```
+
 Для локальной генерации HTML-отчета нужно отдельно установить Allure Report CLI, чтобы в терминале была доступна команда `allure`.
 
 macOS:
