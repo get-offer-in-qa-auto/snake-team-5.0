@@ -134,6 +134,7 @@ def test_create_project_without_authorization(
 ):
     api_manager.admin_steps.create_project_without_authorization(project_request)
     api_manager.admin_steps.check_project_does_not_exist(project_request.id)
+    api_manager.database_steps.verify_project_not_created(project_request.id)
 
 
 @pytest.mark.api
@@ -149,6 +150,7 @@ def test_delete_project(
     created_objects.remove(project)
 
     api_manager.admin_steps.check_project_does_not_exist(project.id)
+    api_manager.database_steps.verify_project_deleted(project.id)
 
 
 @pytest.mark.api

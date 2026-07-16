@@ -21,6 +21,20 @@ def test_create_user(api_manager: ApiManager, user_request: CreateUserRequest):
 
 @pytest.mark.api
 @pytest.mark.regression
+def test_created_user_is_persisted_in_database(
+    api_manager: ApiManager, user_request: CreateUserRequest
+):
+    user = api_manager.admin_steps.create_user(user_request)
+
+    database_user = api_manager.database_steps.verify_user_persisted(user.username)
+
+    assert database_user.id == user.id
+    assert database_user.username == user.username
+    assert database_user.algorithm == "BCRYPT"
+
+
+@pytest.mark.api
+@pytest.mark.regression
 def test_create_user_with_existing_username(
     api_manager: ApiManager, user_request: CreateUserRequest, user_request_factory
 ):
@@ -43,6 +57,7 @@ def test_create_user_without_authorization(
     api_manager.admin_steps.create_user_without_authorization(user_request)
 
     api_manager.admin_steps.check_user_does_not_exist(user_request.username)
+    api_manager.database_steps.verify_user_not_created(user_request.username)
 
 
 @pytest.mark.api
@@ -56,6 +71,7 @@ def test_delete_user(
     created_objects.remove(user)
 
     api_manager.admin_steps.check_user_does_not_exist(user.username)
+    api_manager.database_steps.verify_user_deleted(user.username)
 
 
 @pytest.mark.api
