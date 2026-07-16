@@ -1,3 +1,4 @@
+import os
 from typing import TypeVar
 
 import requests
@@ -15,7 +16,12 @@ T = TypeVar("T", bound=BaseModel)
 class CrudRequester(HttpRequest, CrudEndpointInterface):
     @property
     def base_url(self) -> str:
-        return f"{Config.get('server')}{Config.get('apiBasePath')}"
+        server_url = (
+            os.getenv("TEAMCITY_URL")
+            or os.getenv("TEAMCITY_BASE_URL")
+            or Config.get("server")
+        ).rstrip("/")
+        return f"{server_url}{Config.get('apiBasePath')}"
 
     def post(
         self,
@@ -45,11 +51,16 @@ class CrudRequester(HttpRequest, CrudEndpointInterface):
         self.response_spec(response)
         return response
 
-    def update(self, model: T | None = None) -> requests.Response:
+    def update(
+        self, model: T | None = None, path: str | None = None
+    ) -> requests.Response:
         body = model.model_dump() if model is not None else ""
 
         response = requests.put(
-            url=f"{self.base_url}{self.endpoint.value.url}",
+            url=(
+                f"{self.base_url}{self.endpoint.value.url}"
+                f"{('/' + path) if path is not None else ''}"
+            ),
             headers=self.request_spec,
             json=body,
         )

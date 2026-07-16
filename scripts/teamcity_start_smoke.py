@@ -4,6 +4,7 @@ import http.client
 import http.cookiejar
 import os
 import re
+import secrets
 import sys
 import time
 from dataclasses import dataclass
@@ -22,6 +23,8 @@ FIRST_START_MARKERS = (
 CSRF_HEADER_RE = re.compile(r'name="csrf-header-name"\s+content="([^"]+)"')
 CSRF_TOKEN_RE = re.compile(r'name="tc-csrf-token"\s+content="([^"]+)"')
 MAINTENANCE_STAGE_RE = re.compile(r"Stage:\s*([A-Z_]+)")
+ADMIN_SETUP_MARKER = "create administrator account"
+ADMIN_PUBLIC_KEY_RE = re.compile(r'name="publicKey"\s+value="([^"]+)"')
 
 
 @dataclass(frozen=True)
@@ -95,6 +98,78 @@ def get_maintenance_stage(body: str) -> str:
     return match.group(1) if match else ""
 
 
+def is_admin_setup_page(body: str) -> bool:
+    return ADMIN_SETUP_MARKER in body.lower()
+
+
+def encrypt_teamcity_password(password: str, public_key: str) -> str:
+    password_bytes = password.encode("ascii")
+    modulus = int(public_key, 16)
+    block_size = (modulus.bit_length() + 7) // 8
+    if len(password_bytes) > 116 or len(password_bytes) + 11 > block_size:
+        raise ValueError("TeamCity administrator password is too long to encrypt")
+
+    padding = bytearray()
+    padding_size = block_size - len(password_bytes) - 4
+    while len(padding) < padding_size:
+        random_byte = secrets.token_bytes(1)
+        if random_byte != b"\x00":
+            padding.extend(random_byte)
+
+    encoded_password = (
+        b"\x00\x02"
+        + bytes(padding)
+        + b"\x00"
+        + password_bytes
+        + bytes([len(password_bytes)])
+    )
+    encrypted_password = pow(
+        int.from_bytes(encoded_password, byteorder="big"), 65537, modulus
+    )
+    encrypted_hex = format(encrypted_password, "x")
+    return encrypted_hex if len(encrypted_hex) % 2 == 0 else f"0{encrypted_hex}"
+
+
+def create_initial_administrator(opener, base_url: str, timeout: int) -> None:
+    status, body = request_with_session(
+        opener, f"{base_url}/setupAdmin.html?init=1", timeout
+    )
+    if status != 200 or not is_admin_setup_page(body):
+        raise RuntimeError(
+            "TeamCity administrator setup page is unavailable: "
+            f"HTTP {status}. {body[:500]}"
+        )
+
+    public_key_match = ADMIN_PUBLIC_KEY_RE.search(body)
+    if not public_key_match:
+        raise RuntimeError(
+            "TeamCity administrator setup page did not contain a public key"
+        )
+
+    password = secrets.token_urlsafe(24)
+    public_key = public_key_match.group(1)
+    encrypted_password = encrypt_teamcity_password(password, public_key)
+    status, response_body = request_with_session(
+        opener,
+        f"{base_url}/createAdminSubmit.html",
+        timeout,
+        data={
+            "username1": "ci-initial-admin",
+            "password1": password,
+            "retypedPassword": password,
+            "encryptedPassword1": encrypted_password,
+            "encryptedRetypedPassword": encrypted_password,
+            "submitCreateUser": "",
+            "publicKey": public_key,
+        },
+    )
+    if status != 200 or "<errors>" in response_body:
+        raise RuntimeError(
+            "TeamCity administrator account creation failed: "
+            f"HTTP {status}. {response_body[:500]}"
+        )
+
+
 def post_maintenance_command(
     opener,
     base_url: str,
@@ -123,6 +198,12 @@ def complete_first_start_setup(
     base_url = get_base_url(url)
     opener = build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
     status, body = request_with_session(opener, url, timeout)
+    if is_admin_setup_page(body):
+        print("Auto setup: creating the initial TeamCity administrator.")
+        create_initial_administrator(opener, base_url, timeout)
+        status, body = request_with_session(opener, url, timeout)
+        return not is_admin_setup_page(body)
+
     if not is_expected_first_start(status, body):
         return True
 
@@ -184,6 +265,16 @@ def complete_first_start_setup(
             completed_commands.add("acceptLicenseAgreement")
         else:
             ready_status, ready_body = request_with_session(opener, url, timeout)
+            if (
+                is_admin_setup_page(ready_body)
+                and "createInitialAdministrator" not in completed_commands
+            ):
+                print("Auto setup: creating the initial TeamCity administrator.")
+                create_initial_administrator(opener, base_url, timeout)
+                completed_commands.add("createInitialAdministrator")
+                time.sleep(interval)
+                continue
+
             readiness = classify_teamcity_response(ready_status, ready_body)
             if readiness.opened and readiness.code != "FIRST_START_REQUIRED":
                 print("Auto setup: TeamCity first-start setup is complete.")
@@ -303,6 +394,18 @@ def main() -> int:
         last_body = body
         readiness = classify_teamcity_response(status, body)
         message = format_readiness_message(readiness, args.url)
+
+        if args.auto_setup and is_admin_setup_page(body):
+            print(
+                "TeamCity requires an initial administrator. Running automatic setup."
+            )
+            if complete_first_start_setup(
+                args.url, args.request_timeout, args.interval, args.timeout
+            ):
+                time.sleep(args.interval)
+                continue
+            append_github_step_summary(readiness, args.url)
+            return 1
 
         if readiness.code == "FIRST_START_REQUIRED" and args.auto_setup:
             print(f"{message} Running automatic first-start setup.")
