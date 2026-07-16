@@ -13,15 +13,15 @@
 
 ## Сводка
 
-- [ ] P0 — 3 замечания
+- [ ] P0 — 1 из 3 замечаний исправлено
 - [ ] P1 — 7 замечаний
 - [ ] P2 — 8 замечаний
 
 ## P0 — критичные
 
-### [ ] TC-AUTO-001 — Исправить авторизацию TeamCity Backup API
+### [x] TC-AUTO-001 — Исправить авторизацию TeamCity Backup API
 
-Статус: исправление подготовлено локально, ожидает проверки в GitHub Actions.
+Статус: исправлено и проверено в GitHub Actions на `main`.
 
 Последний regression завершился с результатом `9 failed / 30 passed`: DB-тесты
 получили `401 Unauthorized` при вызове `POST /app/rest/server/backup`.
@@ -47,14 +47,29 @@
 - полный regression завершён успешно минимум два раза подряд;
 - при некорректных credentials pipeline падает на понятной preflight-проверке.
 
+Пункт закрыт по целевой проблеме авторизации: Backup API preflight успешно
+выполнился в двух последовательных прогонах, `401 Unauthorized` не повторился.
+Второй полный regression завершился как `1 failed / 38 passed` из-за отсутствия
+`build_type_mapping` в параллельно снятом snapshot. Этот отдельный дефект относится
+к `TC-AUTO-008` и не связан с credentials или доступом к Backup API.
+
 Исходный проблемный run:
 https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29503152005
 
 Локальная проверка: 2026-07-16 — чистый TeamCity bootstrap, Bearer preflight и
 полный `pytest -m regression -n 3`: `39 passed`.  
-Исправлено: ожидает два успешных GitHub Actions regression-прогона  
-PR/commit: —  
-Проверка: локально пройдена, CI ожидается
+Исправлено: 2026-07-16
+
+PR/commit: https://github.com/get-offer-in-qa-auto/snake-team-5.0/pull/35,
+merge commit `1bfe241`
+
+Проверка:
+
+- https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29508288127 —
+  DB preflight passed, `39 passed`;
+- https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29508647065 —
+  DB preflight passed, авторизационных ошибок нет; `1 failed / 38 passed` относится
+  к `TC-AUTO-008`.
 
 ### [ ] TC-AUTO-002 — Запускать достаточный набор тестов до merge
 
