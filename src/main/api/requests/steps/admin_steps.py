@@ -29,6 +29,12 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_created_or_ok(),
         ).post(user_request)
 
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.CREATE_USER,
+            ResponseSpecs.request_returns_ok(),
+        ).update(user_request, path=self._user_locator(user_response.id))
+
         self.created_objects.append(user_response)
         return user_response
 
