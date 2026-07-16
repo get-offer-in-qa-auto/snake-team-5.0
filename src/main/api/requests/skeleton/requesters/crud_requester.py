@@ -43,21 +43,29 @@ class CrudRequester(HttpRequest, CrudEndpointInterface):
         self.response_spec(response)
         return response
 
-    def update(self, model: Optional[T] = None) -> requests.Response:
+    def update(self, model: Optional[T] = None, path: Optional[str] = None) -> requests.Response:
         body = model.model_dump() if model is not None else ''
 
         response = requests.put(
-            url=f'{self.base_url}{self.endpoint.value.url}',
+            url=(
+                f'{self.base_url}{self.endpoint.value.url}'
+                f'{("/" + path) if path is not None else ""}'
+            ),
             headers=self.request_spec,
-            json=body
+            json=body,
         )
+
         self.response_spec(response)
         return response
 
-    def delete(self, id: Union[int, str]) -> requests.Response:
+
+    def delete(self, path: str | None = None) -> requests.Response:
         response = requests.delete(
-            url=f'{self.base_url}{self.endpoint.value.url}/{id}',
-            headers=self.request_spec
+            url=(
+                f"{self.base_url}{self.endpoint.value.url}"
+                f'{("/" + path) if path is not None else ""}'
+            ),
+            headers=self.request_spec,
         )
         self.response_spec(response)
         return response

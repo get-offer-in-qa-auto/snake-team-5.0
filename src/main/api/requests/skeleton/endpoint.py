@@ -2,9 +2,12 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, List
 
+from src.main.api.models.build_step_response import BuildStepResponse
+from src.main.api.models.create_build_step_request import CreateBuildStepRequest
 from src.main.api.models.create_project_request import CreateProjectRequest
 from src.main.api.models.create_build_configuration_request import CreateBuildConfigurationRequest
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
+from src.main.api.models.build_step_response import BuildStepsResponse
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.create_user_response import CreateUserResponse
 from src.main.api.models.user_token import (
@@ -116,4 +119,34 @@ class Endpoint(Enum):
         url='/buildTypes',
         request_model=None,
         response_model=None
+    )
+
+    CREATE_BUILD_STEP = EndpointConfig(
+        url="/buildTypes",
+        request_model=CreateBuildStepRequest,
+        response_model=BuildStepResponse,
+    )
+
+    GET_BUILD_STEP = EndpointConfig(
+        url="/buildTypes",
+        request_model=None,
+        response_model=BuildStepResponse,
+    )
+
+    GET_BUILD_STEPS = EndpointConfig(
+        url="/buildTypes",
+        request_model=None,
+        response_model=BuildStepsResponse,
+    )
+
+    DELETE_BUILD_STEP = EndpointConfig(
+        url="/buildTypes",
+        request_model=None,
+        response_model=None,
+    )
+
+    UPDATE_BUILD_STEP = EndpointConfig(
+        url="/buildTypes",
+        request_model=CreateBuildStepRequest,
+        response_model=BuildStepResponse,
     )
