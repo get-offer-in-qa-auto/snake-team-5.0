@@ -1,3 +1,4 @@
+import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
@@ -9,6 +10,8 @@ from src.main.api.models.project_response import ProjectResponse
 from src.main.api.specs.response_specs import ResponseError
 
 
+@allure.title("Create build configuration")
+@allure.tag("api", "smoke", "regression", "build-configuration")
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
@@ -31,6 +34,8 @@ def test_create_build_configuration(
     assert stored_configuration.project.id == project.id
 
 
+@allure.title("Created build configuration is persisted in database")
+@allure.tag("api", "regression", "build-configuration", "database")
 @pytest.mark.api
 @pytest.mark.regression
 def test_created_build_configuration_is_persisted_in_database(
@@ -53,6 +58,8 @@ def test_created_build_configuration_is_persisted_in_database(
     assert database_configuration.config_id
 
 
+@allure.title("Create build configuration in subproject")
+@allure.tag("api", "regression", "build-configuration")
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_in_subproject(
@@ -77,6 +84,8 @@ def test_create_build_configuration_in_subproject(
     assert stored_configuration.project.id == subproject.id
 
 
+@allure.title("Build configuration cannot be created in unknown project")
+@allure.tag("api", "regression", "build-configuration", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_with_unknown_project(
@@ -97,6 +106,8 @@ def test_create_build_configuration_with_unknown_project(
     )
 
 
+@allure.title("Build configuration cannot be created with existing id")
+@allure.tag("api", "regression", "build-configuration", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_with_existing_id(
@@ -122,6 +133,10 @@ def test_create_build_configuration_with_existing_id(
     ModelAssertions(configuration_request, stored_configuration).match()
 
 
+@allure.title(
+    "Build configuration cannot be created with existing name in same project"
+)
+@allure.tag("api", "regression", "build-configuration", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_with_existing_name_in_same_project(
@@ -148,6 +163,10 @@ def test_create_build_configuration_with_existing_name_in_same_project(
     )
 
 
+@allure.title(
+    "Build configurations with same name can be created in different projects"
+)
+@allure.tag("api", "regression", "build-configuration")
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configurations_with_same_name_in_different_projects(
@@ -182,6 +201,8 @@ def test_create_build_configurations_with_same_name_in_different_projects(
     assert stored_second.project.id == second_project.id
 
 
+@allure.title("Build configuration cannot be created without authorization")
+@allure.tag("api", "regression", "build-configuration", "authorization", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_without_authorization(
@@ -198,6 +219,8 @@ def test_create_build_configuration_without_authorization(
     )
 
 
+@allure.title("Delete build configuration")
+@allure.tag("api", "regression", "build-configuration", "database")
 @pytest.mark.api
 @pytest.mark.regression
 def test_delete_build_configuration(
@@ -217,6 +240,8 @@ def test_delete_build_configuration(
     api_manager.database_steps.verify_build_configuration_deleted(configuration.id)
 
 
+@allure.title("Delete project with build configuration")
+@allure.tag("api", "regression", "build-configuration", "project")
 @pytest.mark.api
 @pytest.mark.regression
 def test_delete_project_with_build_configuration(
@@ -237,6 +262,8 @@ def test_delete_project_with_build_configuration(
     api_manager.admin_steps.check_build_configuration_does_not_exist(configuration.id)
 
 
+@allure.title("Create build configuration with different id and name")
+@allure.tag("api", "regression", "build-configuration")
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_with_different_id_and_name(

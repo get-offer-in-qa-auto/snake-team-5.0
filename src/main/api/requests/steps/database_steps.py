@@ -8,7 +8,6 @@ class DatabaseSteps:
     def __init__(self, client: DatabaseClient | None = None):
         self.client = client or create_database_client()
 
-    @allure.step("Get project {external_id} from TeamCity database")
     def get_project_by_external_id(self, external_id: str) -> ProjectDao:
         with self.client.snapshot() as database:
             mapping = database.fetch_one(
@@ -61,7 +60,6 @@ class DatabaseSteps:
             f"but row was found: {mapping}"
         )
 
-    @allure.step("Get build configuration {external_id} from TeamCity database")
     def get_build_configuration_by_external_id(
         self, external_id: str
     ) -> BuildConfigurationDao:
@@ -129,7 +127,6 @@ class DatabaseSteps:
             f"BUILD_TYPE_MAPPING, but row was found: {mapping}"
         )
 
-    @allure.step("Get user {username} from TeamCity database")
     def get_user_by_username(self, username: str) -> UserDao:
         with self.client.snapshot() as database:
             user = database.fetch_one("users", {"username": username})

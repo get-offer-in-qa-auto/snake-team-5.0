@@ -1,3 +1,4 @@
+import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
@@ -6,6 +7,8 @@ from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.specs.response_specs import ResponseError
 
 
+@allure.title("Create user")
+@allure.tag("api", "smoke", "regression", "user")
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
@@ -19,6 +22,8 @@ def test_create_user(api_manager: ApiManager, user_request: CreateUserRequest):
     assert user.href
 
 
+@allure.title("Created user is persisted in database")
+@allure.tag("api", "regression", "user", "database")
 @pytest.mark.api
 @pytest.mark.regression
 def test_created_user_is_persisted_in_database(
@@ -33,6 +38,8 @@ def test_created_user_is_persisted_in_database(
     assert database_user.algorithm == "BCRYPT"
 
 
+@allure.title("User cannot be created with existing username")
+@allure.tag("api", "regression", "user", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_user_with_existing_username(
@@ -49,6 +56,8 @@ def test_create_user_with_existing_username(
     ModelAssertions(user_request, stored_user).match()
 
 
+@allure.title("User cannot be created without authorization")
+@allure.tag("api", "regression", "user", "authorization", "negative")
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_user_without_authorization(
@@ -60,6 +69,8 @@ def test_create_user_without_authorization(
     api_manager.database_steps.verify_user_not_created(user_request.username)
 
 
+@allure.title("Delete user")
+@allure.tag("api", "regression", "user", "database")
 @pytest.mark.api
 @pytest.mark.regression
 def test_delete_user(
@@ -74,6 +85,8 @@ def test_delete_user(
     api_manager.database_steps.verify_user_deleted(user.username)
 
 
+@allure.title("Deleted user cannot authenticate")
+@allure.tag("api", "regression", "user", "authorization")
 @pytest.mark.api
 @pytest.mark.regression
 def test_deleted_user_cannot_authenticate(

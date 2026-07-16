@@ -14,6 +14,7 @@ from scripts.teamcity_start_smoke import (
 @allure.feature("Readiness")
 @allure.story("Web endpoint")
 @allure.title("TeamCity web endpoint is opened")
+@allure.tag("smoke", "regression", "readiness")
 @pytest.mark.smoke
 @pytest.mark.regression
 def test_teamcity_web_endpoint_is_opened():
