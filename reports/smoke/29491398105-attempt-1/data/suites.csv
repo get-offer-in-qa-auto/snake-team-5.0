@@ -1,0 +1,6 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","64","TeamCity web endpoint is opened","tests.smoke","2026-07-16","passed","2026-07-16","","test_teamcity_opened","",""
+"","80","test_create_project","tests.api","2026-07-16","passed","2026-07-16","","project_test","",""
+"","415","test_create_user_token","tests.api.user_test","2026-07-16","passed","2026-07-16","","token_test","",""
+"","76","test_create_user","tests.api.user_test","2026-07-16","passed","2026-07-16","","user_test","",""
+"","354","test_create_build_configuration","tests.api","2026-07-16","passed","2026-07-16","","build_configuration_test","",""
