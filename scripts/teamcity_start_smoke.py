@@ -21,6 +21,7 @@ FIRST_START_MARKERS = (
     "first start",
     "teamcity data directory",
     "super user authentication token",
+    "license agreement",
 )
 
 CSRF_HEADER_RE = re.compile(r'name="csrf-header-name"\s+content="([^"]+)"')
@@ -272,6 +273,7 @@ def complete_first_start_setup(
     max_wait: int,
     admin_username: str,
     admin_password: str,
+    database_mode: str,
 ) -> bool:
     base_url = get_base_url(url)
     opener = build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
@@ -324,6 +326,12 @@ def complete_first_start_setup(
         elif (
             stage == "DB_SETTINGS_SCREEN" and "goNewDatabase" not in completed_commands
         ):
+            if database_mode == "external":
+                raise RuntimeError(
+                    "TeamCity reached the database selection screen even though "
+                    "an external database was required. Check database.properties, "
+                    "TEAMCITY_DB_* variables, PostgreSQL health, and the JDBC driver."
+                )
             print("Auto setup: selecting internal TeamCity database.")
             post_maintenance_command(
                 opener,
@@ -481,6 +489,15 @@ def main() -> int:
         "--access-token-name",
         help="Name of the CI administrator access token created after setup.",
     )
+    parser.add_argument(
+        "--database-mode",
+        choices=("internal", "external"),
+        default="internal",
+        help=(
+            "Database expected during first start. External mode refuses to "
+            "silently fall back to the internal HSQLDB."
+        ),
+    )
     args = parser.parse_args()
 
     admin_username = os.getenv("TEAMCITY_USERNAME", "ci-initial-admin").strip()
@@ -512,6 +529,7 @@ def main() -> int:
                 args.timeout,
                 admin_username,
                 admin_password,
+                args.database_mode,
             ):
                 time.sleep(args.interval)
                 continue
@@ -527,6 +545,7 @@ def main() -> int:
                 args.timeout,
                 admin_username,
                 admin_password,
+                args.database_mode,
             ):
                 time.sleep(args.interval)
                 continue

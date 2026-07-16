@@ -36,6 +36,34 @@ CI Docker Compose:
 ci/teamcity/compose.yaml
 ```
 
+## PostgreSQL production-like regression
+
+Отдельный workflow `.github/workflows/teamcity-postgresql-regression.yml`
+поднимает один production-like стенд:
+
+```text
+TeamCity Server + TeamCity Agent + PostgreSQL 17.5
+```
+
+Он запускается:
+
+- nightly в `02:00 UTC` (`05:00 МСК`);
+- вручную через `Actions → TeamCity PostgreSQL Regression → Run workflow`.
+
+Для ручного и scheduled запуска regression stage использует 4 xdist worker по
+умолчанию. Smoke gate остаётся последовательным. Порядок выполнения:
+
+```text
+PostgreSQL health → TeamCity external DB bootstrap → read-only DB preflight
+→ 5 smoke tests → 34 regression tests in 4 workers
+```
+
+Workflow не запускается на каждый PR и не публикует GitHub Pages. JUnit, Allure
+и Docker/TeamCity logs сохраняются как artifacts на 7 дней. Database password и
+DSN создаются внутри runner, маскируются и удаляются вместе с Docker volumes.
+
+PostgreSQL compose-файл: `ci/teamcity-postgresql/compose.yaml`.
+
 ## Почему это отдельный этап
 
 Для GitHub Actions нельзя считать успешным только наличие workflow-файла. Нам нужно сначала доказать, что чистый runner может скачать Docker images, поднять TeamCity Server и Agent, открыть порт `8111` и получить ответ от web-приложения.
@@ -81,8 +109,9 @@ teamcity-login-page
 - `headers.txt` — HTTP headers;
 - `readiness.txt` — человекочитаемая классификация состояния.
 
-Workflow можно запустить вручную через `Run workflow`. PR и ручной regression
-используют фиксированный последовательный режим `pytest_workers: 0`.
+Основной HSQLDB workflow можно запустить вручную через `Run workflow`. PR и
+ручной HSQLDB regression используют фиксированный последовательный режим
+`pytest_workers: 0`. PostgreSQL workflow по умолчанию использует 4 worker.
 
 ## Allure report
 

@@ -28,6 +28,18 @@ inputs:
     description: TeamCity URL exposed to the runner through Docker port mapping.
     required: false
     default: http://localhost:8111/login.html
+  compose_file:
+    description: Docker Compose file used to start the TeamCity test stand.
+    required: false
+    default: ci/teamcity/compose.yaml
+  server_container:
+    description: TeamCity server container name used for logs and backup access.
+    required: false
+    default: teamcity-server-ci
+  database_mode:
+    description: First-start database mode, either internal or external.
+    required: false
+    default: internal
   wait_timeout_seconds:
     description: Maximum time to wait until TeamCity starts answering HTTP.
     required: false
@@ -89,7 +101,7 @@ runs:
     # В этом стенде нет внешней БД: TeamCity использует внутреннюю database в data directory.
     - name: Start TeamCity server and agent
       shell: bash
-      run: docker compose -f ci/teamcity/compose.yaml up -d
+      run: docker compose -f "${{ inputs.compose_file }}" up -d
 
     # Ждем, пока TeamCity начнет отвечать по HTTP,
     # потому что контейнер может быть запущен раньше, чем готов web UI.
@@ -102,6 +114,7 @@ runs:
           --interval "${{ inputs.wait_interval_seconds }}" \
           --request-timeout "${{ inputs.request_timeout_seconds }}" \
           --access-token-output "${RUNNER_TEMP}/teamcity-access-token" \
+          --database-mode "${{ inputs.database_mode }}" \
           --auto-setup
 
     # Все последующие административные REST-запросы используют временный Bearer
@@ -126,7 +139,7 @@ runs:
       if: ${{ inputs.database_preflight == 'true' }}
       shell: bash
       env:
-        TEAMCITY_DB_CONTAINER: teamcity-server-ci
+        TEAMCITY_DB_CONTAINER: ${{ inputs.server_container }}
       run: python3 -m scripts.teamcity_database_preflight
 
     # В gated-режиме smoke выполняется первым и последовательно. Любое падение
@@ -135,7 +148,7 @@ runs:
       if: ${{ success() && inputs.smoke_gate == 'true' }}
       shell: bash
       env:
-        TEAMCITY_DB_CONTAINER: teamcity-server-ci
+        TEAMCITY_DB_CONTAINER: ${{ inputs.server_container }}
       run: |
         mkdir -p artifacts/test-results
         python3 -m pytest \
@@ -150,7 +163,7 @@ runs:
       if: ${{ success() && inputs.smoke_gate == 'true' }}
       shell: bash
       env:
-        TEAMCITY_DB_CONTAINER: teamcity-server-ci
+        TEAMCITY_DB_CONTAINER: ${{ inputs.server_container }}
       run: |
         python3 -m pytest \
           -o addopts="--alluredir=artifacts/allure-results" \
@@ -164,7 +177,7 @@ runs:
       if: ${{ success() && inputs.smoke_gate != 'true' }}
       shell: bash
       env:
-        TEAMCITY_DB_CONTAINER: teamcity-server-ci
+        TEAMCITY_DB_CONTAINER: ${{ inputs.server_container }}
       run: |
         mkdir -p artifacts/test-results
         python3 -m pytest \
@@ -229,7 +242,7 @@ runs:
     - name: Show container status
       if: always()
       shell: bash
-      run: docker compose -f ci/teamcity/compose.yaml ps
+      run: docker compose -f "${{ inputs.compose_file }}" ps
 
     # Собираем состояние Docker Compose и логи контейнеров в файлы,
     # чтобы их можно было скачать и разобрать после завершения workflow.
@@ -238,11 +251,11 @@ runs:
       shell: bash
       run: |
         mkdir -p artifacts/teamcity
-        docker compose -f ci/teamcity/compose.yaml ps > artifacts/teamcity/docker-compose-ps.txt
-        docker compose -f ci/teamcity/compose.yaml logs --no-color > artifacts/teamcity/docker-compose.log
-        if docker inspect teamcity-server-ci >/dev/null 2>&1; then
+        docker compose -f "${{ inputs.compose_file }}" ps > artifacts/teamcity/docker-compose-ps.txt
+        docker compose -f "${{ inputs.compose_file }}" logs --no-color > artifacts/teamcity/docker-compose.log
+        if docker inspect "${{ inputs.server_container }}" >/dev/null 2>&1; then
           mkdir -p artifacts/teamcity/server-logs
-          if ! docker cp teamcity-server-ci:/opt/teamcity/logs/. artifacts/teamcity/server-logs; then
+          if ! docker cp "${{ inputs.server_container }}:/opt/teamcity/logs/." artifacts/teamcity/server-logs; then
             echo "::warning title=TeamCity logs::Could not copy TeamCity server log files."
           fi
         fi
@@ -314,4 +327,4 @@ runs:
     - name: Stop TeamCity
       if: always()
       shell: bash
-      run: docker compose -f ci/teamcity/compose.yaml down -v
+      run: docker compose -f "${{ inputs.compose_file }}" down -v
