@@ -33,6 +33,28 @@ def test_create_build_configuration(
 
 @pytest.mark.api
 @pytest.mark.regression
+def test_created_build_configuration_is_persisted_in_database(
+    api_manager: ApiManager,
+    project: ProjectResponse,
+    build_configuration_request: CreateBuildConfigurationRequest,
+):
+    configuration = api_manager.admin_steps.create_build_configuration(
+        project.id, build_configuration_request
+    )
+
+    database_configuration = (
+        api_manager.database_steps.verify_build_configuration_persisted(
+            configuration.id
+        )
+    )
+
+    assert database_configuration.external_id == configuration.id
+    assert database_configuration.internal_id.startswith("bt")
+    assert database_configuration.config_id
+
+
+@pytest.mark.api
+@pytest.mark.regression
 def test_create_build_configuration_in_subproject(
     api_manager: ApiManager,
     project_request_factory,
@@ -68,6 +90,9 @@ def test_create_build_configuration_with_unknown_project(
     )
 
     api_manager.admin_steps.check_build_configuration_does_not_exist(
+        build_configuration_request.id
+    )
+    api_manager.database_steps.verify_build_configuration_not_created(
         build_configuration_request.id
     )
 
@@ -189,6 +214,7 @@ def test_delete_build_configuration(
     created_objects.remove(configuration)
 
     api_manager.admin_steps.check_build_configuration_does_not_exist(configuration.id)
+    api_manager.database_steps.verify_build_configuration_deleted(configuration.id)
 
 
 @pytest.mark.api
