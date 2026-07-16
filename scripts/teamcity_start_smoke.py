@@ -8,9 +8,12 @@ import secrets
 import sys
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode, urlsplit, urlunsplit
+from urllib.parse import quote, urlencode, urlsplit, urlunsplit
 from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
+
+import requests
 
 FIRST_START_MARKERS = (
     "startup confirmation",
@@ -130,7 +133,13 @@ def encrypt_teamcity_password(password: str, public_key: str) -> str:
     return encrypted_hex if len(encrypted_hex) % 2 == 0 else f"0{encrypted_hex}"
 
 
-def create_initial_administrator(opener, base_url: str, timeout: int) -> None:
+def create_initial_administrator(
+    opener,
+    base_url: str,
+    timeout: int,
+    username: str,
+    password: str,
+) -> None:
     status, body = request_with_session(
         opener, f"{base_url}/setupAdmin.html?init=1", timeout
     )
@@ -146,7 +155,6 @@ def create_initial_administrator(opener, base_url: str, timeout: int) -> None:
             "TeamCity administrator setup page did not contain a public key"
         )
 
-    password = secrets.token_urlsafe(24)
     public_key = public_key_match.group(1)
     encrypted_password = encrypt_teamcity_password(password, public_key)
     status, response_body = request_with_session(
@@ -154,7 +162,7 @@ def create_initial_administrator(opener, base_url: str, timeout: int) -> None:
         f"{base_url}/createAdminSubmit.html",
         timeout,
         data={
-            "username1": "ci-initial-admin",
+            "username1": username,
             "password1": password,
             "retypedPassword": password,
             "encryptedPassword1": encrypted_password,
@@ -168,6 +176,71 @@ def create_initial_administrator(opener, base_url: str, timeout: int) -> None:
             "TeamCity administrator account creation failed: "
             f"HTTP {status}. {response_body[:500]}"
         )
+
+
+def create_ci_access_token(
+    base_url: str,
+    username: str,
+    password: str,
+    token_name: str,
+    timeout: int,
+) -> str:
+    with requests.Session() as session:
+        session.auth = (username, password)
+        csrf_response = session.get(
+            f"{base_url}/authenticationTest.html?csrf",
+            headers={"Accept": "text/plain"},
+            timeout=timeout,
+        )
+        if csrf_response.status_code != 200:
+            raise RuntimeError(
+                "TeamCity CI administrator authentication failed while requesting "
+                f"a CSRF token: HTTP {csrf_response.status_code}. "
+                f"{csrf_response.text[:500]}"
+            )
+
+        csrf_token = csrf_response.text.strip()
+        if not csrf_token:
+            raise RuntimeError("TeamCity returned an empty administrator CSRF token")
+
+        encoded_username = quote(username, safe="")
+        token_response = session.post(
+            f"{base_url}/app/rest/users/username:{encoded_username}/tokens",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "X-TC-CSRF-Token": csrf_token,
+            },
+            json={"name": token_name},
+            timeout=timeout,
+        )
+        if token_response.status_code not in (200, 201):
+            raise RuntimeError(
+                "TeamCity access token creation failed: "
+                f"HTTP {token_response.status_code}. {token_response.text[:500]}"
+            )
+
+        try:
+            token = str(token_response.json().get("value") or "").strip()
+        except requests.JSONDecodeError as error:
+            raise RuntimeError(
+                "TeamCity access token response was not valid JSON"
+            ) from error
+        if not token:
+            raise RuntimeError("TeamCity access token response did not contain a value")
+        return token
+
+
+def write_secret_file(path: Path, value: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor = os.open(
+        path,
+        os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+        0o600,
+    )
+    with os.fdopen(descriptor, "w", encoding="utf-8") as secret_file:
+        secret_file.write(value)
+        secret_file.write("\n")
 
 
 def post_maintenance_command(
@@ -193,14 +266,25 @@ def post_maintenance_command(
 
 
 def complete_first_start_setup(
-    url: str, timeout: int, interval: int, max_wait: int
+    url: str,
+    timeout: int,
+    interval: int,
+    max_wait: int,
+    admin_username: str,
+    admin_password: str,
 ) -> bool:
     base_url = get_base_url(url)
     opener = build_opener(HTTPCookieProcessor(http.cookiejar.CookieJar()))
     status, body = request_with_session(opener, url, timeout)
     if is_admin_setup_page(body):
         print("Auto setup: creating the initial TeamCity administrator.")
-        create_initial_administrator(opener, base_url, timeout)
+        create_initial_administrator(
+            opener,
+            base_url,
+            timeout,
+            admin_username,
+            admin_password,
+        )
         status, body = request_with_session(opener, url, timeout)
         return not is_admin_setup_page(body)
 
@@ -270,7 +354,13 @@ def complete_first_start_setup(
                 and "createInitialAdministrator" not in completed_commands
             ):
                 print("Auto setup: creating the initial TeamCity administrator.")
-                create_initial_administrator(opener, base_url, timeout)
+                create_initial_administrator(
+                    opener,
+                    base_url,
+                    timeout,
+                    admin_username,
+                    admin_password,
+                )
                 completed_commands.add("createInitialAdministrator")
                 time.sleep(interval)
                 continue
@@ -382,8 +472,24 @@ def main() -> int:
         action="store_true",
         help="Complete fresh TeamCity first-start setup before reporting readiness.",
     )
+    parser.add_argument(
+        "--access-token-output",
+        type=Path,
+        help="Secure file where a newly created CI administrator token is written.",
+    )
+    parser.add_argument(
+        "--access-token-name",
+        help="Name of the CI administrator access token created after setup.",
+    )
     args = parser.parse_args()
 
+    admin_username = os.getenv("TEAMCITY_USERNAME", "ci-initial-admin").strip()
+    admin_password = os.getenv("TEAMCITY_PASSWORD") or secrets.token_urlsafe(24)
+    access_token_name = args.access_token_name or (
+        "ci-autotests-"
+        f"{os.getenv('GITHUB_RUN_ID', 'local')}-"
+        f"{os.getenv('GITHUB_RUN_ATTEMPT', '1')}"
+    )
     deadline = time.monotonic() + args.timeout
     last_status: int | None = None
     last_body = ""
@@ -400,7 +506,12 @@ def main() -> int:
                 "TeamCity requires an initial administrator. Running automatic setup."
             )
             if complete_first_start_setup(
-                args.url, args.request_timeout, args.interval, args.timeout
+                args.url,
+                args.request_timeout,
+                args.interval,
+                args.timeout,
+                admin_username,
+                admin_password,
             ):
                 time.sleep(args.interval)
                 continue
@@ -410,7 +521,12 @@ def main() -> int:
         if readiness.code == "FIRST_START_REQUIRED" and args.auto_setup:
             print(f"{message} Running automatic first-start setup.")
             if complete_first_start_setup(
-                args.url, args.request_timeout, args.interval, args.timeout
+                args.url,
+                args.request_timeout,
+                args.interval,
+                args.timeout,
+                admin_username,
+                admin_password,
             ):
                 time.sleep(args.interval)
                 continue
@@ -418,6 +534,24 @@ def main() -> int:
             return 1
 
         if readiness.opened:
+            if args.access_token_output:
+                try:
+                    access_token = create_ci_access_token(
+                        get_base_url(args.url),
+                        admin_username,
+                        admin_password,
+                        access_token_name,
+                        args.request_timeout,
+                    )
+                    write_secret_file(args.access_token_output, access_token)
+                except (requests.RequestException, RuntimeError, OSError) as error:
+                    print(
+                        "TeamCity REST API is not ready for CI access token "
+                        f"creation yet: {error}"
+                    )
+                    time.sleep(args.interval)
+                    continue
+                print("TeamCity CI administrator access token was created securely.")
             if os.getenv("GITHUB_ACTIONS"):
                 print(f"::notice title=TeamCity readiness::{message}")
             print(message)

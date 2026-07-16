@@ -56,6 +56,11 @@ class RequestSpecs:
     @staticmethod
     def _admin_auth_headers() -> list[str]:
         headers = []
+
+        access_token = os.getenv("TEAMCITY_ACCESS_TOKEN")
+        if access_token:
+            headers.append(f"Bearer {access_token}")
+
         configured_header = Config.get("ADMIN_AUTH_HEADER")
         if (
             configured_header

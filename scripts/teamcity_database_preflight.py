@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+import argparse
+import sys
+
+import requests
+
+from src.main.api.database import create_database_client
+
+
+def run_database_preflight() -> int:
+    try:
+        client = create_database_client()
+        with client.snapshot() as database:
+            database.fetch_all("users")
+    except (AssertionError, LookupError, OSError, RuntimeError, TimeoutError) as error:
+        print(f"TeamCity database preflight failed: {error}", file=sys.stderr)
+        return 1
+    except requests.RequestException as error:
+        response = error.response
+        response_details = ""
+        if response is not None:
+            response_details = (
+                f" HTTP {response.status_code}. Response: {response.text[:500]}"
+            )
+        print(
+            f"TeamCity database preflight request failed: {error}.{response_details}",
+            file=sys.stderr,
+        )
+        return 1
+
+    print("TeamCity database preflight passed: backup and snapshot are available.")
+    return 0
+
+
+def main() -> int:
+    argparse.ArgumentParser(
+        description=(
+            "Verify that TeamCity can create, expose, read, and remove a database "
+            "backup before database tests start."
+        )
+    ).parse_args()
+    return run_database_preflight()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
