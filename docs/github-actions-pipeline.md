@@ -37,7 +37,14 @@ ci/teamcity/compose.yaml
 
 Для GitHub Actions нельзя считать успешным только наличие workflow-файла. Нам нужно сначала доказать, что чистый runner может скачать Docker images, поднять TeamCity Server и Agent, открыть порт `8111` и получить ответ от web-приложения.
 
-На чистом data directory TeamCity может остановиться на first-start confirmation или setup wizard. До появления bootstrap-скрипта это ожидаемое промежуточное состояние.
+На чистом data directory TeamCity останавливается на first-start confirmation и
+setup wizard. Pipeline автоматически подтверждает новый стенд, выбирает internal
+HSQLDB, принимает лицензию и создает временного CI-администратора.
+
+Пароль администратора генерируется внутри runner и маскируется. После setup
+bootstrap выпускает временный access token, и административные REST-запросы
+выполняются через Bearer authentication. Для regression до pytest дополнительно
+запускается реальный TeamCity database backup preflight.
 
 ## Что считается успехом сейчас
 
@@ -69,7 +76,9 @@ teamcity-login-page
 - `headers.txt` — HTTP headers;
 - `readiness.txt` — человекочитаемая классификация состояния.
 
-Workflow можно запустить вручную через `Run workflow`; дополнительных параметров для запуска нет.
+Workflow можно запустить вручную через `Run workflow`. Параметр
+`pytest_workers` задает число xdist workers; значение `0` включает
+последовательный режим.
 
 ## Allure report
 
@@ -144,13 +153,6 @@ Settings -> Pages -> Build and deployment -> Source: GitHub Actions
 
 ## Следующий этап
 
-Следующим шагом нужно добавить bootstrap:
-
-- подтвердить first start без ручного UI;
-- выбрать `Internal database / HSQLDB`;
-- создать administrator user или access token;
-- дождаться доступности REST API;
-- авторизовать agent;
-- проверить состояние `authorized + connected`.
-
-После этого можно расширять pytest smoke/e2e tests.
+Bootstrap сервера, создание CI-администратора и Bearer token уже реализованы.
+Следующим этапом остаются автоматическая авторизация agent, проверка состояния
+`authorized + connected` и запуск минимального реального build.

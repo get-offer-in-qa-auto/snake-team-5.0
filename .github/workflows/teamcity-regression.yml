@@ -44,6 +44,7 @@ jobs:
           logs_artifact_name: teamcity-regression-logs
           results_artifact_name: teamcity-regression-test-results
           page_artifact_name: teamcity-regression-login-page
+          database_preflight: "true"
 
   deploy-allure-pages:
     name: Publish Allure report page
