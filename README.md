@@ -8,9 +8,11 @@
 2. [Версия TeamCity](#2-версия-teamcity)
 3. [Важное для CI](#3-важное-для-ci)
 4. [Локальные данные](#4-локальные-данные)
-5. [Автотесты и Allure report](#5-автотесты-и-allure-report)
-6. [Защита main](#6-защита-main)
-7. [Документация проекта](#7-документация-проекта)
+5. [Качество Python-кода](#5-качество-python-кода)
+6. [Автотесты и Allure report](#6-автотесты-и-allure-report)
+7. [Проверки базы данных](#7-проверки-базы-данных)
+8. [Защита main](#8-защита-main)
+9. [Документация проекта](#9-документация-проекта)
 
 ## 1. Установка TeamCity локально
 
@@ -213,7 +215,7 @@ python3 -m pip install -r requirements.txt
 - `auto` — worker на каждое доступное CPU-ядро;
 - `0` — последовательный запуск для диагностики flaky-тестов.
 
-В pull request smoke использует 2 worker’а. Локально количество workers задаётся так:
+В pull request smoke использует 3 worker’а. Локально количество workers задаётся так:
 
 ```bash
 python3 -m pytest -m regression -n 2
@@ -314,7 +316,25 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/regression/
 
 Чтобы старые ссылки не перезатирались, workflow хранит опубликованный Pages site в ветке `gh-pages` и добавляет каждый новый отчет в отдельный каталог. GitHub Actions artifacts хранятся 7 дней, а опубликованные Pages-отчеты остаются в `gh-pages`, пока их не удалить отдельной чисткой. Чтобы публикация работала, в настройках репозитория нужно включить GitHub Pages с source `GitHub Actions`. Ссылка на конкретный отчет появляется в workflow summary и в deployment environment `github-pages`.
 
-## 7. Защита main
+## 7. Проверки базы данных
+
+DB-проверки доступны через `api_manager.database_steps` и не содержат SQL в тестах. По умолчанию адаптер сам выбирает режим:
+
+- встроенная HSQLDB проверяется по консистентному database snapshot, который TeamCity создаёт штатным backup API;
+- для внешней PostgreSQL задаётся `TEAMCITY_DB_DSN`, после чего клиент выполняет только read-only запросы напрямую;
+- backup-режим также можно использовать с внешней БД, потому что формат TeamCity backup не зависит от database backend.
+
+Пример запуска с внешней PostgreSQL:
+
+```bash
+export TEAMCITY_DB_ADAPTER=postgresql
+export TEAMCITY_DB_DSN='postgresql://teamcity:<password>@db.example.test:5432/teamcity'
+python3 -m pytest tests/api/project_test.py::test_created_project_is_persisted_in_database
+```
+
+Пароли и реальные DSN не коммитятся. Подробная архитектура, параметры и ограничения описаны в `docs/database-checks.md`.
+
+## 8. Защита main
 
 В GitHub для ветки `main` включена branch protection:
 
@@ -325,12 +345,13 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/regression/
 - force push и удаление `main` запрещены;
 - перед merge должны быть решены все conversation threads.
 
-## 8. Документация проекта
+## 9. Документация проекта
 
 - Подробная инструкция по локальному стенду: `docs/local-teamcity-setup.md`
 - Стратегия окружений для автотестов: `docs/test-environments.md`
 - Группы автотестов: `docs/test-suites.md`
 - Заметки по REST API: `docs/rest-api.md`
+- Проверки persisted state в БД: `docs/database-checks.md`
 - Решение по версии TeamCity: `docs/teamcity-version.md`
 - Первый этап GitHub Actions pipeline: `docs/github-actions-pipeline.md`
 - Тест-план автоматизации: `docs/Тест План по Автоматизации Тестирования - TeamCity.docx`
