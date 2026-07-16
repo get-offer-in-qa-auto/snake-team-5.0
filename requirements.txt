@@ -7,3 +7,5 @@ pydantic
 faker
 rstr
 playwright
+filelock >= 3, < 4
+psycopg[binary] >= 3, < 4

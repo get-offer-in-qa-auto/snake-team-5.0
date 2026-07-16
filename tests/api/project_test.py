@@ -22,6 +22,22 @@ def test_create_project(api_manager: ApiManager, project_request: CreateProjectR
 
 @pytest.mark.api
 @pytest.mark.regression
+def test_created_project_is_persisted_in_database(
+    api_manager: ApiManager, project_request: CreateProjectRequest
+):
+    project_response = api_manager.admin_steps.create_project(project_request)
+
+    database_project = api_manager.database_steps.verify_project_persisted(
+        project_response.id
+    )
+
+    assert database_project.external_id == project_response.id
+    assert database_project.internal_id.startswith("project")
+    assert database_project.config_id
+
+
+@pytest.mark.api
+@pytest.mark.regression
 def test_create_subproject(api_manager: ApiManager, project_request_factory):
     parent_request = project_request_factory()
     parent_project = api_manager.admin_steps.create_project(parent_request)

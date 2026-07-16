@@ -90,6 +90,8 @@ runs:
     # Allure results создаются автоматически через pytest.ini.
     - name: Run TeamCity ${{ inputs.test_label }} tests
       shell: bash
+      env:
+        TEAMCITY_DB_CONTAINER: teamcity-server-ci
       run: |
         mkdir -p artifacts/test-results
         python3 -m pytest \
