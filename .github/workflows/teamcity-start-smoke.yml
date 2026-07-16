@@ -3,18 +3,6 @@ name: TeamCity Start Smoke
 on:
   pull_request:
   workflow_dispatch:
-    inputs:
-      pytest_workers:
-        description: Number of parallel pytest workers (0 runs tests serially).
-        required: false
-        default: "3"
-        type: choice
-        options:
-          - "0"
-          - "2"
-          - "3"
-          - "4"
-          - auto
 
 jobs:
   code-quality:
@@ -63,17 +51,19 @@ jobs:
 
       # Общая логика запуска TeamCity и pytest вынесена в local composite action,
       # чтобы переиспользовать ее без отдельного workflow в GitHub Actions UI.
-      - name: Run TeamCity smoke tests
+      - name: Run TeamCity gated regression tests
         id: teamcity-pytest
         uses: ./.github/actions/teamcity-pytest
         with:
-          pytest_marker: smoke
-          pytest_workers: ${{ inputs.pytest_workers || '3' }}
-          test_label: smoke
-          junit_filename: teamcity-smoke.xml
-          logs_artifact_name: teamcity-start-smoke-logs
-          results_artifact_name: teamcity-smoke-test-results
-          page_artifact_name: teamcity-login-page
+          pytest_marker: regression
+          pytest_workers: "0"
+          test_label: regression
+          junit_filename: teamcity-regression.xml
+          logs_artifact_name: teamcity-regression-logs
+          results_artifact_name: teamcity-regression-test-results
+          page_artifact_name: teamcity-regression-login-page
+          database_preflight: "true"
+          smoke_gate: "true"
 
   deploy-allure-pages:
     name: Publish Allure report page
@@ -101,8 +91,8 @@ jobs:
         id: pages
         uses: ./.github/actions/publish-allure-pages
         with:
-          report_artifact_name: teamcity-smoke-allure-report
-          suite_name: smoke
+          report_artifact_name: teamcity-regression-allure-report
+          suite_name: regression
 
       # Публикуем накопленный Pages site с историей отчетов.
       - name: Deploy Allure report to GitHub Pages

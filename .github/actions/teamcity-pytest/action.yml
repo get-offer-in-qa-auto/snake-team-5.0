@@ -44,6 +44,10 @@ inputs:
     description: Run a real TeamCity database backup preflight before pytest.
     required: false
     default: "false"
+  smoke_gate:
+    description: Run serial smoke tests first, then run the selected suite without smoke tests.
+    required: false
+    default: "false"
 outputs:
   allure_pages_ready:
     description: "true when the generated Allure report has index.html and can be deployed to Pages."
@@ -125,10 +129,39 @@ runs:
         TEAMCITY_DB_CONTAINER: teamcity-server-ci
       run: python3 -m scripts.teamcity_database_preflight
 
-    # Запускаем выбранную suite параллельно через pytest-xdist и сохраняем
-    # JUnit XML. Значение 0 отключает xdist и полезно при диагностике.
-    # Allure results создаются автоматически через pytest.ini.
+    # В gated-режиме smoke выполняется первым и последовательно. Любое падение
+    # останавливает основной test run, но always()-шаги ниже сохраняют диагностику.
+    - name: Run TeamCity smoke gate tests
+      if: ${{ success() && inputs.smoke_gate == 'true' }}
+      shell: bash
+      env:
+        TEAMCITY_DB_CONTAINER: teamcity-server-ci
+      run: |
+        mkdir -p artifacts/test-results
+        python3 -m pytest \
+          -m "smoke" \
+          -n "0" \
+          --junitxml="artifacts/test-results/smoke-${{ inputs.junit_filename }}"
+
+    # Smoke-тесты уже входят в regression marker, поэтому исключаем их из второго
+    # запуска. Переопределение addopts сохраняет smoke Allure results: второй pytest
+    # не выполняет повторный --clean-alluredir.
+    - name: Run remaining TeamCity ${{ inputs.test_label }} tests
+      if: ${{ success() && inputs.smoke_gate == 'true' }}
+      shell: bash
+      env:
+        TEAMCITY_DB_CONTAINER: teamcity-server-ci
+      run: |
+        python3 -m pytest \
+          -o addopts="--alluredir=artifacts/allure-results" \
+          -m "(${{ inputs.pytest_marker }}) and not smoke" \
+          -n "${{ inputs.pytest_workers }}" \
+          --junitxml="artifacts/test-results/${{ inputs.junit_filename }}"
+
+    # Обычный режим сохраняет прежнее поведение action: запускает одну выбранную
+    # suite. Значение workers=0 отключает pytest-xdist.
     - name: Run TeamCity ${{ inputs.test_label }} tests
+      if: ${{ success() && inputs.smoke_gate != 'true' }}
       shell: bash
       env:
         TEAMCITY_DB_CONTAINER: teamcity-server-ci
