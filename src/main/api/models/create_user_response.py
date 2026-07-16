@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional
 
 from src.main.api.models.base_model import BaseModel
 
@@ -6,7 +6,7 @@ from src.main.api.models.base_model import BaseModel
 class CreateUserResponse(BaseModel):
     id: int
     username: str
-    password: str
-    name: Optional[str]
-    role: str
-    accounts: List[Dict[str, Any]]
+    name: Optional[str] = None
+    email: Optional[str] = None
+    href: Optional[str] = None
+    hasPassword: Optional[bool] = None

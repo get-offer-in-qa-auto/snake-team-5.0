@@ -12,5 +12,5 @@ class ParentProjectRequest(BaseModel):
 
 class CreateProjectRequest(BaseModel):
     id: Annotated[str, GeneratingRule(regex=r"^AutotestApiProject[A-Za-z0-9]{8}$")]
-    name: Annotated[str, GeneratingRule(regex=r"^AutotestApiProject[A-Za-z0-9]{8}$")]
+    name: Annotated[str, GeneratingRule(regex=r"^[A-Za-z]{4}[0-9]{2} [A-Za-z]{4} [0-9]{2}$")]
     parentProject: ParentProjectRequest = Field(default_factory=ParentProjectRequest)

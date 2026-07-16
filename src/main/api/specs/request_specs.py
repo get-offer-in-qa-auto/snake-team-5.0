@@ -36,6 +36,28 @@ class RequestSpecs:
         return RequestSpecs.default_req_headers()
 
     @staticmethod
+    def auth_as_user(
+        username: str,
+        password: str,
+        csrf: bool = False
+    ) -> Dict[str, str]:
+        headers = RequestSpecs.default_req_headers()
+        auth_header = RequestSpecs._basic_auth_header(
+            username,
+            password
+        )
+        headers["Authorization"] = auth_header
+        if csrf:
+            headers["X-TC-CSRF-Token"] = RequestSpecs._csrf_token(auth_header)
+        return headers
+
+    @staticmethod
+    def auth_with_token(token: str) -> Dict[str, str]:
+        headers = RequestSpecs.default_req_headers()
+        headers["Authorization"] = f"Bearer {token}"
+        return headers
+
+    @staticmethod
     def _basic_auth_header(username: str, password: str) -> str:
         raw_token = f"{username}:{password}".encode("utf-8")
         return f"Basic {base64.b64encode(raw_token).decode('ascii')}"

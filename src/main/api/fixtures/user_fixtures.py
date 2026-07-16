@@ -7,18 +7,39 @@ from src.main.api.generators.random_model_generator import RandomModelGenerator
 
 
 @pytest.fixture(scope='function')
-def user_request(user_factory):
-    try:
-        return SessionStorage.get_user(0)
-    except Exception:
-        user = user_factory()
-        return user
+def user_request_factory():
+    def create_user_request(
+        username: str | None = None,
+        password: str | None = None,
+        name: str | None = None
+    ) -> CreateUserRequest:
+        generated_user = RandomModelGenerator.generate(CreateUserRequest)
+        return CreateUserRequest(
+            username=(
+                username
+                if username is not None
+                else generated_user.username
+            ),
+            password=(
+                password
+                if password is not None
+                else generated_user.password
+            ),
+            name=name if name is not None else generated_user.name,
+        )
+
+    return create_user_request
+
+
+@pytest.fixture(scope='function')
+def user_request(user_request_factory):
+    return user_request_factory()
 
 
 @pytest.fixture(scope="function")
-def user_factory(api_manager: ApiManager):
+def user_factory(api_manager: ApiManager, user_request_factory):
     def create_user() -> CreateUserRequest:
-        user_data = RandomModelGenerator.generate(CreateUserRequest)
+        user_data = user_request_factory()
         api_manager.admin_steps.create_user(user_data)
         SessionStorage.add_users([user_data])
         return user_data
@@ -28,4 +49,4 @@ def user_factory(api_manager: ApiManager):
 
 @pytest.fixture
 def admin_user_request():
-    return CreateUserRequest(username='admin', password='admin', role='ADMIN')
+    return CreateUserRequest(username='admin', password='admin', name='Admin User')
