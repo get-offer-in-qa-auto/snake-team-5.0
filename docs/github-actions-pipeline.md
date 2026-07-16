@@ -4,16 +4,19 @@
 
 ## Текущий этап
 
-Первый CI-этап проверяет запуск TeamCity стенда и выполняет минимальный smoke-test.
-
-На текущем этапе pipeline запускает pytest smoke-test с marker `smoke`: TeamCity login page должна открыть HTTP-соединение и вернуть ожидаемый ответ без авторизации.
+PR pipeline поднимает один чистый TeamCity стенд и выполняет gated regression.
+Проверки идут строго последовательно: database preflight, 5 smoke-тестов и затем
+34 остальных regression-теста. Если preflight или smoke падает, следующий этап
+не запускается.
 
 - поднять TeamCity Server;
 - поднять TeamCity Agent;
 - дождаться HTTP-ответа от `http://localhost:8111/login.html`;
 - показать понятное readiness-состояние: `READY_LOGIN_PAGE`, `AUTH_REQUIRED` или `FIRST_START_REQUIRED`;
-- запустить smoke-test через `pytest -m smoke`;
-- сохранить JUnit XML test result;
+- проверить полный backup/copy/read/remove lifecycle через database preflight;
+- запустить smoke gate через `pytest -m smoke -n 0`;
+- после успешного smoke запустить `pytest -m "regression and not smoke" -n 0`;
+- сохранить отдельные JUnit XML для smoke gate и оставшегося regression;
 - сохранить Allure results;
 - сразу собрать Allure HTML-report;
 - опубликовать Allure HTML-report как GitHub Pages page с постоянной ссылкой для любого запуска;
@@ -43,8 +46,8 @@ HSQLDB, принимает лицензию и создает временног
 
 Пароль администратора генерируется внутри runner и маскируется. После setup
 bootstrap выпускает временный access token, и административные REST-запросы
-выполняются через Bearer authentication. Для regression до pytest дополнительно
-запускается реальный TeamCity database backup preflight.
+выполняются через Bearer authentication. До pytest запускается реальный TeamCity
+database backup preflight. TeamCity стартует один раз для всех трёх этапов.
 
 ## Что считается успехом сейчас
 
@@ -52,7 +55,9 @@ Pipeline считается успешным, если:
 
 - Docker Compose успешно поднял containers;
 - TeamCity web endpoint начал отвечать;
-- pytest smoke-test подтвердил, что TeamCity login page открылась;
+- database preflight подтвердил доступность Backup API и snapshot;
+- все smoke-тесты прошли последовательно;
+- остальные regression-тесты прошли последовательно;
 - GitHub Step Summary показывает итоговое состояние TeamCity readiness;
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
@@ -76,9 +81,8 @@ teamcity-login-page
 - `headers.txt` — HTTP headers;
 - `readiness.txt` — человекочитаемая классификация состояния.
 
-Workflow можно запустить вручную через `Run workflow`. Параметр
-`pytest_workers` задает число xdist workers; значение `0` включает
-последовательный режим.
+Workflow можно запустить вручную через `Run workflow`. PR и ручной regression
+используют фиксированный последовательный режим `pytest_workers: 0`.
 
 ## Allure report
 
@@ -95,21 +99,22 @@ teamcity-<suite>-allure-results
 teamcity-<suite>-allure-report
 ```
 
-Для smoke suite это будут:
+Для отдельной smoke suite это будут:
 
 ```text
 teamcity-smoke-allure-results
 teamcity-smoke-allure-report
 ```
 
-Для regression suite:
+Gated PR pipeline публикует объединённый regression report, содержащий результаты
+smoke gate и остальных regression-тестов:
 
 ```text
 teamcity-regression-allure-results
 teamcity-regression-allure-report
 ```
 
-Перед генерацией HTML-report workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. Для этого используется ветка `gh-pages`: `smoke` берет историю только из прошлых `reports/smoke/...`, а `regression` только из прошлых `reports/regression/...`.
+Перед генерацией HTML-report workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. Для этого используется ветка `gh-pages`: `smoke` берет историю только из прошлых `reports/smoke/...`, а gated regression — только из прошлых `reports/regression/...`.
 
 GitHub Actions artifacts хранятся 7 дней:
 
