@@ -3,6 +3,18 @@ name: TeamCity Start Smoke
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      pytest_workers:
+        description: Number of parallel pytest workers (0 runs tests serially).
+        required: false
+        default: "3"
+        type: choice
+        options:
+          - "0"
+          - "2"
+          - "3"
+          - "4"
+          - auto
 
 jobs:
   code-quality:
@@ -56,6 +68,7 @@ jobs:
         uses: ./.github/actions/teamcity-pytest
         with:
           pytest_marker: smoke
+          pytest_workers: ${{ inputs.pytest_workers || '3' }}
           test_label: smoke
           junit_filename: teamcity-smoke.xml
           logs_artifact_name: teamcity-start-smoke-logs
