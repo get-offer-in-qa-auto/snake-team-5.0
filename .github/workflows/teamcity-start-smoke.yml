@@ -5,8 +5,37 @@ on:
   workflow_dispatch:
 
 jobs:
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install development dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+
+      # Быстрые статические проверки идут первыми, чтобы не тратить время
+      # на запуск Docker-стенда при очевидных проблемах в коде.
+      - name: Lint Python code
+        run: python3 -m ruff check .
+
+      - name: Check Python formatting
+        run: python3 -m ruff format --check .
+
+      - name: Check static types
+        run: python3 -m mypy src/main
+
   teamcity-start-smoke:
     name: Start TeamCity
+    needs: code-quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

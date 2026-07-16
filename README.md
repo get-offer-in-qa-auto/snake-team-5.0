@@ -194,7 +194,7 @@ python3 -m mypy src/main
 python3 -m pre_commit run --all-files
 ```
 
-Workflow **Code Quality** выполняет Ruff и mypy в каждом pull request до трудоёмкого Docker-прогона TeamCity. После его первого успешного запуска его стоит добавить в required status checks для `main`.
+В каждом pull request job **Code Quality** выполняет Ruff и mypy. Только после их успеха запускается трудоёмкий TeamCity Smoke в Docker, поэтому нарушение качества кода блокирует дальнейший PR-пайплайн. Pre-commit остаётся локальным механизмом перед коммитом и не дублирует CI-проверки.
 
 ## 6. Автотесты и Allure report
 
