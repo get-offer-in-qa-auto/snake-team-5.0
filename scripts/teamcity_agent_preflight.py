@@ -2,6 +2,7 @@
 import argparse
 import sys
 import time
+from typing import Any
 
 import requests
 
@@ -10,17 +11,23 @@ from src.main.api.specs.request_specs import RequestSpecs
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Authorize the CI TeamCity agent and wait until it is connected."
+        description="Authorize CI TeamCity agents and wait until all are connected."
     )
-    parser.add_argument("--name", required=True, help="Expected TeamCity agent name")
+    parser.add_argument(
+        "--name",
+        required=True,
+        action="append",
+        help="Expected TeamCity agent name. Repeat for multiple agents.",
+    )
     parser.add_argument("--timeout", type=int, default=120)
     args = parser.parse_args()
+    expected_names = set(args.name)
 
     deadline = time.monotonic() + args.timeout
     base_url = f"{RequestSpecs._server_url()}/app/rest"
     headers = RequestSpecs.admin_auth_spec(csrf=False)
     headers["Accept"] = "application/json"
-    last_agents: object = None
+    last_agents: list[dict[str, Any]] = []
 
     while time.monotonic() < deadline:
         response = requests.get(
@@ -34,17 +41,17 @@ def main() -> int:
         )
         response.raise_for_status()
         last_agents = response.json().get("agent", [])
-        agent = next(
-            (item for item in last_agents if item.get("name") == args.name), None
-        )
-        if agent is None:
-            time.sleep(1)
-            continue
+        agents_by_name = {
+            item.get("name"): item
+            for item in last_agents
+            if item.get("name") in expected_names
+        }
 
-        agent_id = agent["id"]
-        if not agent.get("authorized"):
+        for agent in agents_by_name.values():
+            if agent.get("authorized"):
+                continue
             authorize = requests.put(
-                f"{base_url}/agents/id:{agent_id}/authorized",
+                f"{base_url}/agents/id:{agent['id']}/authorized",
                 data="true",
                 headers={
                     **headers,
@@ -54,18 +61,25 @@ def main() -> int:
                 timeout=20,
             )
             authorize.raise_for_status()
-            time.sleep(1)
-            continue
 
-        if agent.get("connected") and agent.get("enabled"):
+        ready_names = {
+            name
+            for name, agent in agents_by_name.items()
+            if agent.get("authorized")
+            and agent.get("connected")
+            and agent.get("enabled")
+        }
+        if ready_names == expected_names:
             print(
-                f"TeamCity agent {args.name!r} is authorized, connected, and enabled."
+                "TeamCity agents are authorized, connected, and enabled: "
+                f"{', '.join(sorted(ready_names))}."
             )
             return 0
         time.sleep(1)
 
     print(
-        f"TeamCity agent {args.name!r} did not become ready. Last agents: {last_agents}",
+        f"TeamCity agents {sorted(expected_names)!r} did not become ready. "
+        f"Last agents: {last_agents}",
         file=sys.stderr,
     )
     return 1

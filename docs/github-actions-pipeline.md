@@ -50,12 +50,13 @@ TeamCity Server + TeamCity Agent + PostgreSQL 17.5
 - nightly в `02:00 UTC` (`05:00 МСК`);
 - вручную через `Actions → TeamCity PostgreSQL Regression → Run workflow`.
 
-Для ручного и scheduled запуска regression stage использует 4 xdist worker по
-умолчанию. Smoke gate остаётся последовательным. Порядок выполнения:
+Для ручного и scheduled запуска regression stage всегда использует 2 xdist
+worker и 2 отдельных TeamCity agent. Smoke gate остаётся последовательным.
+Количество workers в ручном запуске не настраивается. Порядок выполнения:
 
 ```text
 PostgreSQL health → TeamCity external DB bootstrap → read-only DB preflight
-→ 6 smoke tests → 44 regression tests in 4 workers
+→ 6 smoke tests → 44 regression tests in 2 workers
 ```
 
 Workflow не запускается на каждый PR и не публикует GitHub Pages. JUnit, Allure
@@ -111,7 +112,7 @@ teamcity-login-page
 
 Основной HSQLDB workflow можно запустить вручную через `Run workflow`. PR и
 ручной HSQLDB regression используют фиксированный последовательный режим
-`pytest_workers: 0`. PostgreSQL workflow по умолчанию использует 4 worker.
+`pytest_workers: 0`. PostgreSQL workflow всегда использует 2 worker.
 
 ## Allure report
 

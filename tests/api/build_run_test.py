@@ -9,7 +9,6 @@ pytestmark = [
     pytest.mark.api,
     pytest.mark.regression,
     pytest.mark.build_execution,
-    pytest.mark.xdist_group("build-execution"),
 ]
 
 

@@ -227,11 +227,8 @@ python3 -m pip install -r requirements.txt
 
 `pytest-xdist` запускает тесты параллельно. Основной PR regression выполняется
 последовательно, чтобы stateful DB-проверки не конфликтовали. Отдельный
-PostgreSQL regression можно запустить вручную из GitHub Actions UI:
-
-- `4` — значение по умолчанию для PostgreSQL regression;
-- `auto` — worker на каждое доступное CPU-ядро;
-- `0` — последовательный запуск для диагностики flaky-тестов.
+PostgreSQL regression всегда использует 2 worker и 2 отдельных TeamCity agent.
+Количество workers в ручном запуске не настраивается.
 
 В pull request сначала последовательно выполняются 6 smoke-тестов, затем 44
 остальных regression-тестов. Локально количество workers задаётся так:

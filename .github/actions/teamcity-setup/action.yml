@@ -18,8 +18,8 @@ inputs:
     description: First-start database mode, either internal or external.
     required: false
     default: internal
-  agent_name:
-    description: Name of the TeamCity agent that must be authorized before tests.
+  agent_names:
+    description: Comma-separated TeamCity agent names that must be ready before tests.
     required: false
     default: ci-agent-1
   wait_timeout_seconds:
@@ -98,9 +98,24 @@ runs:
         echo "TEAMCITY_PASSWORD=" >> "$GITHUB_ENV"
         rm -f "$token_file"
 
-    - name: Authorize and wait for TeamCity build agent
+    - name: Authorize and wait for TeamCity build agents
       shell: bash
-      run: python3 -m scripts.teamcity_agent_preflight --name "${{ inputs.agent_name }}"
+      env:
+        TEAMCITY_AGENT_NAMES: ${{ inputs.agent_names }}
+      run: |
+        agent_args=()
+        IFS=',' read -ra agent_names <<< "$TEAMCITY_AGENT_NAMES"
+        for agent_name in "${agent_names[@]}"; do
+          trimmed_name="$(echo "$agent_name" | xargs)"
+          if [ -n "$trimmed_name" ]; then
+            agent_args+=(--name "$trimmed_name")
+          fi
+        done
+        if [ "${#agent_args[@]}" -eq 0 ]; then
+          echo "At least one TeamCity agent name is required." >&2
+          exit 1
+        fi
+        python3 -m scripts.teamcity_agent_preflight "${agent_args[@]}"
 
     - name: Verify TeamCity database backup access
       if: ${{ inputs.database_preflight == 'true' }}
