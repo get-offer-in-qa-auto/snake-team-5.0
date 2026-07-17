@@ -49,6 +49,7 @@ jobs:
         with:
           compose_file: ci/teamcity-postgresql/compose.yaml
           server_container: teamcity-server-postgresql-ci
+          agent_name: postgresql-ci-agent-1
           database_mode: external
           pytest_marker: regression
           pytest_workers: ${{ inputs.pytest_workers || '4' }}

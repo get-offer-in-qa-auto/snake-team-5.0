@@ -40,6 +40,10 @@ inputs:
     description: First-start database mode, either internal or external.
     required: false
     default: internal
+  agent_name:
+    description: Name of the TeamCity agent that must be authorized before build-execution tests.
+    required: false
+    default: ci-agent-1
   wait_timeout_seconds:
     description: Maximum time to wait until TeamCity starts answering HTTP.
     required: false
@@ -132,6 +136,10 @@ runs:
         echo "TEAMCITY_ACCESS_TOKEN=$token" >> "$GITHUB_ENV"
         echo "TEAMCITY_PASSWORD=" >> "$GITHUB_ENV"
         rm -f "$token_file"
+
+    - name: Authorize and wait for TeamCity build agent
+      shell: bash
+      run: python3 -m scripts.teamcity_agent_preflight --name "${{ inputs.agent_name }}"
 
     # Regression DB-проверки используют online backup TeamCity. Проверяем точный
     # POST/copy/read/remove lifecycle до запуска всей pytest suite.
