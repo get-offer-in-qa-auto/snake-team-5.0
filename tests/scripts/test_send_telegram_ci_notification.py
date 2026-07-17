@@ -25,7 +25,7 @@ def test_build_message_uses_readable_telegram_sections():
     run = telegram_notification.WorkflowRun(
         run_id="29567942357",
         run_attempt="1",
-        name="TeamCity Start Smoke",
+        name="TeamCity Regression",
         status="success",
         branch="feature/<build-run>",
         event_name="pull_request",
@@ -58,7 +58,7 @@ def test_build_message_uses_readable_telegram_sections():
 
     assert (
         message
-        == """✅ <b>TeamCity Start Smoke</b>
+        == """✅ <b>TeamCity Regression</b>
 Status: <b>success</b>
 
 <b>Run details</b>
