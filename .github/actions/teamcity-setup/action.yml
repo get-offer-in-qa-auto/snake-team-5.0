@@ -77,8 +77,9 @@ runs:
         deadline=$((SECONDS + ${{ inputs.wait_timeout_seconds }}))
 
         while [ "$SECONDS" -lt "$deadline" ]; do
-          docker compose -f "${{ inputs.compose_file }}" logs --no-color teamcity-server > "$log_file"
-          if python3 scripts/teamcity_super_user_token.py \
+          if docker exec "${{ inputs.server_container }}" \
+            cat /opt/teamcity/logs/teamcity-startup.log > "$log_file" 2>/dev/null &&
+            python3 scripts/teamcity_super_user_token.py \
             --log-file "$log_file" \
             --output "$token_file"; then
             token="$(<"$token_file")"
