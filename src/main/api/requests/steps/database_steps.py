@@ -35,9 +35,7 @@ class DatabaseSteps:
             delete_time=int(delete_time) if delete_time is not None else None,
         )
 
-    @allure.step(
-        "Verify project {project_response.id} is persisted in TeamCity database"
-    )
+    @allure.step("Verify project is persisted in TeamCity database")
     def verify_project_persisted(self, project_response: ProjectResponse) -> ProjectDao:
         project = self.get_project_by_external_id(project_response.id)
         assert project.delete_time is None, (
@@ -97,9 +95,7 @@ class DatabaseSteps:
             delete_time=int(delete_time) if delete_time is not None else None,
         )
 
-    @allure.step(
-        "Verify build configuration {build_configuration.id} is persisted in TeamCity database"
-    )
+    @allure.step("Verify build configuration is persisted in TeamCity database")
     def verify_build_configuration_persisted(
         self, build_configuration: BuildConfigurationResponse
     ) -> BuildConfigurationDao:
@@ -157,9 +153,7 @@ class DatabaseSteps:
             algorithm=user["ALGORITHM"],
         )
 
-    @allure.step(
-        "Verify user {user_response.username} is persisted in TeamCity database"
-    )
+    @allure.step("Verify user is persisted in TeamCity database")
     def verify_user_persisted(self, user_response: CreateUserResponse) -> UserDao:
         user = self.get_user_by_username(user_response.username)
         assert user.id == user_response.id
