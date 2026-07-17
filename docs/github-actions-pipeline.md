@@ -5,8 +5,8 @@
 ## Текущий этап
 
 PR pipeline поднимает один чистый TeamCity стенд и выполняет gated regression.
-Проверки идут строго последовательно: database preflight, 5 smoke-тестов и затем
-34 остальных regression-теста. Если preflight или smoke падает, следующий этап
+Проверки идут строго последовательно: database preflight, 6 smoke-тестов и затем
+44 остальных regression-тестов. Если preflight или smoke падает, следующий этап
 не запускается.
 
 - поднять TeamCity Server;
@@ -55,7 +55,7 @@ TeamCity Server + TeamCity Agent + PostgreSQL 17.5
 
 ```text
 PostgreSQL health → TeamCity external DB bootstrap → read-only DB preflight
-→ 5 smoke tests → 34 regression tests in 4 workers
+→ 6 smoke tests → 44 regression tests in 4 workers
 ```
 
 Workflow не запускается на каждый PR и не публикует GitHub Pages. JUnit, Allure

@@ -216,8 +216,8 @@ PostgreSQL regression можно запустить вручную из GitHub A
 - `auto` — worker на каждое доступное CPU-ядро;
 - `0` — последовательный запуск для диагностики flaky-тестов.
 
-В pull request сначала последовательно выполняются 5 smoke-тестов, затем 34
-остальных regression-теста. Локально количество workers задаётся так:
+В pull request сначала последовательно выполняются 6 smoke-тестов, затем 44
+остальных regression-тестов. Локально количество workers задаётся так:
 
 ```bash
 python3 -m pytest -m regression -n 2
