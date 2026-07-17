@@ -43,19 +43,40 @@ jobs:
           echo "TEAMCITY_DB_ADAPTER=postgresql" >> "$GITHUB_ENV"
           echo "TEAMCITY_DB_DSN=$dsn" >> "$GITHUB_ENV"
 
-      - name: Run TeamCity PostgreSQL regression tests
-        id: teamcity-pytest
-        uses: ./.github/actions/teamcity-pytest
+      - name: Start and prepare TeamCity with PostgreSQL
+        uses: ./.github/actions/teamcity-setup
         with:
           compose_file: ci/teamcity-postgresql/compose.yaml
           server_container: teamcity-server-postgresql-ci
+          agent_name: postgresql-ci-agent-1
           database_mode: external
-          pytest_marker: regression
+          database_preflight: "true"
+
+      - name: Run TeamCity PostgreSQL smoke gate
+        uses: ./.github/actions/teamcity-test
+        with:
+          pytest_marker: smoke
+          pytest_workers: "0"
+          junit_filename: smoke-teamcity-postgresql-regression.xml
+          server_container: teamcity-server-postgresql-ci
+
+      - name: Run remaining TeamCity PostgreSQL regression tests
+        uses: ./.github/actions/teamcity-test
+        with:
+          pytest_marker: "(regression) and not smoke"
           pytest_workers: ${{ inputs.pytest_workers || '4' }}
-          test_label: postgresql-regression
           junit_filename: teamcity-postgresql-regression.xml
+          server_container: teamcity-server-postgresql-ci
+          preserve_allure_results: "true"
+
+      - name: Build PostgreSQL reports and stop TeamCity
+        id: teamcity-report
+        if: always()
+        uses: ./.github/actions/teamcity-report
+        with:
+          test_label: postgresql-regression
+          compose_file: ci/teamcity-postgresql/compose.yaml
+          server_container: teamcity-server-postgresql-ci
           logs_artifact_name: teamcity-postgresql-regression-logs
           results_artifact_name: teamcity-postgresql-regression-test-results
           page_artifact_name: teamcity-postgresql-login-page
-          database_preflight: "true"
-          smoke_gate: "true"

@@ -34,7 +34,7 @@ jobs:
         run: python3 -m mypy src/main
 
   teamcity-start-smoke:
-    name: Start TeamCity
+    name: TeamCity regression
     needs: code-quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -43,27 +43,43 @@ jobs:
       pages: write
       id-token: write
     outputs:
-      allure_pages_ready: ${{ steps.teamcity-pytest.outputs.allure_pages_ready }}
+      allure_pages_ready: ${{ steps.teamcity-report.outputs.allure_pages_ready }}
     steps:
       # Скачиваем код репозитория, чтобы runner видел local action, scripts, tests и compose-файл.
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Общая логика запуска TeamCity и pytest вынесена в local composite action,
-      # чтобы переиспользовать ее без отдельного workflow в GitHub Actions UI.
-      - name: Run TeamCity gated regression tests
-        id: teamcity-pytest
-        uses: ./.github/actions/teamcity-pytest
+      # Setup, тесты и сбор результатов остаются в одном job, чтобы Docker-стенд
+      # и временный TeamCity access token сохранялись на одном runner.
+      - name: Start and prepare TeamCity
+        uses: ./.github/actions/teamcity-setup
         with:
-          pytest_marker: regression
+          database_preflight: "true"
+
+      - name: Run TeamCity smoke gate
+        uses: ./.github/actions/teamcity-test
+        with:
+          pytest_marker: smoke
           pytest_workers: "0"
-          test_label: regression
+          junit_filename: smoke-teamcity-regression.xml
+
+      - name: Run remaining TeamCity regression tests
+        uses: ./.github/actions/teamcity-test
+        with:
+          pytest_marker: "(regression) and not smoke"
+          pytest_workers: "0"
           junit_filename: teamcity-regression.xml
+          preserve_allure_results: "true"
+
+      - name: Build reports and stop TeamCity
+        id: teamcity-report
+        if: always()
+        uses: ./.github/actions/teamcity-report
+        with:
+          test_label: regression
           logs_artifact_name: teamcity-regression-logs
           results_artifact_name: teamcity-regression-test-results
           page_artifact_name: teamcity-regression-login-page
-          database_preflight: "true"
-          smoke_gate: "true"
 
   deploy-allure-pages:
     name: Publish Allure report page

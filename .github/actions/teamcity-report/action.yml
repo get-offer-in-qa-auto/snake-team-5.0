@@ -1,0 +1,162 @@
+name: TeamCity Report and Cleanup
+description: Collect TeamCity test artifacts, prepare Allure, and stop the Docker stand.
+
+inputs:
+  test_label:
+    description: Human-readable test suite label used in artifact names and Allure history.
+    required: true
+  logs_artifact_name:
+    description: Name of the TeamCity and Docker Compose logs artifact.
+    required: true
+  results_artifact_name:
+    description: Name of the pytest JUnit XML results artifact.
+    required: true
+  page_artifact_name:
+    description: Name of the captured TeamCity login page artifact.
+    required: true
+  teamcity_url:
+    description: TeamCity URL exposed to the runner through Docker port mapping.
+    required: false
+    default: http://localhost:8111/login.html
+  compose_file:
+    description: Docker Compose file used to run the TeamCity test stand.
+    required: false
+    default: ci/teamcity/compose.yaml
+  server_container:
+    description: TeamCity server container name used for log collection.
+    required: false
+    default: teamcity-server-ci
+
+outputs:
+  allure_pages_ready:
+    description: "true when the generated Allure report has index.html and can be deployed to Pages."
+    value: ${{ steps.allure-pages.outputs.ready }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Java for Allure
+      if: always()
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: "17"
+
+    - name: Restore Allure history
+      if: always()
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        if [ ! -d artifacts/allure-results ] || [ "$(find artifacts/allure-results -type f | wc -l)" -eq 0 ]; then
+          echo "No Allure results found, skipping history restore."
+          exit 0
+        fi
+
+        remote_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        if git ls-remote --exit-code --heads "$remote_url" gh-pages >/dev/null 2>&1; then
+          rm -rf pages-history
+          git clone --depth=1 --branch gh-pages "$remote_url" pages-history
+          python3 .github/scripts/restore_allure_history.py \
+            --site-dir pages-history \
+            --suite "${{ inputs.test_label }}" \
+            --results-dir artifacts/allure-results
+        else
+          echo "No gh-pages branch found, skipping history restore."
+        fi
+
+    - name: Generate Allure report
+      if: always()
+      shell: bash
+      run: |
+        if [ -d artifacts/allure-results ] && [ "$(find artifacts/allure-results -type f | wc -l)" -gt 0 ]; then
+          npm install -g allure-commandline
+          allure generate artifacts/allure-results --clean -o artifacts/allure-report
+        else
+          echo "No Allure results found, skipping report generation."
+        fi
+
+    - name: Capture TeamCity login page
+      if: always()
+      shell: bash
+      run: python3 scripts/teamcity_capture_page.py --url "${{ inputs.teamcity_url }}" --output-dir artifacts/teamcity-page
+
+    - name: Show container status
+      if: always()
+      shell: bash
+      run: docker compose -f "${{ inputs.compose_file }}" ps
+
+    - name: Collect TeamCity logs
+      if: always()
+      shell: bash
+      run: |
+        mkdir -p artifacts/teamcity
+        docker compose -f "${{ inputs.compose_file }}" ps > artifacts/teamcity/docker-compose-ps.txt
+        docker compose -f "${{ inputs.compose_file }}" logs --no-color > artifacts/teamcity/docker-compose.log
+        if docker inspect "${{ inputs.server_container }}" >/dev/null 2>&1; then
+          mkdir -p artifacts/teamcity/server-logs
+          if ! docker cp "${{ inputs.server_container }}:/opt/teamcity/logs/." artifacts/teamcity/server-logs; then
+            echo "::warning title=TeamCity logs::Could not copy TeamCity server log files."
+          fi
+        fi
+
+    - name: Upload TeamCity logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.logs_artifact_name }}
+        path: artifacts/teamcity
+        if-no-files-found: ignore
+        retention-days: 7
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.results_artifact_name }}
+        path: artifacts/test-results
+        if-no-files-found: ignore
+        retention-days: 7
+
+    - name: Upload Allure results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: teamcity-${{ inputs.test_label }}-allure-results
+        path: artifacts/allure-results
+        if-no-files-found: ignore
+        retention-days: 7
+
+    - name: Upload Allure report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: teamcity-${{ inputs.test_label }}-allure-report
+        path: artifacts/allure-report
+        if-no-files-found: ignore
+        retention-days: 7
+
+    - name: Check Allure report for Pages
+      id: allure-pages
+      if: always()
+      shell: bash
+      run: |
+        if [ -f artifacts/allure-report/index.html ]; then
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Upload TeamCity page snapshot
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.page_artifact_name }}
+        path: artifacts/teamcity-page
+        if-no-files-found: ignore
+        retention-days: 7
+
+    - name: Stop TeamCity
+      if: always()
+      shell: bash
+      run: docker compose -f "${{ inputs.compose_file }}" down -v

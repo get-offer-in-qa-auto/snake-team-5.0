@@ -1,0 +1,107 @@
+name: TeamCity Setup
+description: Start and prepare a TeamCity Docker stand for tests on the current runner.
+
+inputs:
+  teamcity_url:
+    description: TeamCity URL exposed to the runner through Docker port mapping.
+    required: false
+    default: http://localhost:8111/login.html
+  compose_file:
+    description: Docker Compose file used to start the TeamCity test stand.
+    required: false
+    default: ci/teamcity/compose.yaml
+  server_container:
+    description: TeamCity server container name used for database backup access.
+    required: false
+    default: teamcity-server-ci
+  database_mode:
+    description: First-start database mode, either internal or external.
+    required: false
+    default: internal
+  agent_name:
+    description: Name of the TeamCity agent that must be authorized before tests.
+    required: false
+    default: ci-agent-1
+  wait_timeout_seconds:
+    description: Maximum time to wait until TeamCity starts answering HTTP.
+    required: false
+    default: "300"
+  wait_interval_seconds:
+    description: Delay between TeamCity readiness checks.
+    required: false
+    default: "2"
+  request_timeout_seconds:
+    description: Timeout for one HTTP request to TeamCity.
+    required: false
+    default: "5"
+  database_preflight:
+    description: Run a real TeamCity database backup preflight before pytest.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Check Docker availability
+      shell: bash
+      run: |
+        docker --version
+        docker compose version
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install test dependencies
+      shell: bash
+      run: python3 -m pip install -r requirements.txt
+
+    - name: Generate TeamCity CI administrator credentials
+      shell: bash
+      run: |
+        password="$(openssl rand -hex 24)"
+        echo "::add-mask::$password"
+        echo "TEAMCITY_USERNAME=ci-initial-admin" >> "$GITHUB_ENV"
+        echo "TEAMCITY_PASSWORD=$password" >> "$GITHUB_ENV"
+
+    - name: Start TeamCity server and agent
+      shell: bash
+      run: docker compose -f "${{ inputs.compose_file }}" up -d
+
+    - name: Wait for TeamCity web endpoint
+      shell: bash
+      run: |
+        python3 scripts/teamcity_start_smoke.py \
+          --url "${{ inputs.teamcity_url }}" \
+          --timeout "${{ inputs.wait_timeout_seconds }}" \
+          --interval "${{ inputs.wait_interval_seconds }}" \
+          --request-timeout "${{ inputs.request_timeout_seconds }}" \
+          --access-token-output "${RUNNER_TEMP}/teamcity-access-token" \
+          --database-mode "${{ inputs.database_mode }}" \
+          --auto-setup
+
+    - name: Export TeamCity CI access token
+      shell: bash
+      run: |
+        token_file="${RUNNER_TEMP}/teamcity-access-token"
+        if [ ! -s "$token_file" ]; then
+          echo "TeamCity access token file is missing or empty." >&2
+          exit 1
+        fi
+        token="$(<"$token_file")"
+        echo "::add-mask::$token"
+        echo "TEAMCITY_ACCESS_TOKEN=$token" >> "$GITHUB_ENV"
+        echo "TEAMCITY_PASSWORD=" >> "$GITHUB_ENV"
+        rm -f "$token_file"
+
+    - name: Authorize and wait for TeamCity build agent
+      shell: bash
+      run: python3 -m scripts.teamcity_agent_preflight --name "${{ inputs.agent_name }}"
+
+    - name: Verify TeamCity database backup access
+      if: ${{ inputs.database_preflight == 'true' }}
+      shell: bash
+      env:
+        TEAMCITY_DB_CONTAINER: ${{ inputs.server_container }}
+      run: python3 -m scripts.teamcity_database_preflight

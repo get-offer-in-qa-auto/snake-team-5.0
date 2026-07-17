@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Any
 
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
+from src.main.api.models.build_run import BuildRunResponse
 from src.main.api.models.build_step_response import (
     BuildStepResponse,
     BuildStepsResponse,
@@ -19,6 +20,10 @@ from src.main.api.models.role_assignment import (
     RoleAssignmentRequest,
     RoleAssignmentResponse,
     RoleAssignmentsResponse,
+)
+from src.main.api.models.start_build_request import (
+    BuildCancelRequest,
+    StartBuildRequest,
 )
 from src.main.api.models.user_token import (
     CreateUserTokenRequest,
@@ -104,4 +109,15 @@ class Endpoint(Enum):
         url="/buildTypes",
         request_model=CreateBuildStepRequest,
         response_model=BuildStepResponse,
+    )
+    START_BUILD_RUN = EndpointConfig(
+        url="/buildQueue",
+        request_model=StartBuildRequest,
+        response_model=BuildRunResponse,
+    )
+    GET_BUILD_RUN = EndpointConfig(
+        url="/builds", request_model=None, response_model=BuildRunResponse
+    )
+    CANCEL_BUILD_RUN = EndpointConfig(
+        url="/builds", request_model=BuildCancelRequest, response_model=None
     )
