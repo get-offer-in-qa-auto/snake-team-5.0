@@ -61,6 +61,7 @@ docker compose version
 Запустить TeamCity:
 
 ```bash
+export TEAMCITY_SUPER_USER_TOKEN="$(openssl rand -hex 24)"
 docker compose -f teamcity-local/compose.yaml up -d
 ```
 
@@ -72,22 +73,16 @@ docker compose -f teamcity-local/compose.yaml up -d
 docker compose -f teamcity-local/compose.yaml logs -f teamcity-server
 ```
 
-## Super User token из логов
+## Super User token
 
-Super User не имеет отдельного имени пользователя: TeamCity создаёт новый token
-при каждом старте и пишет его в server log. Войти можно с пустым именем
-пользователя и этим token как паролем. В compose-файле token не хранится.
+Super User не имеет отдельного имени пользователя. Войти можно с пустым именем
+пользователя и значением `TEAMCITY_SUPER_USER_TOKEN` как паролем. Compose
+требует передать token при создании контейнера, но не хранит его в репозитории.
 
-Для временного использования в локальных API-тестах извлечь его так:
+Перед созданием или пересозданием локального контейнера сгенерировать token:
 
 ```bash
-docker exec teamcity-server-local \
-  cat /opt/teamcity/logs/teamcity-startup.log > /tmp/teamcity-startup.log
-python3 scripts/teamcity_super_user_token.py \
-  --log-file /tmp/teamcity-startup.log \
-  --output /tmp/teamcity-super-user-token
-export TEAMCITY_SUPER_USER_TOKEN="$(< /tmp/teamcity-super-user-token)"
-rm -f /tmp/teamcity-startup.log /tmp/teamcity-super-user-token
+export TEAMCITY_SUPER_USER_TOKEN="$(openssl rand -hex 24)"
 ```
 
 Для CI используется отдельный краткоживущий `TEAMCITY_ACCESS_TOKEN`.

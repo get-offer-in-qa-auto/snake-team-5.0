@@ -61,38 +61,16 @@ runs:
       shell: bash
       run: |
         password="$(openssl rand -hex 24)"
+        super_user_token="$(openssl rand -hex 24)"
         echo "::add-mask::$password"
+        echo "::add-mask::$super_user_token"
         echo "TEAMCITY_USERNAME=ci-initial-admin" >> "$GITHUB_ENV"
         echo "TEAMCITY_PASSWORD=$password" >> "$GITHUB_ENV"
+        echo "TEAMCITY_SUPER_USER_TOKEN=$super_user_token" >> "$GITHUB_ENV"
 
     - name: Start TeamCity server and agent
       shell: bash
       run: docker compose -f "${{ inputs.compose_file }}" up -d
-
-    - name: Read TeamCity Super User token from logs
-      shell: bash
-      run: |
-        token_file="${RUNNER_TEMP}/teamcity-super-user-token"
-        log_file="${RUNNER_TEMP}/teamcity-server.log"
-        deadline=$((SECONDS + ${{ inputs.wait_timeout_seconds }}))
-
-        while [ "$SECONDS" -lt "$deadline" ]; do
-          if docker exec "${{ inputs.server_container }}" \
-            cat /opt/teamcity/logs/teamcity-startup.log > "$log_file" 2>/dev/null &&
-            python3 scripts/teamcity_super_user_token.py \
-            --log-file "$log_file" \
-            --output "$token_file"; then
-            token="$(<"$token_file")"
-            echo "::add-mask::$token"
-            echo "TEAMCITY_SUPER_USER_TOKEN=$token" >> "$GITHUB_ENV"
-            rm -f "$token_file" "$log_file"
-            exit 0
-          fi
-          sleep "${{ inputs.wait_interval_seconds }}"
-        done
-
-        echo "TeamCity Super User token was not found in the server logs." >&2
-        exit 1
 
     - name: Wait for TeamCity web endpoint
       shell: bash
