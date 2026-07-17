@@ -1,0 +1,46 @@
+name: TeamCity Test
+description: Run one pytest stage against a TeamCity stand prepared on the current runner.
+
+inputs:
+  pytest_marker:
+    description: Pytest marker expression to run.
+    required: true
+  pytest_workers:
+    description: Number of pytest-xdist workers. Use 0 for serial execution.
+    required: false
+    default: "3"
+  junit_filename:
+    description: JUnit XML filename saved under artifacts/test-results.
+    required: true
+  server_container:
+    description: TeamCity server container used by database and configuration checks.
+    required: false
+    default: teamcity-server-ci
+  preserve_allure_results:
+    description: Append to existing Allure results instead of cleaning them first.
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Run pytest
+      shell: bash
+      env:
+        PYTEST_MARKER: ${{ inputs.pytest_marker }}
+        PYTEST_WORKERS: ${{ inputs.pytest_workers }}
+        JUNIT_FILENAME: ${{ inputs.junit_filename }}
+        PRESERVE_ALLURE_RESULTS: ${{ inputs.preserve_allure_results }}
+        TEAMCITY_DB_CONTAINER: ${{ inputs.server_container }}
+        TEAMCITY_CONFIG_CONTAINER: ${{ inputs.server_container }}
+      run: |
+        mkdir -p artifacts/test-results
+        pytest_args=()
+        if [ "$PRESERVE_ALLURE_RESULTS" = "true" ]; then
+          pytest_args+=(-o "addopts=--alluredir=artifacts/allure-results")
+        fi
+        python3 -m pytest \
+          "${pytest_args[@]}" \
+          -m "$PYTEST_MARKER" \
+          -n "$PYTEST_WORKERS" \
+          --junitxml="artifacts/test-results/$JUNIT_FILENAME"
