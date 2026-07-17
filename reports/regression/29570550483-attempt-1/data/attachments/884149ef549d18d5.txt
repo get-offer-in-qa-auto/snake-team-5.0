@@ -1,0 +1,1 @@
+TeamCity agent 'ci-agent-1' is authorized, connected, and enabled.
