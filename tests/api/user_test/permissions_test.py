@@ -2,6 +2,7 @@ import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
+from src.main.api.models.comparison.entity_assertions import EntityAssertions
 from src.main.api.models.comparison.model_assertions import ModelAssertions
 from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
@@ -82,8 +83,7 @@ def test_admin_can_create_build_configuration(
     )
 
     ModelAssertions(build_configuration_request, stored_configuration).match()
-    assert stored_configuration.project is not None
-    assert stored_configuration.project.id == project.id
+    EntityAssertions.belongs_to_project(stored_configuration, project.id)
 
 
 @allure.title("Limited user cannot create build configuration")

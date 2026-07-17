@@ -2,6 +2,9 @@ import allure
 
 from src.main.api.database import DatabaseClient, create_database_client
 from src.main.api.database.dao import BuildConfigurationDao, ProjectDao, UserDao
+from src.main.api.models.build_configuration_response import BuildConfigurationResponse
+from src.main.api.models.create_user_response import CreateUserResponse
+from src.main.api.models.project_response import ProjectResponse
 
 
 class DatabaseSteps:
@@ -32,13 +35,18 @@ class DatabaseSteps:
             delete_time=int(delete_time) if delete_time is not None else None,
         )
 
-    @allure.step("Verify project {external_id} is persisted in TeamCity database")
-    def verify_project_persisted(self, external_id: str) -> ProjectDao:
-        project = self.get_project_by_external_id(external_id)
+    @allure.step(
+        "Verify project {project_response.id} is persisted in TeamCity database"
+    )
+    def verify_project_persisted(self, project_response: ProjectResponse) -> ProjectDao:
+        project = self.get_project_by_external_id(project_response.id)
         assert project.delete_time is None, (
-            f"Project {external_id!r} is marked as deleted in the database: "
+            f"Project {project_response.id!r} is marked as deleted in the database: "
             f"delete_time={project.delete_time}"
         )
+        assert project.external_id == project_response.id
+        assert project.internal_id.startswith("project")
+        assert project.config_id
         return project
 
     @allure.step("Verify project {external_id} is deleted in TeamCity database")
@@ -90,17 +98,22 @@ class DatabaseSteps:
         )
 
     @allure.step(
-        "Verify build configuration {external_id} is persisted in TeamCity database"
+        "Verify build configuration {build_configuration.id} is persisted in TeamCity database"
     )
     def verify_build_configuration_persisted(
-        self, external_id: str
+        self, build_configuration: BuildConfigurationResponse
     ) -> BuildConfigurationDao:
-        build_configuration = self.get_build_configuration_by_external_id(external_id)
-        assert build_configuration.delete_time is None, (
-            f"Build configuration {external_id!r} is marked as deleted in the "
-            f"database: delete_time={build_configuration.delete_time}"
+        database_configuration = self.get_build_configuration_by_external_id(
+            build_configuration.id
         )
-        return build_configuration
+        assert database_configuration.delete_time is None, (
+            f"Build configuration {build_configuration.id!r} is marked as deleted in the "
+            f"database: delete_time={database_configuration.delete_time}"
+        )
+        assert database_configuration.external_id == build_configuration.id
+        assert database_configuration.internal_id.startswith("bt")
+        assert database_configuration.config_id
+        return database_configuration
 
     @allure.step(
         "Verify build configuration {external_id} is deleted in TeamCity database"
@@ -144,9 +157,15 @@ class DatabaseSteps:
             algorithm=user["ALGORITHM"],
         )
 
-    @allure.step("Verify user {username} is persisted in TeamCity database")
-    def verify_user_persisted(self, username: str) -> UserDao:
-        return self.get_user_by_username(username)
+    @allure.step(
+        "Verify user {user_response.username} is persisted in TeamCity database"
+    )
+    def verify_user_persisted(self, user_response: CreateUserResponse) -> UserDao:
+        user = self.get_user_by_username(user_response.username)
+        assert user.id == user_response.id
+        assert user.username == user_response.username
+        assert user.algorithm == "BCRYPT"
+        return user
 
     @allure.step("Verify user {username} is deleted from TeamCity database")
     def verify_user_deleted(self, username: str) -> None:

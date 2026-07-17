@@ -7,7 +7,6 @@ from src.main.api.configs.config import Config
 
 
 class RequestSpecs:
-    _LOCAL_SUPER_USER_TOKEN = "autotestlocalsuperusertoken"
     _PLACEHOLDER_AUTH_HEADER = "<BASIC_TOKEN>"
     _csrf_tokens: dict[str, str] = {}
 
@@ -80,10 +79,7 @@ class RequestSpecs:
                 RequestSpecs._basic_auth_header(admin_username, admin_password)
             )
 
-        super_user_token = Config.get(
-            "TEAMCITY_SUPER_USER_TOKEN",
-            RequestSpecs._LOCAL_SUPER_USER_TOKEN,
-        )
+        super_user_token = Config.get("TEAMCITY_SUPER_USER_TOKEN", "")
         if super_user_token:
             headers.append(RequestSpecs._basic_auth_header("", super_user_token))
 

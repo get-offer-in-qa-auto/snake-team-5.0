@@ -2,6 +2,7 @@ import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
+from src.main.api.models.comparison.entity_assertions import EntityAssertions
 from src.main.api.models.comparison.model_assertions import ModelAssertions
 from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
@@ -29,9 +30,8 @@ def test_create_build_configuration(
 
     ModelAssertions(build_configuration_request, configuration).match()
     ModelAssertions(build_configuration_request, stored_configuration).match()
-    assert configuration.href
-    assert stored_configuration.project is not None
-    assert stored_configuration.project.id == project.id
+    EntityAssertions.has_href(configuration)
+    EntityAssertions.belongs_to_project(stored_configuration, project.id)
 
 
 @allure.title("Created build configuration is persisted in database")
@@ -47,15 +47,7 @@ def test_created_build_configuration_is_persisted_in_database(
         project.id, build_configuration_request
     )
 
-    database_configuration = (
-        api_manager.database_steps.verify_build_configuration_persisted(
-            configuration.id
-        )
-    )
-
-    assert database_configuration.external_id == configuration.id
-    assert database_configuration.internal_id.startswith("bt")
-    assert database_configuration.config_id
+    api_manager.database_steps.verify_build_configuration_persisted(configuration)
 
 
 @allure.title("Create build configuration in subproject")
@@ -80,8 +72,7 @@ def test_create_build_configuration_in_subproject(
     )
 
     ModelAssertions(build_configuration_request, stored_configuration).match()
-    assert stored_configuration.project is not None
-    assert stored_configuration.project.id == subproject.id
+    EntityAssertions.belongs_to_project(stored_configuration, subproject.id)
 
 
 @allure.title("Build configuration cannot be created in unknown project")
@@ -193,12 +184,10 @@ def test_create_build_configurations_with_same_name_in_different_projects(
         second_configuration.id
     )
 
-    assert stored_first.id != stored_second.id
-    assert stored_first.name == stored_second.name == shared_name
-    assert stored_first.project is not None
-    assert stored_second.project is not None
-    assert stored_first.project.id == first_project.id
-    assert stored_second.project.id == second_project.id
+    ModelAssertions(first_request, stored_first).match()
+    ModelAssertions(second_request, stored_second).match()
+    EntityAssertions.belongs_to_project(stored_first, first_project.id)
+    EntityAssertions.belongs_to_project(stored_second, second_project.id)
 
 
 @allure.title("Build configuration cannot be created without authorization")

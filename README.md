@@ -80,6 +80,26 @@ docker compose -f teamcity-local/compose.yaml ps
 docker compose -f teamcity-local/compose.yaml logs -f teamcity-server
 ```
 
+### Super User для локальной диагностики
+
+Super User — не отдельный логин. TeamCity при каждом запуске создаёт временный
+token, записывает его в `teamcity-server.log` и использует как пароль с пустым
+именем пользователя. Фиксированного token в compose-файлах нет.
+
+Получить token из текущих логов, не выводя его в терминал:
+
+```bash
+docker compose -f teamcity-local/compose.yaml logs --no-color teamcity-server > /tmp/teamcity-server.log
+python3 scripts/teamcity_super_user_token.py \
+  --log-file /tmp/teamcity-server.log \
+  --output /tmp/teamcity-super-user-token
+export TEAMCITY_SUPER_USER_TOKEN="$(< /tmp/teamcity-super-user-token)"
+rm -f /tmp/teamcity-server.log /tmp/teamcity-super-user-token
+```
+
+Для обычных CI-тестов используется отдельный временный `TEAMCITY_ACCESS_TOKEN`,
+а не Super User token.
+
 Ожидаемое состояние после первичной настройки:
 
 - `teamcity-server-local` запущен;
