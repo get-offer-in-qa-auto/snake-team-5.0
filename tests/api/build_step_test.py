@@ -1,9 +1,11 @@
+import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.comparison.model_assertions import ModelAssertions
 from src.main.api.models.create_build_step_request import CreateBuildStepRequest
+from src.main.api.models.project_response import ProjectResponse
 
 
 @pytest.mark.api
@@ -26,6 +28,33 @@ def test_create_build_step(
 
     assert created_step.id.startswith("RUNNER_")
     assert stored_step.id == created_step.id
+
+
+@allure.title("Created build step is persisted in TeamCity configuration")
+@allure.tag("api", "regression", "build-step", "configuration")
+@pytest.mark.api
+@pytest.mark.regression
+@pytest.mark.configuration
+def test_created_build_step_is_persisted_in_configuration(
+    api_manager: ApiManager,
+    project: ProjectResponse,
+    build_configuration: BuildConfigurationResponse,
+    build_step_request: CreateBuildStepRequest,
+):
+    created_step = api_manager.admin_steps.create_build_step(
+        build_configuration.id, build_step_request
+    )
+
+    persisted_step = api_manager.configuration_steps.verify_build_step_persisted(
+        project.id, build_configuration.id, created_step.id
+    )
+
+    assert persisted_step.name == build_step_request.name
+    assert persisted_step.type == build_step_request.type
+    assert (
+        persisted_step.parameters["script.content"]
+        == build_step_request.properties.property[0].value
+    )
 
 
 @pytest.mark.api
@@ -61,6 +90,35 @@ def test_update_build_step(
     assert actual_properties["script.content"] == expected_properties["script.content"]
 
 
+@allure.title("Updated build step is persisted in TeamCity configuration")
+@allure.tag("api", "regression", "build-step", "configuration")
+@pytest.mark.api
+@pytest.mark.regression
+@pytest.mark.configuration
+def test_updated_build_step_is_persisted_in_configuration(
+    api_manager: ApiManager,
+    project: ProjectResponse,
+    build_configuration: BuildConfigurationResponse,
+    build_step_request: CreateBuildStepRequest,
+    build_step_request_factory,
+):
+    created_step = api_manager.admin_steps.create_build_step(
+        build_configuration.id, build_step_request
+    )
+    updated_request = build_step_request_factory(script="echo persisted update")
+
+    api_manager.admin_steps.update_build_step(
+        build_configuration.id, created_step.id, updated_request
+    )
+    persisted_step = api_manager.configuration_steps.verify_build_step_persisted(
+        project.id, build_configuration.id, created_step.id
+    )
+
+    assert persisted_step.name == updated_request.name
+    assert persisted_step.type == updated_request.type
+    assert persisted_step.parameters["script.content"] == "echo persisted update"
+
+
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
@@ -76,6 +134,27 @@ def test_delete_build_step(
     api_manager.admin_steps.delete_build_step(build_configuration.id, created_step.id)
     api_manager.admin_steps.check_build_step_does_not_exist(
         build_configuration.id, created_step.id
+    )
+
+
+@allure.title("Deleted build step is removed from TeamCity configuration")
+@allure.tag("api", "regression", "build-step", "configuration")
+@pytest.mark.api
+@pytest.mark.regression
+@pytest.mark.configuration
+def test_deleted_build_step_is_removed_from_configuration(
+    api_manager: ApiManager,
+    project: ProjectResponse,
+    build_configuration: BuildConfigurationResponse,
+    build_step_request: CreateBuildStepRequest,
+):
+    created_step = api_manager.admin_steps.create_build_step(
+        build_configuration.id, build_step_request
+    )
+
+    api_manager.admin_steps.delete_build_step(build_configuration.id, created_step.id)
+    api_manager.configuration_steps.verify_build_step_deleted(
+        project.id, build_configuration.id, created_step.id
     )
 
 
