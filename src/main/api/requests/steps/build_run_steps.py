@@ -99,3 +99,14 @@ class BuildRunSteps:
         )
         response.raise_for_status()
         return response.text
+
+    @allure.step("Verify build result")
+    def verify_result(
+        self,
+        build: BuildRunResponse,
+        expected_status: str,
+        expected_log_text: str | None = None,
+    ) -> None:
+        assert build.status == expected_status
+        if expected_log_text is not None:
+            assert expected_log_text in self.get_log(build.id)

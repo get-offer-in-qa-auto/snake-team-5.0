@@ -55,6 +55,32 @@ class UserSteps(BaseSteps):
             ResponseSpecs.request_returns_ok(),
         ).get(f"username:{user_request.username}/tokens")
 
+    @allure.step("Verify user token was created")
+    def verify_user_token_created(
+        self,
+        user_request: CreateUserRequest,
+        token_request: CreateUserTokenRequest,
+        created_token: UserTokenResponse,
+    ) -> None:
+        self.verify_response_matches(token_request, created_token)
+        assert created_token.value
+        assert created_token.creationTime
+
+        stored_tokens = self.get_user_tokens(user_request)
+        stored_token = next(
+            (
+                token
+                for token in stored_tokens.token
+                if token.name == created_token.name
+            ),
+            None,
+        )
+        assert stored_token is not None, (
+            f"Token {created_token.name!r} is not stored for user "
+            f"{user_request.username!r}"
+        )
+        assert stored_token.value is None
+
     @allure.step("Delete token {token_name} for user {username}")
     def delete_user_token(self, username: str, password: str, token_name: str):
         CrudRequester(

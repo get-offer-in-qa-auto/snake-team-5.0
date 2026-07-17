@@ -23,8 +23,7 @@ def test_successful_build_run(
     queued = api_manager.build_run_steps.start(configuration_id)
     finished = api_manager.build_run_steps.wait_until_finished(queued.id)
 
-    assert finished.status == "SUCCESS"
-    assert marker in api_manager.build_run_steps.get_log(queued.id)
+    api_manager.build_run_steps.verify_result(finished, "SUCCESS", marker)
 
 
 @allure.title("Manual build run reports failed script")
@@ -38,8 +37,7 @@ def test_failed_build_run(
     queued = api_manager.build_run_steps.start(configuration_id)
     finished = api_manager.build_run_steps.wait_until_finished(queued.id)
 
-    assert finished.status == "FAILURE"
-    assert "BUILD_RUN_FAILURE" in api_manager.build_run_steps.get_log(queued.id)
+    api_manager.build_run_steps.verify_result(finished, "FAILURE", "BUILD_RUN_FAILURE")
 
 
 @allure.title("Manual build run receives a runtime parameter")
@@ -56,8 +54,7 @@ def test_build_run_with_runtime_parameter(
     )
     finished = api_manager.build_run_steps.wait_until_finished(queued.id)
 
-    assert finished.status == "SUCCESS"
-    assert f"RUNTIME={marker}" in api_manager.build_run_steps.get_log(queued.id)
+    api_manager.build_run_steps.verify_result(finished, "SUCCESS", f"RUNTIME={marker}")
 
 
 @allure.title("Running build can be cancelled")
@@ -72,4 +69,4 @@ def test_running_build_can_be_cancelled(
     api_manager.build_run_steps.cancel(queued.id, cancellation_comment)
     finished = api_manager.build_run_steps.wait_until_finished(queued.id)
 
-    assert finished.status == "UNKNOWN"
+    api_manager.build_run_steps.verify_result(finished, "UNKNOWN")
