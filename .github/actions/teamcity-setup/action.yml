@@ -61,9 +61,12 @@ runs:
       shell: bash
       run: |
         password="$(openssl rand -hex 24)"
+        super_user_token="$(openssl rand -hex 24)"
         echo "::add-mask::$password"
+        echo "::add-mask::$super_user_token"
         echo "TEAMCITY_USERNAME=ci-initial-admin" >> "$GITHUB_ENV"
         echo "TEAMCITY_PASSWORD=$password" >> "$GITHUB_ENV"
+        echo "TEAMCITY_SUPER_USER_TOKEN=$super_user_token" >> "$GITHUB_ENV"
 
     - name: Start TeamCity server and agent
       shell: bash

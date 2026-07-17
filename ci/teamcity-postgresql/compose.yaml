@@ -41,7 +41,7 @@ services:
       TEAMCITY_DB_URL: jdbc:postgresql://teamcity-postgres:5432/teamcity
       TEAMCITY_DB_USER: teamcity
       TEAMCITY_DB_PASSWORD: ${TEAMCITY_POSTGRES_PASSWORD:?TEAMCITY_POSTGRES_PASSWORD is required}
-      TEAMCITY_SERVER_OPTS: "-Dteamcity.superUser.token=autotestpostgresqlsuperusertoken -Dteamcity.internal.accessTokens.enableCreationForOtherUsers=true"
+      TEAMCITY_SERVER_OPTS: "-Dteamcity.superUser.token=${TEAMCITY_SUPER_USER_TOKEN:?TEAMCITY_SUPER_USER_TOKEN is required} -Dteamcity.internal.accessTokens.enableCreationForOtherUsers=true"
     volumes:
       - teamcity-data:/data/teamcity_server/datadir
       - teamcity-logs:/opt/teamcity/logs

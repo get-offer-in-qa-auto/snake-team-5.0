@@ -2,6 +2,7 @@ import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
+from src.main.api.models.comparison.entity_assertions import EntityAssertions
 from src.main.api.models.comparison.model_assertions import ModelAssertions
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.specs.response_specs import ResponseError
@@ -18,8 +19,8 @@ def test_create_user(api_manager: ApiManager, user_request: CreateUserRequest):
 
     ModelAssertions(user_request, user).match()
     ModelAssertions(user_request, stored_user).match()
-    assert user.id
-    assert user.href
+    EntityAssertions.has_id(user)
+    EntityAssertions.has_href(user)
 
 
 @allure.title("Created user is persisted in database")
@@ -31,11 +32,7 @@ def test_created_user_is_persisted_in_database(
 ):
     user = api_manager.admin_steps.create_user(user_request)
 
-    database_user = api_manager.database_steps.verify_user_persisted(user.username)
-
-    assert database_user.id == user.id
-    assert database_user.username == user.username
-    assert database_user.algorithm == "BCRYPT"
+    api_manager.database_steps.verify_user_persisted(user)
 
 
 @allure.title("User cannot be created with existing username")

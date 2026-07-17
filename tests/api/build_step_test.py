@@ -45,15 +45,11 @@ def test_created_build_step_is_persisted_in_configuration(
         build_configuration.id, build_step_request
     )
 
-    persisted_step = api_manager.configuration_steps.verify_build_step_persisted(
-        project.id, build_configuration.id, created_step.id
-    )
-
-    assert persisted_step.name == build_step_request.name
-    assert persisted_step.type == build_step_request.type
-    assert (
-        persisted_step.parameters["script.content"]
-        == build_step_request.properties.property[0].value
+    api_manager.configuration_steps.verify_build_step_persisted(
+        project.id,
+        build_configuration.id,
+        created_step.id,
+        build_step_request,
     )
 
 
@@ -110,13 +106,12 @@ def test_updated_build_step_is_persisted_in_configuration(
     api_manager.admin_steps.update_build_step(
         build_configuration.id, created_step.id, updated_request
     )
-    persisted_step = api_manager.configuration_steps.verify_build_step_persisted(
-        project.id, build_configuration.id, created_step.id
+    api_manager.configuration_steps.verify_build_step_persisted(
+        project.id,
+        build_configuration.id,
+        created_step.id,
+        updated_request,
     )
-
-    assert persisted_step.name == updated_request.name
-    assert persisted_step.type == updated_request.type
-    assert persisted_step.parameters["script.content"] == "echo persisted update"
 
 
 @pytest.mark.api

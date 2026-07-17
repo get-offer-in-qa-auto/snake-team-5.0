@@ -38,6 +38,7 @@ docker compose version
 Из корня проекта выполнить:
 
 ```bash
+export TEAMCITY_SUPER_USER_TOKEN="$(openssl rand -hex 24)"
 docker compose -f teamcity-local/compose.yaml up -d
 ```
 
@@ -79,6 +80,22 @@ docker compose -f teamcity-local/compose.yaml ps
 ```bash
 docker compose -f teamcity-local/compose.yaml logs -f teamcity-server
 ```
+
+### Super User для локальной диагностики
+
+Super User — не отдельный логин. Локальный compose требует случайный token,
+переданный через `TEAMCITY_SUPER_USER_TOKEN`, и использует его как пароль с
+пустым именем пользователя. Фиксированного token в compose-файлах нет.
+
+Перед созданием или пересозданием контейнера сгенерировать token:
+
+```bash
+export TEAMCITY_SUPER_USER_TOKEN="$(openssl rand -hex 24)"
+docker compose -f teamcity-local/compose.yaml up -d
+```
+
+Для обычных CI-тестов используется отдельный временный `TEAMCITY_ACCESS_TOKEN`,
+а не Super User token.
 
 Ожидаемое состояние после первичной настройки:
 

@@ -7,6 +7,7 @@ from src.main.api.configuration.client import (
     BuildStepConfiguration,
     TeamCityConfigurationClient,
 )
+from src.main.api.models.create_build_step_request import CreateBuildStepRequest
 
 
 class ConfigurationSteps:
@@ -16,7 +17,11 @@ class ConfigurationSteps:
 
     @allure.step("Verify build step {step_id} is persisted in TeamCity configuration")
     def verify_build_step_persisted(
-        self, project_id: str, build_configuration_id: str, step_id: str
+        self,
+        project_id: str,
+        build_configuration_id: str,
+        step_id: str,
+        expected_step: CreateBuildStepRequest,
     ) -> BuildStepConfiguration:
         deadline = time.monotonic() + self.timeout
         last_step: BuildStepConfiguration | None = None
@@ -27,6 +32,13 @@ class ConfigurationSteps:
                     project_id, build_configuration_id, step_id
                 )
                 if last_step is not None:
+                    expected_parameters = {
+                        item.name: item.value
+                        for item in expected_step.properties.property
+                    }
+                    assert last_step.name == expected_step.name
+                    assert last_step.type == expected_step.type
+                    assert last_step.parameters == expected_parameters
                     return last_step
             except FileNotFoundError as error:
                 last_error = error
