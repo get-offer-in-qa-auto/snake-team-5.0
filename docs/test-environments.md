@@ -93,10 +93,10 @@ PostgreSQL выбран как внешний database backend для production
 
 ```text
 Fast CI:
-  TeamCity Server + full TeamCity Agent + internal HSQLDB
+  TeamCity Server + 2 full TeamCity Agents + internal HSQLDB
 
 Production-like CI:
-  TeamCity Server + full TeamCity Agent + PostgreSQL
+  TeamCity Server + 2 full TeamCity Agents + PostgreSQL
 ```
 
 Fast CI нужен для быстрых проверок основной функциональности.

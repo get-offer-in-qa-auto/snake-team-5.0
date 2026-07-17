@@ -4,18 +4,18 @@
 
 ## Текущий этап
 
-PR pipeline поднимает один чистый TeamCity стенд и выполняет gated regression.
-Проверки идут строго последовательно: database preflight, 6 smoke-тестов и затем
-44 остальных regression-тестов. Если preflight или smoke падает, следующий этап
-не запускается.
+PR pipeline поднимает один чистый TeamCity стенд с двумя build agents и выполняет
+gated regression. Этапы идут последовательно: database preflight, 6 smoke-тестов
+в 2 worker и затем 44 остальных regression-теста в 2 worker. Если preflight или
+smoke падает, следующий этап не запускается.
 
 - поднять TeamCity Server;
-- поднять TeamCity Agent;
+- поднять два TeamCity Agent;
 - дождаться HTTP-ответа от `http://localhost:8111/login.html`;
 - показать понятное readiness-состояние: `READY_LOGIN_PAGE`, `AUTH_REQUIRED` или `FIRST_START_REQUIRED`;
 - проверить полный backup/copy/read/remove lifecycle через database preflight;
-- запустить smoke gate через `pytest -m smoke -n 0`;
-- после успешного smoke запустить `pytest -m "regression and not smoke" -n 0`;
+- запустить smoke gate через `pytest -m smoke -n 2`;
+- после успешного smoke запустить `pytest -m "regression and not smoke" -n 2`;
 - сохранить отдельные JUnit XML для smoke gate и оставшегося regression;
 - сохранить Allure results;
 - сразу собрать Allure HTML-report;
@@ -42,7 +42,7 @@ ci/teamcity/compose.yaml
 поднимает один production-like стенд:
 
 ```text
-TeamCity Server + TeamCity Agent + PostgreSQL 17.5
+TeamCity Server + 2 TeamCity Agents + PostgreSQL 17.5
 ```
 
 Он запускается:
@@ -85,8 +85,8 @@ Pipeline считается успешным, если:
 - Docker Compose успешно поднял containers;
 - TeamCity web endpoint начал отвечать;
 - database preflight подтвердил доступность Backup API и snapshot;
-- все smoke-тесты прошли последовательно;
-- остальные regression-тесты прошли последовательно;
+- все smoke-тесты прошли в 2 xdist worker;
+- остальные regression-тесты прошли в 2 xdist worker;
 - GitHub Step Summary показывает итоговое состояние TeamCity readiness;
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
@@ -111,8 +111,9 @@ teamcity-login-page
 - `readiness.txt` — человекочитаемая классификация состояния.
 
 Основной HSQLDB workflow можно запустить вручную через `Run workflow`. PR и
-ручной HSQLDB regression используют фиксированный последовательный режим
-`pytest_workers: 0`. PostgreSQL workflow всегда использует 2 worker.
+ручной HSQLDB regression используют фиксированный режим `pytest_workers: 2`
+для smoke и остальных regression-тестов. В PostgreSQL workflow smoke gate
+остаётся последовательным, а остальные regression-тесты используют 2 worker.
 
 ## Allure report
 

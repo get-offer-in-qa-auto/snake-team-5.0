@@ -28,6 +28,22 @@ services:
       - teamcity-agent-tools:/opt/buildagent/tools
       - teamcity-agent-plugins:/opt/buildagent/plugins
 
+  teamcity-agent-2:
+    image: jetbrains/teamcity-agent:2026.1.1
+    container_name: teamcity-agent-2-ci
+    depends_on:
+      - teamcity-server
+    environment:
+      SERVER_URL: http://teamcity-server:8111
+      AGENT_NAME: ci-agent-2
+    volumes:
+      - teamcity-agent-2-conf:/data/teamcity_agent/conf
+      - teamcity-agent-2-work:/opt/buildagent/work
+      - teamcity-agent-2-system:/opt/buildagent/system
+      - teamcity-agent-2-temp:/opt/buildagent/temp
+      - teamcity-agent-2-tools:/opt/buildagent/tools
+      - teamcity-agent-2-plugins:/opt/buildagent/plugins
+
 volumes:
   teamcity-data:
   teamcity-logs:
@@ -37,3 +53,9 @@ volumes:
   teamcity-agent-temp:
   teamcity-agent-tools:
   teamcity-agent-plugins:
+  teamcity-agent-2-conf:
+  teamcity-agent-2-work:
+  teamcity-agent-2-system:
+  teamcity-agent-2-temp:
+  teamcity-agent-2-tools:
+  teamcity-agent-2-plugins:

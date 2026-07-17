@@ -54,20 +54,21 @@ jobs:
       - name: Start and prepare TeamCity
         uses: ./.github/actions/teamcity-setup
         with:
+          agent_names: ci-agent-1,ci-agent-2
           database_preflight: "true"
 
       - name: Run TeamCity smoke gate
         uses: ./.github/actions/teamcity-test
         with:
           pytest_marker: smoke
-          pytest_workers: "0"
+          pytest_workers: "2"
           junit_filename: smoke-teamcity-regression.xml
 
       - name: Run remaining TeamCity regression tests
         uses: ./.github/actions/teamcity-test
         with:
           pytest_marker: "(regression) and not smoke"
-          pytest_workers: "0"
+          pytest_workers: "2"
           junit_filename: teamcity-regression.xml
           preserve_allure_results: "true"
 
