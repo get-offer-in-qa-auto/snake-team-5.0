@@ -352,7 +352,7 @@ DB-проверки доступны через `api_manager.database_steps` и 
 ```bash
 export TEAMCITY_DB_ADAPTER=postgresql
 export TEAMCITY_DB_DSN='postgresql://teamcity:<password>@db.example.test:5432/teamcity'
-python3 -m pytest tests/api/project_test.py::test_created_project_is_persisted_in_database
+python3 -m pytest tests/api/projects/test_project_lifecycle.py::test_created_project_is_persisted_in_database
 ```
 
 Пароли и реальные DSN не коммитятся. Подробная архитектура, параметры и ограничения описаны в `docs/database-checks.md`.
