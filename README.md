@@ -208,14 +208,16 @@ python3 -m pip install -r requirements.txt
 
 В `requirements.txt` уже входит `allure-pytest`, который позволяет pytest сохранять Allure results.
 
-`pytest-xdist` запускает тесты параллельно. В GitHub Actions для smoke и regression можно выбрать параметр `pytest_workers` при ручном запуске workflow:
+`pytest-xdist` запускает тесты параллельно. Основной PR regression выполняется
+последовательно, чтобы stateful DB-проверки не конфликтовали. Отдельный
+PostgreSQL regression можно запустить вручную из GitHub Actions UI:
 
-- `3` — значение по умолчанию для smoke и regression;
-- `4` — более быстрый прогон при достаточных ресурсах runner-а;
+- `4` — значение по умолчанию для PostgreSQL regression;
 - `auto` — worker на каждое доступное CPU-ядро;
 - `0` — последовательный запуск для диагностики flaky-тестов.
 
-В pull request smoke использует 3 worker’а. Локально количество workers задаётся так:
+В pull request сначала последовательно выполняются 5 smoke-тестов, затем 34
+остальных regression-теста. Локально количество workers задаётся так:
 
 ```bash
 python3 -m pytest -m regression -n 2
@@ -333,6 +335,11 @@ python3 -m pytest tests/api/project_test.py::test_created_project_is_persisted_i
 ```
 
 Пароли и реальные DSN не коммитятся. Подробная архитектура, параметры и ограничения описаны в `docs/database-checks.md`.
+
+Production-like PostgreSQL regression запускается nightly в `05:00 МСК` и
+вручную через workflow `TeamCity PostgreSQL Regression`. TeamCity и тестовый
+adapter используют одну временную PostgreSQL database; после job containers и
+volumes удаляются.
 
 ## 8. Защита main
 

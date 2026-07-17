@@ -43,6 +43,15 @@ token через `TEAMCITY_ACCESS_TOKEN`. Пароль и token маскирую
 
 Для production-like стенда можно читать PostgreSQL напрямую. Соединение открывается по `TEAMCITY_DB_DSN`, а транзакция переводится в read-only режим. Имена таблиц и колонок проходят проверку, значения передаются параметрами.
 
+Отдельный GitHub Actions workflow поднимает TeamCity с PostgreSQL 17.5 как
+основной database backend. Перед тестами preflight открывает read-only snapshot и
+читает таблицу `USERS` напрямую, без TeamCity Backup API. JDBC driver 42.7.13
+скачивается с официального pgJDBC сайта, проверяется по SHA-256 и помещается в
+`<TeamCity Data Directory>/lib/jdbc`. Runtime password и DSN маскируются.
+
+TeamCity хранит логические флаги в PostgreSQL как `smallint`, поэтому adapter
+нормализует Python `bool` в `1/0` при параметризованных запросах.
+
 ## Конфигурация
 
 | Переменная | Значение |
@@ -54,6 +63,7 @@ token через `TEAMCITY_ACCESS_TOKEN`. Пароль и token маскирую
 | `TEAMCITY_DB_CONTAINER_BACKUP_DIR` | путь backup внутри контейнера |
 | `TEAMCITY_DB_BACKUP_TIMEOUT` | ожидание snapshot-а в секундах, default `120` |
 | `TEAMCITY_ACCESS_TOKEN` | временный Bearer token CI-администратора для REST API |
+| `TEAMCITY_POSTGRES_PASSWORD` | временный пароль PostgreSQL-контейнера в CI |
 
 Реальные логины, пароли и DSN должны передаваться через environment/CI secrets и не должны попадать в `resources/config.properties`.
 

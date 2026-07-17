@@ -81,7 +81,8 @@ merge commit `1bfe241`
 - [x] сохранить smoke gate на каждый PR;
 - [x] после успешного smoke запускать полный regression последовательно на том
   же TeamCity стенде;
-- запускать regression на `main` и по расписанию;
+- [ ] запускать основной regression на `main`;
+- [x] запускать PostgreSQL regression по nightly-расписанию и вручную;
 - выделить DB-тесты в отдельный marker/job;
 
 Текущий gated-порядок: database preflight → 5 smoke-тестов → 34 остальных
@@ -219,8 +220,8 @@ Backup-снимки базы запускаются вперемешку с stat
 - добавить pytest marker `database`;
 - запускать DB-suite отдельным последовательным job либо xdist group;
 - добавить polling для eventually consistent create/delete операций;
-- оценить переход CI DB-проверок на PostgreSQL adapter вместо backup на каждый
-  assertion.
+- [x] добавить отдельный PostgreSQL CI job с прямым read-only adapter вместо
+  backup на каждый assertion;
 
 Критерий готовности:
 

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import argparse
+import os
 import sys
 
+import psycopg
 import requests
 
 from src.main.api.database import create_database_client
@@ -12,7 +14,14 @@ def run_database_preflight() -> int:
         client = create_database_client()
         with client.snapshot() as database:
             database.fetch_all("users")
-    except (AssertionError, LookupError, OSError, RuntimeError, TimeoutError) as error:
+    except (
+        AssertionError,
+        LookupError,
+        OSError,
+        RuntimeError,
+        TimeoutError,
+        psycopg.Error,
+    ) as error:
         print(f"TeamCity database preflight failed: {error}", file=sys.stderr)
         return 1
     except requests.RequestException as error:
@@ -28,15 +37,22 @@ def run_database_preflight() -> int:
         )
         return 1
 
-    print("TeamCity database preflight passed: backup and snapshot are available.")
+    adapter = os.getenv("TEAMCITY_DB_ADAPTER", "auto").lower()
+    if adapter == "postgresql" or os.getenv("TEAMCITY_DB_DSN"):
+        print(
+            "TeamCity database preflight passed: PostgreSQL is available "
+            "through a read-only snapshot."
+        )
+    else:
+        print("TeamCity database preflight passed: backup and snapshot are available.")
     return 0
 
 
 def main() -> int:
     argparse.ArgumentParser(
         description=(
-            "Verify that TeamCity can create, expose, read, and remove a database "
-            "backup before database tests start."
+            "Verify that the configured TeamCity database adapter can open and "
+            "read a consistent snapshot before database tests start."
         )
     ).parse_args()
     return run_database_preflight()

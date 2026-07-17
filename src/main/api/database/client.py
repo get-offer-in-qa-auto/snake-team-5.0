@@ -230,7 +230,10 @@ class PostgreSQLSnapshot(DatabaseSnapshot):
         params: list[Any] = []
         if columns:
             query += " WHERE " + " AND ".join(f"{column} = %s" for column in columns)
-            params.extend(where[column] for column in columns)
+            params.extend(
+                int(where[column]) if isinstance(where[column], bool) else where[column]
+                for column in columns
+            )
         if limit is not None:
             query += f" LIMIT {limit}"
 
