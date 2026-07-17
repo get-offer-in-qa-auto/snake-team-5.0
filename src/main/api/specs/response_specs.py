@@ -15,6 +15,7 @@ class ResponseError(StrEnum):
     USERNAME_ALREADY_EXISTS = "already exists"
     USER_NOT_FOUND = "User not found"
     INCORRECT_USERNAME_OR_PASSWORD = "Incorrect username or password"
+    BUILD_STEP_NOT_FOUND = "No step with id"
 
 
 class ResponseSpecs:
@@ -60,8 +61,6 @@ class ResponseSpecs:
             assert response.status_code == HTTPStatus.BAD_REQUEST, (
                 f"Expected 400 BAD_REQUEST, got {response.status_code}. Response: {response.text}"
             )
-
-            # Not sure if it's a nice way to handle other formats in response except json
             try:
                 actual_value = response.json().get(error_key)
             except ValueError:

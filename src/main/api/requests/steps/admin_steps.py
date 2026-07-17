@@ -1,9 +1,14 @@
 import allure
 
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
+from src.main.api.models.build_step_response import (
+    BuildStepResponse,
+    BuildStepsResponse,
+)
 from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
 )
+from src.main.api.models.create_build_step_request import CreateBuildStepRequest
 from src.main.api.models.create_project_request import CreateProjectRequest
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.create_user_response import CreateUserResponse
@@ -287,6 +292,117 @@ class AdminSteps(BaseSteps):
             Endpoint.DELETE_BUILD_CONFIGURATION,
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._build_configuration_locator(build_configuration_id))
+
+    def create_build_step(
+        self, build_configuration_id: str, build_step_request: CreateBuildStepRequest
+    ) -> BuildStepResponse:
+        build_configuration_locator = self._build_configuration_locator(
+            build_configuration_id
+        )
+
+        return ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.CREATE_BUILD_STEP,
+            ResponseSpecs.entity_was_created_or_ok(),
+        ).post(build_step_request, path=f"{build_configuration_locator}/steps")
+
+    def get_build_step(
+        self, build_configuration_id: str, step_id: str
+    ) -> BuildStepResponse:
+        build_configuration_locator = self._build_configuration_locator(
+            build_configuration_id
+        )
+
+        return ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.GET_BUILD_STEP,
+            ResponseSpecs.request_returns_ok(),
+        ).get(f"{build_configuration_locator}/steps/{step_id}")
+
+    def update_build_step(
+        self,
+        build_configuration_id: str,
+        step_id: str,
+        build_step_request: CreateBuildStepRequest,
+    ) -> BuildStepResponse:
+        build_configuration_locator = self._build_configuration_locator(
+            build_configuration_id
+        )
+
+        return ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.UPDATE_BUILD_STEP,
+            ResponseSpecs.request_returns_ok(),
+        ).update(
+            build_step_request,
+            path=f"{build_configuration_locator}/steps/{step_id}",
+        )
+
+    def delete_build_step(self, build_configuration_id: str, step_id: str) -> None:
+        build_configuration_locator = self._build_configuration_locator(
+            build_configuration_id
+        )
+
+        ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.DELETE_BUILD_STEP,
+            ResponseSpecs.entity_was_deleted(),
+        ).delete(f"{build_configuration_locator}/steps/{step_id}")
+
+    def check_build_step_does_not_exist(
+        self,
+        build_configuration_id: str,
+        step_id: str,
+    ) -> None:
+        build_configuration_locator = self._build_configuration_locator(
+            build_configuration_id
+        )
+
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.GET_BUILD_STEP,
+            ResponseSpecs.request_returns_not_found_with_text(
+                ResponseError.BUILD_STEP_NOT_FOUND
+            ),
+        ).get(
+            f"{build_configuration_locator}/steps/{step_id}",
+        )
+
+    def get_build_steps(
+        self,
+        build_configuration_id: str,
+    ) -> BuildStepsResponse:
+        build_configuration_locator = self._build_configuration_locator(
+            build_configuration_id
+        )
+
+        return ValidatedCrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.GET_BUILD_STEPS,
+            ResponseSpecs.request_returns_ok(),
+        ).get(
+            f"{build_configuration_locator}/steps",
+        )
+
+    def create_build_step_with_expected_error(
+        self,
+        build_configuration_id: str,
+        build_step_request: CreateBuildStepRequest,
+    ) -> None:
+        build_configuration_locator = self._build_configuration_locator(
+            build_configuration_id
+        )
+
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.CREATE_BUILD_STEP,
+            ResponseSpecs.request_returns_not_found_with_text(
+                ResponseError.BUILD_CONFIGURATION_NOT_FOUND
+            ),
+        ).post(
+            build_step_request,
+            path=f"{build_configuration_locator}/steps",
+        )
 
     @staticmethod
     def _project_locator(project_id: str) -> str:

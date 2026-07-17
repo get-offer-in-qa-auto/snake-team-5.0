@@ -30,12 +30,8 @@ class CrudRequester(HttpRequest, CrudEndpointInterface):
         allow_redirects: bool = True,
     ) -> requests.Response:
         body = model.model_dump() if model is not None else ""
-
         response = requests.post(
-            url=(
-                f"{self.base_url}{self.endpoint.value.url}"
-                f"{('/' + path) if path is not None else ''}"
-            ),
+            url=f"{self.base_url}{self.endpoint.value.url}{('/' + path) if path is not None else ''}",
             headers=self.request_spec,
             json=body,
             allow_redirects=allow_redirects,
@@ -43,7 +39,7 @@ class CrudRequester(HttpRequest, CrudEndpointInterface):
         self.response_spec(response)
         return response
 
-    def get(self, id: int | str | None = None):
+    def get(self, id: int | str | None = None) -> requests.Response:
         response = requests.get(
             url=f"{self.base_url}{self.endpoint.value.url}{('/' + str(id)) if id is not None else ''}",
             headers=self.request_spec,
@@ -55,21 +51,17 @@ class CrudRequester(HttpRequest, CrudEndpointInterface):
         self, model: T | None = None, path: str | None = None
     ) -> requests.Response:
         body = model.model_dump() if model is not None else ""
-
         response = requests.put(
-            url=(
-                f"{self.base_url}{self.endpoint.value.url}"
-                f"{('/' + path) if path is not None else ''}"
-            ),
+            url=f"{self.base_url}{self.endpoint.value.url}{('/' + path) if path is not None else ''}",
             headers=self.request_spec,
             json=body,
         )
         self.response_spec(response)
         return response
 
-    def delete(self, id: int | str) -> requests.Response:
+    def delete(self, id: int | str | None = None) -> requests.Response:
         response = requests.delete(
-            url=f"{self.base_url}{self.endpoint.value.url}/{id}",
+            url=f"{self.base_url}{self.endpoint.value.url}{('/' + str(id)) if id is not None else ''}",
             headers=self.request_spec,
         )
         self.response_spec(response)

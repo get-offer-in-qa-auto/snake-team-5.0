@@ -25,8 +25,9 @@ class ValidatedCrudRequester(HttpRequest):
         response = self.crud_requester.get(id)
         return self._adapter.validate_python(response.json())
 
-    def update(self, model: T | None = None):
-        response = self.crud_requester.update(model)
+    def update(self, model: T | None = None, path: str | None = None):
+        response = self.crud_requester.update(model, path=path)
         return self._adapter.validate_python(response.json())
 
-    def delete(self, id: int | str): ...
+    def delete(self, id: int | str | None = None) -> None:
+        self.crud_requester.delete(id)
