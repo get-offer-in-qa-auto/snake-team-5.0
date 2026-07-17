@@ -1,5 +1,3 @@
-from typing import Optional
-
 from src.main.api.models.base_model import BaseModel
 from src.main.api.models.project_response import ProjectReferenceResponse
 
@@ -7,6 +5,6 @@ from src.main.api.models.project_response import ProjectReferenceResponse
 class BuildConfigurationResponse(BaseModel):
     id: str
     name: str
-    href: Optional[str] = None
-    projectId: Optional[str] = None
-    project: Optional[ProjectReferenceResponse] = None
+    href: str | None = None
+    projectId: str | None = None
+    project: ProjectReferenceResponse | None = None

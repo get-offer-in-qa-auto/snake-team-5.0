@@ -1,0 +1,74 @@
+name: teamcity-autotests-postgresql-ci
+
+services:
+  teamcity-postgres:
+    image: postgres:17.5-alpine
+    container_name: teamcity-postgresql-ci
+    environment:
+      POSTGRES_DB: teamcity
+      POSTGRES_USER: teamcity
+      POSTGRES_PASSWORD: ${TEAMCITY_POSTGRES_PASSWORD:?TEAMCITY_POSTGRES_PASSWORD is required}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8
+    ports:
+      - "${TEAMCITY_POSTGRES_HOST_PORT:-55432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U teamcity -d teamcity"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - teamcity-postgresql-data:/var/lib/postgresql/data
+
+  prepare-teamcity-data:
+    image: curlimages/curl:8.12.1
+    user: "0:0"
+    volumes:
+      - teamcity-data:/data/teamcity_server/datadir
+      - ./prepare-teamcity-data.sh:/prepare-teamcity-data.sh:ro
+    entrypoint: ["/bin/sh", "/prepare-teamcity-data.sh"]
+
+  teamcity-server:
+    image: jetbrains/teamcity-server:2026.1.1
+    container_name: teamcity-server-postgresql-ci
+    depends_on:
+      prepare-teamcity-data:
+        condition: service_completed_successfully
+      teamcity-postgres:
+        condition: service_healthy
+    ports:
+      - "${TEAMCITY_POSTGRES_HTTP_PORT:-8111}:8111"
+    environment:
+      TEAMCITY_DB_URL: jdbc:postgresql://teamcity-postgres:5432/teamcity
+      TEAMCITY_DB_USER: teamcity
+      TEAMCITY_DB_PASSWORD: ${TEAMCITY_POSTGRES_PASSWORD:?TEAMCITY_POSTGRES_PASSWORD is required}
+      TEAMCITY_SERVER_OPTS: "-Dteamcity.superUser.token=autotestpostgresqlsuperusertoken -Dteamcity.internal.accessTokens.enableCreationForOtherUsers=true"
+    volumes:
+      - teamcity-data:/data/teamcity_server/datadir
+      - teamcity-logs:/opt/teamcity/logs
+
+  teamcity-agent:
+    image: jetbrains/teamcity-agent:2026.1.1
+    container_name: teamcity-agent-postgresql-ci
+    depends_on:
+      - teamcity-server
+    environment:
+      SERVER_URL: http://teamcity-server:8111
+      AGENT_NAME: postgresql-ci-agent-1
+    volumes:
+      - teamcity-agent-conf:/data/teamcity_agent/conf
+      - teamcity-agent-work:/opt/buildagent/work
+      - teamcity-agent-system:/opt/buildagent/system
+      - teamcity-agent-temp:/opt/buildagent/temp
+      - teamcity-agent-tools:/opt/buildagent/tools
+      - teamcity-agent-plugins:/opt/buildagent/plugins
+
+volumes:
+  teamcity-postgresql-data:
+  teamcity-data:
+  teamcity-logs:
+  teamcity-agent-conf:
+  teamcity-agent-work:
+  teamcity-agent-system:
+  teamcity-agent-temp:
+  teamcity-agent-tools:
+  teamcity-agent-plugins:

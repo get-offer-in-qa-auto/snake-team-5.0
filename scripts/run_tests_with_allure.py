@@ -5,7 +5,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 DEFAULT_RESULTS_DIR = Path("artifacts/allure-results")
 DEFAULT_REPORT_DIR = Path("artifacts/allure-report")
 

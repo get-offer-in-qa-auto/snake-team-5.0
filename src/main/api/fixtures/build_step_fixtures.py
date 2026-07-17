@@ -1,11 +1,15 @@
 import random
 import uuid
 from collections.abc import Callable
+
 import pytest
+
 from src.main.api.generators.build_step_data import BUILD_STEP_SCRIPTS
-from src.main.api.models.create_build_step_request import (BuildStepProperties,
-                                                           BuildStepProperty,
-                                                           CreateBuildStepRequest)
+from src.main.api.models.create_build_step_request import (
+    BuildStepProperties,
+    BuildStepProperty,
+    CreateBuildStepRequest,
+)
 
 
 @pytest.fixture(scope="function")
@@ -23,9 +27,7 @@ def build_step_request_factory() -> Callable[..., CreateBuildStepRequest]:
                 property=[
                     BuildStepProperty(
                         name="script.content",
-                        value=script or random.choice(
-                            BUILD_STEP_SCRIPTS
-                        ),
+                        value=script or random.choice(BUILD_STEP_SCRIPTS),
                     ),
                     BuildStepProperty(
                         name="use.custom.script",

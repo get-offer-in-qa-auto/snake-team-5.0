@@ -1,5 +1,3 @@
-from typing import Optional
-
 from src.main.api.models.base_model import BaseModel
 
 
@@ -11,7 +9,7 @@ class RoleAssignmentRequest(BaseModel):
 class RoleAssignmentResponse(BaseModel):
     roleId: str
     scope: str
-    href: Optional[str] = None
+    href: str | None = None
 
 
 class RoleAssignmentsResponse(BaseModel):

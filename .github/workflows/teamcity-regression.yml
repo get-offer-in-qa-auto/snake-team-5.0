@@ -26,11 +26,14 @@ jobs:
         uses: ./.github/actions/teamcity-pytest
         with:
           pytest_marker: regression
+          pytest_workers: "0"
           test_label: regression
           junit_filename: teamcity-regression.xml
           logs_artifact_name: teamcity-regression-logs
           results_artifact_name: teamcity-regression-test-results
           page_artifact_name: teamcity-regression-login-page
+          database_preflight: "true"
+          smoke_gate: "true"
 
   deploy-allure-pages:
     name: Publish Allure report page

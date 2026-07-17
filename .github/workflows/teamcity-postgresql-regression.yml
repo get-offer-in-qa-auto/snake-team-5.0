@@ -1,0 +1,61 @@
+name: TeamCity PostgreSQL Regression
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      pytest_workers:
+        description: Number of parallel pytest workers for the regression stage.
+        required: false
+        default: "4"
+        type: choice
+        options:
+          - "0"
+          - "2"
+          - "3"
+          - "4"
+          - auto
+
+concurrency:
+  group: teamcity-postgresql-regression-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  postgresql-regression:
+    name: Run TeamCity PostgreSQL regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate PostgreSQL CI credentials
+        shell: bash
+        run: |
+          password="$(openssl rand -hex 24)"
+          dsn="postgresql://teamcity:${password}@localhost:55432/teamcity"
+          echo "::add-mask::$password"
+          echo "::add-mask::$dsn"
+          echo "TEAMCITY_POSTGRES_PASSWORD=$password" >> "$GITHUB_ENV"
+          echo "TEAMCITY_DB_ADAPTER=postgresql" >> "$GITHUB_ENV"
+          echo "TEAMCITY_DB_DSN=$dsn" >> "$GITHUB_ENV"
+
+      - name: Run TeamCity PostgreSQL regression tests
+        id: teamcity-pytest
+        uses: ./.github/actions/teamcity-pytest
+        with:
+          compose_file: ci/teamcity-postgresql/compose.yaml
+          server_container: teamcity-server-postgresql-ci
+          database_mode: external
+          pytest_marker: regression
+          pytest_workers: ${{ inputs.pytest_workers || '4' }}
+          test_label: postgresql-regression
+          junit_filename: teamcity-postgresql-regression.xml
+          logs_artifact_name: teamcity-postgresql-regression-logs
+          results_artifact_name: teamcity-postgresql-regression-test-results
+          page_artifact_name: teamcity-postgresql-login-page
+          database_preflight: "true"
+          smoke_gate: "true"

@@ -4,16 +4,19 @@
 
 ## Текущий этап
 
-Первый CI-этап проверяет запуск TeamCity стенда и выполняет минимальный smoke-test.
-
-На текущем этапе pipeline запускает pytest smoke-test с marker `smoke`: TeamCity login page должна открыть HTTP-соединение и вернуть ожидаемый ответ без авторизации.
+PR pipeline поднимает один чистый TeamCity стенд и выполняет gated regression.
+Проверки идут строго последовательно: database preflight, 5 smoke-тестов и затем
+34 остальных regression-теста. Если preflight или smoke падает, следующий этап
+не запускается.
 
 - поднять TeamCity Server;
 - поднять TeamCity Agent;
 - дождаться HTTP-ответа от `http://localhost:8111/login.html`;
 - показать понятное readiness-состояние: `READY_LOGIN_PAGE`, `AUTH_REQUIRED` или `FIRST_START_REQUIRED`;
-- запустить smoke-test через `pytest -m smoke`;
-- сохранить JUnit XML test result;
+- проверить полный backup/copy/read/remove lifecycle через database preflight;
+- запустить smoke gate через `pytest -m smoke -n 0`;
+- после успешного smoke запустить `pytest -m "regression and not smoke" -n 0`;
+- сохранить отдельные JUnit XML для smoke gate и оставшегося regression;
 - сохранить Allure results;
 - сразу собрать Allure HTML-report;
 - опубликовать Allure HTML-report как GitHub Pages page с постоянной ссылкой для любого запуска;
@@ -33,11 +36,46 @@ CI Docker Compose:
 ci/teamcity/compose.yaml
 ```
 
+## PostgreSQL production-like regression
+
+Отдельный workflow `.github/workflows/teamcity-postgresql-regression.yml`
+поднимает один production-like стенд:
+
+```text
+TeamCity Server + TeamCity Agent + PostgreSQL 17.5
+```
+
+Он запускается:
+
+- nightly в `02:00 UTC` (`05:00 МСК`);
+- вручную через `Actions → TeamCity PostgreSQL Regression → Run workflow`.
+
+Для ручного и scheduled запуска regression stage использует 4 xdist worker по
+умолчанию. Smoke gate остаётся последовательным. Порядок выполнения:
+
+```text
+PostgreSQL health → TeamCity external DB bootstrap → read-only DB preflight
+→ 5 smoke tests → 34 regression tests in 4 workers
+```
+
+Workflow не запускается на каждый PR и не публикует GitHub Pages. JUnit, Allure
+и Docker/TeamCity logs сохраняются как artifacts на 7 дней. Database password и
+DSN создаются внутри runner, маскируются и удаляются вместе с Docker volumes.
+
+PostgreSQL compose-файл: `ci/teamcity-postgresql/compose.yaml`.
+
 ## Почему это отдельный этап
 
 Для GitHub Actions нельзя считать успешным только наличие workflow-файла. Нам нужно сначала доказать, что чистый runner может скачать Docker images, поднять TeamCity Server и Agent, открыть порт `8111` и получить ответ от web-приложения.
 
-На чистом data directory TeamCity может остановиться на first-start confirmation или setup wizard. До появления bootstrap-скрипта это ожидаемое промежуточное состояние.
+На чистом data directory TeamCity останавливается на first-start confirmation и
+setup wizard. Pipeline автоматически подтверждает новый стенд, выбирает internal
+HSQLDB, принимает лицензию и создает временного CI-администратора.
+
+Пароль администратора генерируется внутри runner и маскируется. После setup
+bootstrap выпускает временный access token, и административные REST-запросы
+выполняются через Bearer authentication. До pytest запускается реальный TeamCity
+database backup preflight. TeamCity стартует один раз для всех трёх этапов.
 
 ## Что считается успехом сейчас
 
@@ -45,7 +83,9 @@ Pipeline считается успешным, если:
 
 - Docker Compose успешно поднял containers;
 - TeamCity web endpoint начал отвечать;
-- pytest smoke-test подтвердил, что TeamCity login page открылась;
+- database preflight подтвердил доступность Backup API и snapshot;
+- все smoke-тесты прошли последовательно;
+- остальные regression-тесты прошли последовательно;
 - GitHub Step Summary показывает итоговое состояние TeamCity readiness;
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
@@ -69,7 +109,9 @@ teamcity-login-page
 - `headers.txt` — HTTP headers;
 - `readiness.txt` — человекочитаемая классификация состояния.
 
-Workflow можно запустить вручную через `Run workflow`; дополнительных параметров для запуска нет.
+Основной HSQLDB workflow можно запустить вручную через `Run workflow`. PR и
+ручной HSQLDB regression используют фиксированный последовательный режим
+`pytest_workers: 0`. PostgreSQL workflow по умолчанию использует 4 worker.
 
 ## Allure report
 
@@ -86,21 +128,22 @@ teamcity-<suite>-allure-results
 teamcity-<suite>-allure-report
 ```
 
-Для smoke suite это будут:
+Для отдельной smoke suite это будут:
 
 ```text
 teamcity-smoke-allure-results
 teamcity-smoke-allure-report
 ```
 
-Для regression suite:
+Gated PR pipeline публикует объединённый regression report, содержащий результаты
+smoke gate и остальных regression-тестов:
 
 ```text
 teamcity-regression-allure-results
 teamcity-regression-allure-report
 ```
 
-Перед генерацией HTML-report workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. Для этого используется ветка `gh-pages`: `smoke` берет историю только из прошлых `reports/smoke/...`, а `regression` только из прошлых `reports/regression/...`.
+Перед генерацией HTML-report workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. Для этого используется ветка `gh-pages`: `smoke` берет историю только из прошлых `reports/smoke/...`, а gated regression — только из прошлых `reports/regression/...`.
 
 GitHub Actions artifacts хранятся 7 дней:
 
@@ -144,13 +187,6 @@ Settings -> Pages -> Build and deployment -> Source: GitHub Actions
 
 ## Следующий этап
 
-Следующим шагом нужно добавить bootstrap:
-
-- подтвердить first start без ручного UI;
-- выбрать `Internal database / HSQLDB`;
-- создать administrator user или access token;
-- дождаться доступности REST API;
-- авторизовать agent;
-- проверить состояние `authorized + connected`.
-
-После этого можно расширять pytest smoke/e2e tests.
+Bootstrap сервера, создание CI-администратора и Bearer token уже реализованы.
+Следующим этапом остаются автоматическая авторизация agent, проверка состояния
+`authorized + connected` и запуск минимального реального build.

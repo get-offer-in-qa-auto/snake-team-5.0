@@ -44,12 +44,11 @@ Internal HSQLDB подходит для локального изучения п
 TeamCity Server + TeamCity Agent + PostgreSQL
 ```
 
-Это окружение нужно не для каждого быстрого прогона, а для более дорогой проверки:
+Это окружение запускается отдельным GitHub Actions workflow для более дорогой
+проверки:
 
-- на `main`;
 - nightly;
-- перед release;
-- вручную перед важными изменениями инфраструктуры.
+- вручную из Actions UI перед release или важными изменениями инфраструктуры.
 
 Минимальные проверки для PostgreSQL-окружения:
 
@@ -153,6 +152,7 @@ Main / merge:
   Production-like CI на PostgreSQL
 
 Nightly / scheduled:
+  Full regression на PostgreSQL
   Database compatibility smoke на MySQL
   Database compatibility smoke на MariaDB
   Database compatibility smoke на Microsoft SQL Server
@@ -160,6 +160,10 @@ Nightly / scheduled:
 ```
 
 Oracle и Microsoft SQL Server могут быть тяжелее для локального и CI-запуска, поэтому их можно вынести в scheduled/manual job, если инфраструктура или лицензирование усложнят регулярный запуск.
+
+Реализованный PostgreSQL workflow запускается ежедневно в `02:00 UTC`
+(`05:00 МСК`) и вручную. Regression stage использует 4 xdist worker по умолчанию,
+а database adapter читает ту же PostgreSQL напрямую в read-only транзакциях.
 
 ## Источники
 
