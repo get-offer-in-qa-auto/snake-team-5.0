@@ -482,6 +482,7 @@ class AdminSteps(BaseSteps):
     ) -> None:
         self.verify_response_matches(build_step_request, updated_step)
         assert updated_step.id == original_step.id
+        assert updated_step.properties is not None
 
         expected_properties = {
             prop.name: prop.value for prop in build_step_request.properties.property
