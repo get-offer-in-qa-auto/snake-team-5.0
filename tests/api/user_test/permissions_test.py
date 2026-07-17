@@ -2,8 +2,6 @@ import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
-from src.main.api.models.comparison.entity_assertions import EntityAssertions
-from src.main.api.models.comparison.model_assertions import ModelAssertions
 from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
 )
@@ -23,14 +21,11 @@ def test_assign_role_to_user(api_manager: ApiManager, user_request: CreateUserRe
     assigned_role = api_manager.admin_steps.assign_user_role(
         user_request.username, Role.SYSTEM_ADMIN, RoleScope.GLOBAL
     )
-    user_roles = api_manager.admin_steps.get_user_roles(user_request.username)
-
-    assert assigned_role.roleId == Role.SYSTEM_ADMIN
-    assert assigned_role.scope == RoleScope.GLOBAL
-    assert assigned_role.href
-    assert any(
-        role.roleId == Role.SYSTEM_ADMIN and role.scope == RoleScope.GLOBAL
-        for role in user_roles.role
+    api_manager.admin_steps.verify_user_role_assigned(
+        user_request.username,
+        assigned_role,
+        Role.SYSTEM_ADMIN,
+        RoleScope.GLOBAL,
     )
 
 
@@ -48,7 +43,9 @@ def test_admin_can_create_project(
     )
     stored_project = api_manager.admin_steps.get_project(project.id)
 
-    ModelAssertions(project_request, stored_project).match()
+    api_manager.admin_steps.verify_project_stored(
+        project_request, stored_project, "_Root"
+    )
 
 
 @allure.title("Limited user cannot create project")
@@ -82,8 +79,9 @@ def test_admin_can_create_build_configuration(
         configuration.id
     )
 
-    ModelAssertions(build_configuration_request, stored_configuration).match()
-    EntityAssertions.belongs_to_project(stored_configuration, project.id)
+    api_manager.admin_steps.verify_build_configuration_stored(
+        build_configuration_request, stored_configuration, project.id
+    )
 
 
 @allure.title("Limited user cannot create build configuration")

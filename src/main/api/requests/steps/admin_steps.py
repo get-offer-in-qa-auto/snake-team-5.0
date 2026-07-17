@@ -5,6 +5,7 @@ from src.main.api.models.build_step_response import (
     BuildStepResponse,
     BuildStepsResponse,
 )
+from src.main.api.models.comparison.entity_assertions import EntityAssertions
 from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
 )
@@ -80,6 +81,18 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_ok(),
         ).get(self._user_locator(user_request.username))
 
+    @allure.step("Verify user was created")
+    def verify_user_created(
+        self,
+        user_request: CreateUserRequest,
+        created_user: CreateUserResponse,
+        stored_user: CreateUserResponse,
+    ) -> None:
+        self.verify_response_matches(user_request, created_user)
+        self.verify_response_matches(user_request, stored_user)
+        EntityAssertions.has_id(created_user)
+        EntityAssertions.has_href(created_user)
+
     @allure.step("Verify user {username} does not exist")
     def check_user_does_not_exist(self, username: str):
         CrudRequester(
@@ -126,6 +139,25 @@ class AdminSteps(BaseSteps):
             Endpoint.GET_USER_ROLES,
             ResponseSpecs.request_returns_ok(),
         ).get(f"{self._user_locator(username)}/roles")
+
+    @allure.step(
+        "Verify role {role_id} with scope {scope} is assigned to user {username}"
+    )
+    def verify_user_role_assigned(
+        self,
+        username: str,
+        assigned_role: RoleAssignmentResponse,
+        role_id: str,
+        scope: str,
+    ) -> None:
+        assert assigned_role.roleId == role_id
+        assert assigned_role.scope == scope
+        assert assigned_role.href
+
+        user_roles = self.get_user_roles(username)
+        assert any(
+            role.roleId == role_id and role.scope == scope for role in user_roles.role
+        ), f"Role {role_id!r} with scope {scope!r} is not assigned to user {username!r}"
 
     @allure.step("Get all users as administrator")
     def get_all_users(self) -> list[CreateUserRequest]:
@@ -184,6 +216,27 @@ class AdminSteps(BaseSteps):
             Endpoint.GET_PROJECT,
             ResponseSpecs.request_returns_ok(),
         ).get(self._project_locator(project_id))
+
+    @allure.step("Verify project was created")
+    def verify_project_created(
+        self,
+        project_request: CreateProjectRequest,
+        created_project: ProjectResponse,
+        stored_project: ProjectResponse,
+    ) -> None:
+        self.verify_response_matches(project_request, created_project)
+        EntityAssertions.has_href(created_project)
+        self.verify_project_stored(project_request, stored_project, "_Root")
+
+    @allure.step("Verify project is stored in expected parent")
+    def verify_project_stored(
+        self,
+        project_request: CreateProjectRequest,
+        stored_project: ProjectResponse,
+        expected_parent_id: str,
+    ) -> None:
+        self.verify_response_matches(project_request, stored_project)
+        EntityAssertions.has_parent_project(stored_project, expected_parent_id)
 
     @allure.step("Verify project {project_id} does not exist")
     def check_project_does_not_exist(self, project_id: str):
@@ -274,6 +327,30 @@ class AdminSteps(BaseSteps):
             Endpoint.GET_BUILD_CONFIGURATION,
             ResponseSpecs.request_returns_ok(),
         ).get(self._build_configuration_locator(build_configuration_id))
+
+    @allure.step("Verify build configuration was created")
+    def verify_build_configuration_created(
+        self,
+        configuration_request: CreateBuildConfigurationRequest,
+        created_configuration: BuildConfigurationResponse,
+        stored_configuration: BuildConfigurationResponse,
+        expected_project_id: str,
+    ) -> None:
+        self.verify_response_matches(configuration_request, created_configuration)
+        EntityAssertions.has_href(created_configuration)
+        self.verify_build_configuration_stored(
+            configuration_request, stored_configuration, expected_project_id
+        )
+
+    @allure.step("Verify build configuration is stored in expected project")
+    def verify_build_configuration_stored(
+        self,
+        configuration_request: CreateBuildConfigurationRequest,
+        stored_configuration: BuildConfigurationResponse,
+        expected_project_id: str,
+    ) -> None:
+        self.verify_response_matches(configuration_request, stored_configuration)
+        EntityAssertions.belongs_to_project(stored_configuration, expected_project_id)
 
     @allure.step("Verify build configuration {build_configuration_id} does not exist")
     def check_build_configuration_does_not_exist(self, build_configuration_id: str):
@@ -383,6 +460,54 @@ class AdminSteps(BaseSteps):
         ).get(
             f"{build_configuration_locator}/steps",
         )
+
+    @allure.step("Verify build step was created")
+    def verify_build_step_created(
+        self,
+        build_step_request: CreateBuildStepRequest,
+        created_step: BuildStepResponse,
+        stored_step: BuildStepResponse,
+    ) -> None:
+        self.verify_response_matches(build_step_request, created_step)
+        self.verify_response_matches(build_step_request, stored_step)
+        assert created_step.id.startswith("RUNNER_")
+        assert stored_step.id == created_step.id
+
+    @allure.step("Verify build step was updated")
+    def verify_build_step_updated(
+        self,
+        build_step_request: CreateBuildStepRequest,
+        original_step: BuildStepResponse,
+        updated_step: BuildStepResponse,
+    ) -> None:
+        self.verify_response_matches(build_step_request, updated_step)
+        assert updated_step.id == original_step.id
+
+        expected_properties = {
+            prop.name: prop.value for prop in build_step_request.properties.property
+        }
+        actual_properties = {
+            prop.name: prop.value for prop in updated_step.properties.property
+        }
+        assert (
+            actual_properties["script.content"] == expected_properties["script.content"]
+        )
+
+    @allure.step("Verify multiple build steps were created")
+    def verify_build_steps_created(
+        self,
+        requests_and_steps: list[tuple[CreateBuildStepRequest, BuildStepResponse]],
+        stored_steps: BuildStepsResponse,
+    ) -> None:
+        assert stored_steps.count == len(requests_and_steps)
+
+        created_ids = [step.id for _, step in requests_and_steps]
+        assert len(created_ids) == len(set(created_ids))
+
+        stored_steps_by_id = {step.id: step for step in stored_steps.step}
+        for request, created_step in requests_and_steps:
+            assert created_step.id in stored_steps_by_id
+            self.verify_response_matches(request, stored_steps_by_id[created_step.id])
 
     def create_build_step_with_expected_error(
         self,

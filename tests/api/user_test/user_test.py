@@ -2,8 +2,6 @@ import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
-from src.main.api.models.comparison.entity_assertions import EntityAssertions
-from src.main.api.models.comparison.model_assertions import ModelAssertions
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.specs.response_specs import ResponseError
 
@@ -17,10 +15,7 @@ def test_create_user(api_manager: ApiManager, user_request: CreateUserRequest):
     user = api_manager.admin_steps.create_user(user_request)
     stored_user = api_manager.admin_steps.get_user(user.username)
 
-    ModelAssertions(user_request, user).match()
-    ModelAssertions(user_request, stored_user).match()
-    EntityAssertions.has_id(user)
-    EntityAssertions.has_href(user)
+    api_manager.admin_steps.verify_user_created(user_request, user, stored_user)
 
 
 @allure.title("Created user is persisted in database")
@@ -50,7 +45,7 @@ def test_create_user_with_existing_username(
     )
 
     stored_user = api_manager.admin_steps.get_user(user_request.username)
-    ModelAssertions(user_request, stored_user).match()
+    api_manager.admin_steps.verify_response_matches(user_request, stored_user)
 
 
 @allure.title("User cannot be created without authorization")
@@ -91,7 +86,7 @@ def test_deleted_user_cannot_authenticate(
 ):
     user = api_manager.admin_steps.create_user(user_request)
     authenticated_user = api_manager.admin_steps.get_user_as(user_request)
-    ModelAssertions(user_request, authenticated_user).match()
+    api_manager.user_steps.verify_response_matches(user_request, authenticated_user)
 
     api_manager.admin_steps.delete_user(user.id)
     created_objects.remove(user)

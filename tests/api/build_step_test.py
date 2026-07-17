@@ -3,7 +3,6 @@ import pytest
 
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
-from src.main.api.models.comparison.model_assertions import ModelAssertions
 from src.main.api.models.create_build_step_request import CreateBuildStepRequest
 from src.main.api.models.project_response import ProjectResponse
 
@@ -23,11 +22,9 @@ def test_create_build_step(
         build_configuration.id, created_step.id
     )
 
-    ModelAssertions(build_step_request, created_step).match()
-    ModelAssertions(build_step_request, stored_step).match()
-
-    assert created_step.id.startswith("RUNNER_")
-    assert stored_step.id == created_step.id
+    api_manager.admin_steps.verify_build_step_created(
+        build_step_request, created_step, stored_step
+    )
 
 
 @allure.title("Created build step is persisted in TeamCity configuration")
@@ -73,17 +70,9 @@ def test_update_build_step(
         build_configuration.id, created_step.id
     )
 
-    ModelAssertions(updated_request, updated_step).match()
-
-    expected_properties = {
-        prop.name: prop.value for prop in updated_request.properties.property
-    }
-    actual_properties = {
-        prop.name: prop.value for prop in updated_step.properties.property
-    }
-
-    assert updated_step.id == created_step.id
-    assert actual_properties["script.content"] == expected_properties["script.content"]
+    api_manager.admin_steps.verify_build_step_updated(
+        updated_request, created_step, updated_step
+    )
 
 
 @allure.title("Updated build step is persisted in TeamCity configuration")
@@ -171,13 +160,13 @@ def test_create_multiple_build_steps(
     )
 
     stored_steps = api_manager.admin_steps.get_build_steps(build_configuration.id)
-    stored_steps_by_id = {step.id: step for step in stored_steps.step}
-
-    assert stored_steps.count == 2
-    assert first_created_step.id != second_created_step.id
-
-    ModelAssertions(first_request, stored_steps_by_id[first_created_step.id]).match()
-    ModelAssertions(second_request, stored_steps_by_id[second_created_step.id]).match()
+    api_manager.admin_steps.verify_build_steps_created(
+        [
+            (first_request, first_created_step),
+            (second_request, second_created_step),
+        ],
+        stored_steps,
+    )
 
 
 @pytest.mark.api

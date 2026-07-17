@@ -2,8 +2,6 @@ import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
-from src.main.api.models.comparison.entity_assertions import EntityAssertions
-from src.main.api.models.comparison.model_assertions import ModelAssertions
 from src.main.api.models.create_project_request import CreateProjectRequest
 from src.main.api.specs.response_specs import ResponseError
 
@@ -17,10 +15,9 @@ def test_create_project(api_manager: ApiManager, project_request: CreateProjectR
     project_response = api_manager.admin_steps.create_project(project_request)
     stored_project = api_manager.admin_steps.get_project(project_response.id)
 
-    ModelAssertions(project_request, project_response).match()
-    ModelAssertions(project_request, stored_project).match()
-    EntityAssertions.has_href(project_response)
-    EntityAssertions.has_parent_project(stored_project, "_Root")
+    api_manager.admin_steps.verify_project_created(
+        project_request, project_response, stored_project
+    )
 
 
 @allure.title("Created project is persisted in database")
@@ -47,8 +44,9 @@ def test_create_subproject(api_manager: ApiManager, project_request_factory):
     child_project = api_manager.admin_steps.create_project(child_request)
     stored_child_project = api_manager.admin_steps.get_project(child_project.id)
 
-    ModelAssertions(child_request, stored_child_project).match()
-    EntityAssertions.has_parent_project(stored_child_project, parent_project.id)
+    api_manager.admin_steps.verify_project_stored(
+        child_request, stored_child_project, parent_project.id
+    )
 
 
 @allure.title("Project cannot be created with existing id")
@@ -67,7 +65,7 @@ def test_create_project_with_existing_id(
     )
 
     stored_project = api_manager.admin_steps.get_project(project_request.id)
-    ModelAssertions(project_request, stored_project).match()
+    api_manager.admin_steps.verify_response_matches(project_request, stored_project)
 
 
 @allure.title("Project cannot be created with existing name in same parent")
@@ -110,10 +108,12 @@ def test_create_projects_with_same_name_in_different_parents(
     stored_first_child = api_manager.admin_steps.get_project(first_child.id)
     stored_second_child = api_manager.admin_steps.get_project(second_child.id)
 
-    ModelAssertions(first_child_request, stored_first_child).match()
-    ModelAssertions(second_child_request, stored_second_child).match()
-    EntityAssertions.has_parent_project(stored_first_child, first_parent.id)
-    EntityAssertions.has_parent_project(stored_second_child, second_parent.id)
+    api_manager.admin_steps.verify_project_stored(
+        first_child_request, stored_first_child, first_parent.id
+    )
+    api_manager.admin_steps.verify_project_stored(
+        second_child_request, stored_second_child, second_parent.id
+    )
 
 
 @allure.title("Project cannot be created with unknown parent")
@@ -175,5 +175,5 @@ def test_create_project_with_different_id_and_name(
     project_response = api_manager.admin_steps.create_project(project_request)
     stored_project = api_manager.admin_steps.get_project(project_response.id)
 
-    assert project_request.id != project_request.name
-    ModelAssertions(project_request, stored_project).match()
+    api_manager.admin_steps.verify_distinct_id_and_name(project_request)
+    api_manager.admin_steps.verify_response_matches(project_request, stored_project)

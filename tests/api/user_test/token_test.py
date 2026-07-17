@@ -2,7 +2,6 @@ import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
-from src.main.api.models.comparison.model_assertions import ModelAssertions
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.user_token import CreateUserTokenRequest
 
@@ -20,13 +19,9 @@ def test_create_user_token(
     api_manager.admin_steps.create_user(user_request)
 
     token = api_manager.user_steps.create_user_token(user_request, user_token_request)
-    stored_tokens = api_manager.user_steps.get_user_tokens(user_request)
-    stored_token = next(item for item in stored_tokens.token if item.name == token.name)
-
-    ModelAssertions(user_token_request, token).match()
-    assert token.value
-    assert token.creationTime
-    assert stored_token.value is None
+    api_manager.user_steps.verify_user_token_created(
+        user_request, user_token_request, token
+    )
 
 
 @allure.title("Request with valid token is authorized")
@@ -45,7 +40,7 @@ def test_request_with_valid_token(
         user_request.username, token.value
     )
 
-    ModelAssertions(user_request, authenticated_user).match()
+    api_manager.user_steps.verify_response_matches(user_request, authenticated_user)
 
 
 @allure.title("Request without token is rejected")
