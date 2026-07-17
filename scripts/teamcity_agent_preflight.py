@@ -25,7 +25,10 @@ def main() -> int:
     while time.monotonic() < deadline:
         response = requests.get(
             f"{base_url}/agents",
-            params={"locator": "authorized:any,defaultFilter:false"},
+            params={
+                "locator": "authorized:any,defaultFilter:false",
+                "fields": "agent(id,name,authorized,connected,enabled)",
+            },
             headers=headers,
             timeout=20,
         )
