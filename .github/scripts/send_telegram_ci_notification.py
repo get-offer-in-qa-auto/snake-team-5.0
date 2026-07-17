@@ -16,6 +16,18 @@ from typing import Any
 
 HTTP_TIMEOUT_SECONDS = 20
 LOGGER = logging.getLogger("telegram-ci-notify")
+STATUS_ICONS = {
+    "action_required": "⚠️",
+    "cancelled": "⏹️",
+    "failure": "❌",
+    "in_progress": "⏳",
+    "neutral": "➖",
+    "queued": "⏳",
+    "skipped": "⏭️",
+    "stale": "⚠️",
+    "success": "✅",
+    "timed_out": "⏱️",
+}
 
 
 @dataclass(frozen=True)
@@ -309,6 +321,10 @@ def html_link(url: str, label: str) -> str:
     return f'<a href="{html.escape(url, quote=True)}">{html_escape(label)}</a>'
 
 
+def html_code(value: object) -> str:
+    return f"<code>{html_escape(value)}</code>"
+
+
 def int_value(value: object) -> int:
     try:
         return int(value)
@@ -318,6 +334,14 @@ def int_value(value: object) -> int:
 
 def slugify(value: str) -> str:
     return re.sub(r"[^a-zA-Z0-9._-]+", "-", value.strip()).strip("-").lower()
+
+
+def status_icon(status: str) -> str:
+    return STATUS_ICONS.get(status.lower(), "❔")
+
+
+def status_label(status: str) -> str:
+    return status.replace("_", " ").strip().lower() or "unknown"
 
 
 def pull_request_line(run: WorkflowRun) -> str:
@@ -330,18 +354,22 @@ def pull_request_line(run: WorkflowRun) -> str:
 
     label = f"PR #{run.pr_number}"
     return (
-        f"Pull request: {html_link(pr_url, label)}"
+        f"🔀 Pull request: {html_link(pr_url, label)}"
         if pr_url
-        else f"Pull request: {html_escape(label)}"
+        else f"🔀 Pull request: {html_escape(label)}"
     )
 
 
 def job_lines(jobs: list[WorkflowJob]) -> list[str]:
     if not jobs:
-        return ["Jobs: unknown"]
+        return ["<b>Jobs</b>", "❔ No job data"]
 
-    return ["Jobs:"] + [
-        f"- {html_escape(job.name)}: {html_escape(job.status)}" for job in jobs
+    return ["<b>Jobs</b>"] + [
+        (
+            f"{status_icon(job.status)} {html_escape(job.name)}"
+            f" — {html_escape(status_label(job.status))}"
+        )
+        for job in jobs
     ]
 
 
@@ -393,29 +421,28 @@ def build_allure_report(
     )
 
 
-def allure_summary_text(summary: AllureSummary) -> str:
-    return (
-        f"total {summary.total}, "
-        f"passed {summary.passed}, "
-        f"failed {summary.failed}, "
-        f"broken {summary.broken}, "
-        f"skipped {summary.skipped}"
-    )
-
-
 def allure_lines(report: AllureReport | None) -> list[str]:
     if report is None:
         return []
 
-    line = (
-        "Allure report: "
-        f"{html_link(report.url, 'open report')} "
-        f"({html_link(report.history_url, f'{report.suite} history')})"
-    )
-    lines = [line]
+    lines = [
+        "<b>Allure</b>",
+        (
+            f"📊 {html_link(report.url, 'Open report')}"
+            f" · {html_link(report.history_url, 'Report history')}"
+        ),
+    ]
     if report.summary is not None:
-        lines.append(
-            f"Allure tests: {html_escape(allure_summary_text(report.summary))}"
+        lines[1:1] = (
+            f"🧪 Total: {report.summary.total}",
+            (
+                f"✅ Passed: {report.summary.passed}"
+                f" · ❌ Failed: {report.summary.failed}"
+            ),
+            (
+                f"💥 Broken: {report.summary.broken}"
+                f" · ⏭️ Skipped: {report.summary.skipped}"
+            ),
         )
 
     return lines
@@ -427,20 +454,27 @@ def build_message(
     allure_report: AllureReport | None,
 ) -> str:
     lines = [
-        f"<b>{html_escape(run.name)}: {html_escape(run.status)}</b>",
-        f"Branch: {html_escape(run.branch)}",
-        f"Event: {html_escape(run.event_name)}",
-        f"Commit: {html_escape(run.short_sha)}",
+        f"{status_icon(run.status)} <b>{html_escape(run.name)}</b>",
+        f"Status: <b>{html_escape(status_label(run.status))}</b>",
+        "",
+        "<b>Run details</b>",
+        f"🌿 Branch: {html_code(run.branch)}",
+        f"⚡ Event: {html_code(run.event_name)}",
+        f"🔖 Commit: {html_code(run.short_sha)}",
     ]
 
     if pr_line := pull_request_line(run):
         lines.append(pr_line)
 
+    lines.append("")
     lines.extend(job_lines(jobs))
-    lines.extend(allure_lines(allure_report))
+
+    if allure_report is not None:
+        lines.append("")
+        lines.extend(allure_lines(allure_report))
 
     if run.url:
-        lines.append(f"Run: {html_link(run.url, 'GitHub Actions')}")
+        lines.extend(("", f"🔗 {html_link(run.url, 'Open GitHub Actions run')}"))
 
     return "\n".join(lines)
 
