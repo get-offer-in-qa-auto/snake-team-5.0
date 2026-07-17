@@ -21,7 +21,7 @@ inputs:
   compose_file:
     description: Docker Compose file used to run the TeamCity test stand.
     required: false
-    default: ci/teamcity/compose.yaml
+    default: ci/teamcity/hsqldb/compose.yaml
   server_container:
     description: TeamCity server container name used for log collection.
     required: false

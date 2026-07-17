@@ -33,7 +33,15 @@ Workflow:
 CI Docker Compose:
 
 ```text
-ci/teamcity/compose.yaml
+ci/teamcity/hsqldb/compose.yaml
+```
+
+Все TeamCity compose-настройки сгруппированы в одной директории:
+
+```text
+ci/teamcity/local/compose.yaml
+ci/teamcity/hsqldb/compose.yaml
+ci/teamcity/postgresql/compose.yaml
 ```
 
 ## PostgreSQL production-like regression
@@ -63,7 +71,7 @@ Workflow не запускается на каждый PR и не публику
 и Docker/TeamCity logs сохраняются как artifacts на 7 дней. Database password и
 DSN создаются внутри runner, маскируются и удаляются вместе с Docker volumes.
 
-PostgreSQL compose-файл: `ci/teamcity-postgresql/compose.yaml`.
+PostgreSQL compose-файл: `ci/teamcity/postgresql/compose.yaml`.
 
 ## Почему это отдельный этап
 

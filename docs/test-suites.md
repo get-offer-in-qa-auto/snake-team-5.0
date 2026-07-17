@@ -14,7 +14,7 @@
 
 Что проверяем:
 
-- TeamCity стартует с пустым `teamcity-local/teamcity-data/`;
+- TeamCity стартует с пустым TeamCity Data Directory;
 - появляется startup confirmation;
 - можно подтвердить первый запуск;
 - можно выбрать database backend;
@@ -24,7 +24,7 @@
 - можно создать первого администратора с валидными данными;
 - после создания первого администратора можно войти в TeamCity;
 - после завершения setup REST API становится доступен;
-- после завершения setup wizard не появляется повторно при рестарте с сохраненным `teamcity-local/teamcity-data/`;
+- после завершения setup wizard не появляется повторно при рестарте с сохраненным TeamCity Data Directory;
 - agent появляется в `Agents -> Unauthorized`;
 - первый администратор может авторизовать agent.
 
@@ -36,7 +36,7 @@
 
 Что проверяем:
 
-- bootstrap проходит на пустом `teamcity-local/teamcity-data/`;
+- bootstrap проходит на пустом TeamCity Data Directory;
 - bootstrap может настроить internal HSQLDB;
 - bootstrap может настроить внешний database backend для production-like окружения;
 - создается administrator user или access token;

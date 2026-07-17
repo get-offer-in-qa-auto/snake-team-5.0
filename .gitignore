@@ -15,5 +15,5 @@ venv/
 /allure-results/
 /allure-report/
 
+# Local TeamCity runtime state. Compose files live in ci/teamcity/.
 /teamcity-local/*
-!/teamcity-local/compose.yaml

@@ -34,7 +34,7 @@ jobs:
       - name: Start and prepare TeamCity with PostgreSQL
         uses: ./.github/actions/teamcity-setup
         with:
-          compose_file: ci/teamcity-postgresql/compose.yaml
+          compose_file: ci/teamcity/postgresql/compose.yaml
           server_container: teamcity-server-postgresql-ci
           agent_names: postgresql-ci-agent-1,postgresql-ci-agent-2
           database_mode: external
@@ -63,7 +63,7 @@ jobs:
         uses: ./.github/actions/teamcity-report
         with:
           test_label: postgresql-regression
-          compose_file: ci/teamcity-postgresql/compose.yaml
+          compose_file: ci/teamcity/postgresql/compose.yaml
           server_container: teamcity-server-postgresql-ci
           logs_artifact_name: teamcity-postgresql-regression-logs
           results_artifact_name: teamcity-postgresql-regression-test-results
