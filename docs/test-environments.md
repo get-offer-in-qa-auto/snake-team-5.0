@@ -93,10 +93,10 @@ PostgreSQL выбран как внешний database backend для production
 
 ```text
 Fast CI:
-  TeamCity Server + full TeamCity Agent + internal HSQLDB
+  TeamCity Server + 2 full TeamCity Agents + internal HSQLDB
 
 Production-like CI:
-  TeamCity Server + full TeamCity Agent + PostgreSQL
+  TeamCity Server + 2 full TeamCity Agents + PostgreSQL
 ```
 
 Fast CI нужен для быстрых проверок основной функциональности.
@@ -162,8 +162,9 @@ Nightly / scheduled:
 Oracle и Microsoft SQL Server могут быть тяжелее для локального и CI-запуска, поэтому их можно вынести в scheduled/manual job, если инфраструктура или лицензирование усложнят регулярный запуск.
 
 Реализованный PostgreSQL workflow запускается ежедневно в `02:00 UTC`
-(`05:00 МСК`) и вручную. Regression stage использует 4 xdist worker по умолчанию,
-а database adapter читает ту же PostgreSQL напрямую в read-only транзакциях.
+(`05:00 МСК`) и вручную. Regression stage всегда использует 2 xdist worker и
+2 отдельных TeamCity agent, а database adapter читает ту же PostgreSQL напрямую
+в read-only транзакциях.
 
 ## Источники
 
