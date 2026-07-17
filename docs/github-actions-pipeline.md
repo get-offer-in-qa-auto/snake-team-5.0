@@ -27,7 +27,7 @@ PR pipeline поднимает один чистый TeamCity стенд и вы
 Workflow:
 
 ```text
-.github/workflows/teamcity-start-smoke.yml
+.github/workflows/teamcity-regression.yml
 ```
 
 CI Docker Compose:

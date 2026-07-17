@@ -1,13 +1,43 @@
 name: TeamCity Regression
 
 on:
+  pull_request:
   workflow_dispatch:
 
 jobs:
-  teamcity-regression:
-    name: Run TeamCity regression
+  code-quality:
+    name: Code Quality
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install development dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+
+      # Быстрые статические проверки идут первыми, чтобы не тратить время
+      # на запуск Docker-стенда при очевидных проблемах в коде.
+      - name: Lint Python code
+        run: python3 -m ruff check .
+
+      - name: Check Python formatting
+        run: python3 -m ruff format --check .
+
+      - name: Check static types
+        run: python3 -m mypy src/main
+
+  teamcity-regression:
+    name: TeamCity regression
+    needs: code-quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       pages: write
@@ -19,6 +49,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Setup, тесты и сбор результатов остаются в одном job, чтобы Docker-стенд
+      # и временный TeamCity access token сохранялись на одном runner.
       - name: Start and prepare TeamCity
         uses: ./.github/actions/teamcity-setup
         with:
