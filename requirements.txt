@@ -6,6 +6,6 @@ requests >= 2.32, < 3
 pydantic
 faker
 rstr
-playwright
+pytest-playwright >= 0.7, < 1
 filelock >= 3, < 4
 psycopg[binary] >= 3, < 4

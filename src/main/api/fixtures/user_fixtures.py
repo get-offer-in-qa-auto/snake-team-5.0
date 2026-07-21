@@ -2,6 +2,7 @@ import pytest
 
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.classes.session_storage import SessionStorage
+from src.main.api.configs.config import Config
 from src.main.api.generators.random_model_generator import RandomModelGenerator
 from src.main.api.models.create_user_request import CreateUserRequest
 
@@ -41,4 +42,20 @@ def user_factory(api_manager: ApiManager, user_request_factory):
 
 @pytest.fixture
 def admin_user_request():
-    return CreateUserRequest(username="admin", password="admin", name="Admin User")
+    username = (
+        Config.get("TEAMCITY_UI_USERNAME")
+        or Config.get("TEAMCITY_USERNAME")
+        or Config.get("ADMIN_USERNAME")
+    )
+    password = (
+        Config.get("TEAMCITY_UI_PASSWORD")
+        or Config.get("TEAMCITY_PASSWORD")
+        or Config.get("ADMIN_PASSWORD")
+    )
+    if not username or not password:
+        raise ValueError("TeamCity UI administrator credentials are not configured")
+    return CreateUserRequest(
+        username=str(username),
+        password=str(password),
+        name="Admin User",
+    )

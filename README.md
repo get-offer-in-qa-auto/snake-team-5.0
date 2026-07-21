@@ -229,15 +229,39 @@ python3 -m pre_commit run --all-files
 
 ```bash
 python3 -m pip install -r requirements.txt
+python3 -m playwright install chromium
 ```
 
-В `requirements.txt` уже входит `allure-pytest`, который позволяет pytest сохранять Allure results.
+В `requirements.txt` входят `allure-pytest` и `pytest-playwright`. Первый сохраняет
+Allure results, второй предоставляет изолированные Playwright browser context и
+`page` для UI-тестов. На первом этапе поддерживается Chromium.
+
+Запустить только UI-тесты:
+
+```bash
+python3 -m pytest -m ui --browser chromium
+```
+
+Обычные UI-тесты получают `TCSESSIONID` через TeamCity REST API и добавляют cookie
+в чистый browser context до первой навигации. Basic Authorization не передается
+браузерным ресурсам. Отдельный login smoke проходит настоящую форму входа.
+
+Credentials выбираются в порядке:
+
+1. `TEAMCITY_UI_USERNAME` / `TEAMCITY_UI_PASSWORD`;
+2. `TEAMCITY_USERNAME` / `TEAMCITY_PASSWORD`;
+3. локальные `ADMIN_USERNAME` / `ADMIN_PASSWORD` из `resources/config.properties`.
+
+Маркер `admin_session` авторизует администратора. Маркер
+`user_session("fixture_name", ..., auth=0)` позволяет создать пользователей API-
+фикстурами, сохранить их в `SessionStorage` и выбрать активного пользователя.
+API-тесты без этих маркеров не запускают браузер.
 
 `pytest-xdist` запускает тесты параллельно. Основной PR regression и отдельный
 PostgreSQL regression всегда используют 2 worker и 2 отдельных TeamCity agent.
 Количество workers в ручном запуске не настраивается.
 
-В pull request сначала в 2 worker выполняются 6 smoke-тестов, затем в 2 worker —
+В pull request сначала в 2 worker выполняются 8 smoke-тестов, затем в 2 worker —
 44 остальных regression-теста. Локально количество workers задаётся так:
 
 ```bash
@@ -313,6 +337,11 @@ allure generate artifacts/allure-results --clean -o artifacts/allure-report
 
 - `teamcity-<suite>-allure-results`
 - `teamcity-<suite>-allure-report`
+- `teamcity-<suite>-playwright`
+
+При UI-падении screenshot прикладывается к Allure. Screenshot, trace и video,
+сохраненные Playwright, находятся в `artifacts/playwright`; CI загружает этот
+каталог отдельным artifact.
 
 GitHub Actions artifacts хранятся 7 дней.
 

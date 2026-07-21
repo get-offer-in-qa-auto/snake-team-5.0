@@ -256,6 +256,14 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._project_locator(project_id))
 
+    @allure.step("Delete project {project_id} if it exists")
+    def delete_project_if_exists(self, project_id: str):
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.DELETE_PROJECT,
+            ResponseSpecs.entity_was_deleted_or_not_found(),
+        ).delete(self._project_locator(project_id))
+
     @allure.step("Create build configuration in project {project_id}")
     def create_build_configuration(
         self, project_id: str, configuration_request: CreateBuildConfigurationRequest

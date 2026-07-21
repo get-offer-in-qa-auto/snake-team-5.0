@@ -136,6 +136,15 @@ runs:
         if-no-files-found: ignore
         retention-days: 7
 
+    - name: Upload Playwright diagnostics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: teamcity-${{ inputs.test_label }}-playwright
+        path: artifacts/playwright
+        if-no-files-found: ignore
+        retention-days: 7
+
     - name: Check Allure report for Pages
       id: allure-pages
       if: always()
