@@ -20,7 +20,7 @@ class TeamCityHeader:
 
     @allure.step("Verify TeamCity header is visible")
     def should_be_visible(self) -> "TeamCityHeader":
-        expect(self.root).to_be_visible()
+        expect(self.root).to_be_visible(timeout=15_000)
         expect(self.teamcity_link).to_be_visible()
         expect(self.projects_link).to_be_visible()
         return self
