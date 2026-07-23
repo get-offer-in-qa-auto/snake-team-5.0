@@ -1,5 +1,6 @@
 import pytest
 
+from src.main.api.fixtures.created_objects_registry import CreatedObjectsRegistry
 from src.main.api.models.build_configuration_response import (
     BuildConfigurationResponse,
 )
@@ -41,14 +42,16 @@ def test_delete_project_unregisters_project_tree_and_its_configurations(
         name="Other Build",
         projectId=unrelated_project.id,
     )
-    created_objects = [
-        parent,
-        child,
-        parent_configuration,
-        child_configuration,
-        unrelated_project,
-        unrelated_configuration,
-    ]
+    created_objects = CreatedObjectsRegistry(
+        [
+            parent,
+            child,
+            parent_configuration,
+            child_configuration,
+            unrelated_project,
+            unrelated_configuration,
+        ]
+    )
 
     AdminSteps(created_objects).delete_project(parent.id)
 
@@ -68,7 +71,9 @@ def test_delete_build_configuration_unregisters_only_deleted_configuration(
         id="retained-build",
         name="Retained Build",
     )
-    created_objects = [deleted_configuration, retained_configuration]
+    created_objects = CreatedObjectsRegistry(
+        [deleted_configuration, retained_configuration]
+    )
 
     AdminSteps(created_objects).delete_build_configuration(
         f"id:{deleted_configuration.id}"
@@ -84,12 +89,14 @@ def test_delete_user_unregisters_user_and_owned_tokens(monkeypatch):
     deleted_user_token = UserTokenResponse(name="token", username="deleted")
     retained_user = CreateUserResponse(id=2, username="retained")
     retained_user_token = UserTokenResponse(name="token", username="retained")
-    created_objects = [
-        deleted_user,
-        deleted_user_token,
-        retained_user,
-        retained_user_token,
-    ]
+    created_objects = CreatedObjectsRegistry(
+        [
+            deleted_user,
+            deleted_user_token,
+            retained_user,
+            retained_user_token,
+        ]
+    )
 
     AdminSteps(created_objects).delete_user(deleted_user.id)
 
@@ -101,7 +108,7 @@ def test_delete_user_token_unregisters_only_matching_token(monkeypatch):
     deleted_paths = _stub_successful_delete(monkeypatch, user_steps_module)
     deleted_token = UserTokenResponse(name="deleted-token", username="user")
     retained_token = UserTokenResponse(name="retained-token", username="user")
-    created_objects = [deleted_token, retained_token]
+    created_objects = CreatedObjectsRegistry([deleted_token, retained_token])
 
     UserSteps(created_objects).delete_user_token(
         username="user",
@@ -115,7 +122,7 @@ def test_delete_user_token_unregisters_only_matching_token(monkeypatch):
 
 def test_failed_delete_keeps_object_registered_for_fixture_cleanup(monkeypatch):
     project = ProjectResponse(id="project", name="Project")
-    created_objects = [project]
+    created_objects = CreatedObjectsRegistry([project])
 
     class FailingCrudRequester:
         def __init__(self, *args, **kwargs):

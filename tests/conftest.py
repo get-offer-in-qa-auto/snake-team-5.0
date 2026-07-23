@@ -96,6 +96,11 @@ ALLURE_HIERARCHY_BY_PATH = {
         "API Utilities",
         "Cleanup",
     ),
+    ("unit", "api", "fixtures", "test_created_objects_registry.py"): (
+        "Unit",
+        "API Fixtures",
+        "Created Objects Registry",
+    ),
 }
 
 
