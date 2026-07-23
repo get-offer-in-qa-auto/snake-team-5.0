@@ -1,8 +1,8 @@
-from playwright.sync_api import Locator, expect
+from playwright.sync_api import Locator
 
 from src.main.api.models.create_user_request import CreateUserRequest
-from src.main.ui.components.teamcity_header import TeamCityHeader
 from src.main.ui.pages.base_page import BasePage
+from src.main.ui.pages.projects_page import ProjectsPage
 
 
 class LoginPage(BasePage):
@@ -24,10 +24,8 @@ class LoginPage(BasePage):
         self.username_input.fill(user_request.username)
         self.password_input.fill(user_request.password)
         self.login_button.click()
-        TeamCityHeader(self.page).root.wait_for(state="visible", timeout=15_000)
         return self
 
-    def should_be_authenticated(self) -> "LoginPage":
-        expect(self.login_button).not_to_be_visible()
-        TeamCityHeader(self.page).should_be_visible()
-        return self
+    def login_success(self, user_request: CreateUserRequest) -> ProjectsPage:
+        self.login(user_request)
+        return ProjectsPage(self.page)

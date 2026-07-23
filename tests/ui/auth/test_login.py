@@ -9,4 +9,4 @@ from src.main.ui.pages.login_page import LoginPage
 @pytest.mark.smoke
 @pytest.mark.regression
 def test_admin_can_login(page: Page, admin_user_request: CreateUserRequest):
-    LoginPage(page).open().login(admin_user_request).should_be_authenticated()
+    LoginPage(page).open().login_success(admin_user_request).should_be_authenticated()

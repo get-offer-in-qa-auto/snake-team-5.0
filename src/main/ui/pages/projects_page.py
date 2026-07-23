@@ -29,6 +29,10 @@ class ProjectsPage(BasePage):
         self.create_project_link.click()
         return CreateProjectPage(self.page)
 
+    def should_be_authenticated(self) -> ProjectsPage:
+        self.header.should_be_visible()
+        return self
+
     def should_contain_project(
         self, project_request: CreateProjectRequest
     ) -> ProjectsPage:
