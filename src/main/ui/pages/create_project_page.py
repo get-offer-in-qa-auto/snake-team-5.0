@@ -1,3 +1,4 @@
+import allure
 from playwright.sync_api import Locator
 
 from src.main.api.models.create_project_request import CreateProjectRequest
@@ -20,6 +21,7 @@ class CreateProjectPage(BasePage):
     def create_button(self) -> Locator:
         return self.page.get_by_role("button", name="Create", exact=True)
 
+    @allure.step("Create project")
     def create_project(
         self, project_request: CreateProjectRequest
     ) -> "CreateProjectPage":
@@ -28,6 +30,7 @@ class CreateProjectPage(BasePage):
         self.create_button.click()
         return self
 
+    @allure.step("Create project successfully")
     def create_project_success(
         self, project_request: CreateProjectRequest
     ) -> ProjectSetupPage:

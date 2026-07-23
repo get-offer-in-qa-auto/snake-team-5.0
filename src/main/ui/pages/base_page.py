@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TypeVar
 
+import allure
 from playwright.sync_api import Page
 
 from src.main.ui.configuration import teamcity_ui_base_url
@@ -20,6 +21,7 @@ class BasePage(ABC):
     def path(self) -> str:
         raise NotImplementedError
 
+    @allure.step("Open page")
     def open(self: TPage) -> TPage:
         self.page.goto(f"{self.base_url}{self.path}", wait_until="domcontentloaded")
         return self

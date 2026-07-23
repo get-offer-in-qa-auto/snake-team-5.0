@@ -1,3 +1,4 @@
+import allure
 from playwright.sync_api import Locator, Page, expect
 
 
@@ -17,6 +18,7 @@ class TeamCityHeader:
     def projects_link(self) -> Locator:
         return self.root.locator('[data-test-title="Projects"] [data-test="ring-link"]')
 
+    @allure.step("Verify TeamCity header is visible")
     def should_be_visible(self) -> "TeamCityHeader":
         expect(self.root).to_be_visible()
         expect(self.teamcity_link).to_be_visible()

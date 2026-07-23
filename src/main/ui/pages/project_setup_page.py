@@ -1,6 +1,7 @@
 import re
 from urllib.parse import quote
 
+import allure
 from playwright.sync_api import Locator, expect
 
 from src.main.ui.pages.base_page import BasePage
@@ -20,6 +21,7 @@ class ProjectSetupPage(BasePage):
     def project_setup(self) -> Locator:
         return self.page.locator('[data-test="setup-project-page"]')
 
+    @allure.step("Verify project setup page is opened")
     def should_be_opened(self) -> "ProjectSetupPage":
         encoded_project_id = re.escape(quote(self.project_id, safe=""))
         expect(self.page).to_have_url(
