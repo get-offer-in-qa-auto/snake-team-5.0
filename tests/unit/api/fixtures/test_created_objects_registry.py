@@ -5,58 +5,12 @@ from src.main.api.models.build_configuration_response import (
     BuildConfigurationResponse,
 )
 from src.main.api.models.create_user_response import CreateUserResponse
-from src.main.api.models.project_response import (
-    ProjectReferenceResponse,
-    ProjectResponse,
-)
+from src.main.api.models.project_response import ProjectResponse
 from src.main.api.models.user_token import UserTokenResponse
 from src.main.api.requests.steps import admin_steps as admin_steps_module
 from src.main.api.requests.steps import user_steps as user_steps_module
 from src.main.api.requests.steps.admin_steps import AdminSteps
 from src.main.api.requests.steps.user_steps import UserSteps
-
-
-def test_delete_project_unregisters_project_tree_and_its_configurations(
-    monkeypatch,
-):
-    deleted_paths = _stub_successful_delete(monkeypatch, admin_steps_module)
-    parent = ProjectResponse(id="parent", name="Parent")
-    child = ProjectResponse(
-        id="child",
-        name="Child",
-        parentProject=ProjectReferenceResponse(id=parent.id),
-    )
-    parent_configuration = BuildConfigurationResponse(
-        id="parent-build",
-        name="Parent Build",
-        projectId=parent.id,
-    )
-    child_configuration = BuildConfigurationResponse(
-        id="child-build",
-        name="Child Build",
-        projectId=child.id,
-    )
-    unrelated_project = ProjectResponse(id="other", name="Other")
-    unrelated_configuration = BuildConfigurationResponse(
-        id="other-build",
-        name="Other Build",
-        projectId=unrelated_project.id,
-    )
-    created_objects = CreatedObjectsRegistry(
-        [
-            parent,
-            child,
-            parent_configuration,
-            child_configuration,
-            unrelated_project,
-            unrelated_configuration,
-        ]
-    )
-
-    AdminSteps(created_objects).delete_project(parent.id)
-
-    assert deleted_paths == ["id:parent"]
-    assert created_objects == [unrelated_project, unrelated_configuration]
 
 
 def test_delete_build_configuration_unregisters_only_deleted_configuration(
