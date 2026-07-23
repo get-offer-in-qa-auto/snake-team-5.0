@@ -2,6 +2,7 @@ import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
+from src.main.api.constants.teamcity import TeamCityLocator
 from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
 )
@@ -18,7 +19,7 @@ def test_create_build_configuration_in_subproject(
 ):
     parent_project = api_manager.admin_steps.create_project(project_request_factory())
     subproject = api_manager.admin_steps.create_project(
-        project_request_factory(parent_locator=f"id:{parent_project.id}")
+        project_request_factory(parent_locator=TeamCityLocator.by_id(parent_project.id))
     )
 
     configuration = api_manager.admin_steps.create_build_configuration(

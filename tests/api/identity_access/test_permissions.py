@@ -2,6 +2,7 @@ import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
+from src.main.api.constants.teamcity import ROOT_PROJECT_ID
 from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
 )
@@ -44,7 +45,7 @@ def test_admin_can_create_project(
     stored_project = api_manager.admin_steps.get_project(project.id)
 
     api_manager.admin_steps.verify_project_stored(
-        project_request, stored_project, "_Root"
+        project_request, stored_project, ROOT_PROJECT_ID
     )
 
 
@@ -55,7 +56,7 @@ def test_admin_can_create_project(
 def test_limited_user_cannot_create_project(
     api_manager: ApiManager, limited_user_factory, project_request: CreateProjectRequest
 ):
-    limited_user = limited_user_factory("_Root")
+    limited_user = limited_user_factory()
 
     api_manager.user_steps.create_project_forbidden(limited_user, project_request)
 

@@ -2,12 +2,13 @@ from typing import Annotated
 
 from pydantic import Field
 
+from src.main.api.constants.teamcity import ROOT_PROJECT_ID
 from src.main.api.generators.generating_rule import GeneratingRule
 from src.main.api.models.base_model import BaseModel
 
 
 class ParentProjectRequest(BaseModel):
-    locator: str = "_Root"
+    locator: str = ROOT_PROJECT_ID
 
 
 class CreateProjectRequest(BaseModel):

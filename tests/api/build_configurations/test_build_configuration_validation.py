@@ -16,9 +16,10 @@ from src.main.api.specs.response_specs import ResponseError
 def test_create_build_configuration_with_unknown_project(
     api_manager: ApiManager,
     build_configuration_request: CreateBuildConfigurationRequest,
+    nonexistent_project_id: str,
 ):
     api_manager.admin_steps.create_build_configuration_not_found(
-        "MissingProjectForAutotestBuild",
+        nonexistent_project_id,
         build_configuration_request,
         ResponseError.PROJECT_NOT_FOUND,
     )

@@ -1,3 +1,5 @@
+import secrets
+
 import pytest
 
 from src.main.api.generators.random_model_generator import RandomModelGenerator
@@ -18,3 +20,8 @@ def user_token_request_factory():
 @pytest.fixture(scope="function")
 def user_token_request(user_token_request_factory) -> CreateUserTokenRequest:
     return user_token_request_factory()
+
+
+@pytest.fixture(scope="function")
+def invalid_access_token() -> str:
+    return secrets.token_urlsafe(32)

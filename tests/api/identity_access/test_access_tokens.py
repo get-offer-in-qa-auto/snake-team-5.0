@@ -60,12 +60,14 @@ def test_request_without_token(
 @pytest.mark.api
 @pytest.mark.regression
 def test_request_with_invalid_token(
-    api_manager: ApiManager, user_request: CreateUserRequest
+    api_manager: ApiManager,
+    user_request: CreateUserRequest,
+    invalid_access_token: str,
 ):
     api_manager.admin_steps.create_user(user_request)
 
     api_manager.user_steps.check_token_cannot_authenticate(
-        user_request.username, "invalid-autotest-token"
+        user_request.username, invalid_access_token
     )
 
 
