@@ -1,6 +1,6 @@
 import allure
 
-from src.main.api.database import DatabaseClient, create_database_client
+from src.main.api.database import DatabaseClient, DBRequest, create_database_client
 from src.main.api.database.dao import BuildConfigurationDao, ProjectDao, UserDao
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.create_user_response import CreateUserResponse
@@ -12,15 +12,19 @@ class DatabaseSteps:
         self.client = client or create_database_client()
 
     def get_project_by_external_id(self, external_id: str) -> ProjectDao:
-        with self.client.snapshot() as database:
-            mapping = database.fetch_one(
-                "project_mapping", {"ext_id": external_id, "main": True}
+        with self.client.snapshot() as executor:
+            mapping = executor.fetch_one(
+                DBRequest.select(
+                    "project_mapping", {"ext_id": external_id, "main": True}
+                )
             )
             assert mapping is not None, (
                 f"Project {external_id!r} was not found in PROJECT_MAPPING"
             )
 
-            project = database.fetch_one("project", {"int_id": mapping["INT_ID"]})
+            project = executor.fetch_one(
+                DBRequest.select("project", {"int_id": mapping["INT_ID"]})
+            )
             assert project is not None, (
                 f"Project {external_id!r} has mapping {mapping['INT_ID']!r}, "
                 "but no PROJECT row"
@@ -57,9 +61,11 @@ class DatabaseSteps:
 
     @allure.step("Verify project {external_id} was not created in TeamCity database")
     def verify_project_not_created(self, external_id: str) -> None:
-        with self.client.snapshot() as database:
-            mapping = database.fetch_one(
-                "project_mapping", {"ext_id": external_id, "main": True}
+        with self.client.snapshot() as executor:
+            mapping = executor.fetch_one(
+                DBRequest.select(
+                    "project_mapping", {"ext_id": external_id, "main": True}
+                )
             )
         assert mapping is None, (
             f"Project {external_id!r} should not exist in PROJECT_MAPPING, "
@@ -69,17 +75,19 @@ class DatabaseSteps:
     def get_build_configuration_by_external_id(
         self, external_id: str
     ) -> BuildConfigurationDao:
-        with self.client.snapshot() as database:
-            mapping = database.fetch_one(
-                "build_type_mapping", {"ext_id": external_id, "main": True}
+        with self.client.snapshot() as executor:
+            mapping = executor.fetch_one(
+                DBRequest.select(
+                    "build_type_mapping", {"ext_id": external_id, "main": True}
+                )
             )
             assert mapping is not None, (
                 f"Build configuration {external_id!r} was not found in "
                 "BUILD_TYPE_MAPPING"
             )
 
-            build_configuration = database.fetch_one(
-                "build_type", {"int_id": mapping["INT_ID"]}
+            build_configuration = executor.fetch_one(
+                DBRequest.select("build_type", {"int_id": mapping["INT_ID"]})
             )
             assert build_configuration is not None, (
                 f"Build configuration {external_id!r} has mapping "
@@ -127,9 +135,11 @@ class DatabaseSteps:
         "Verify build configuration {external_id} was not created in TeamCity database"
     )
     def verify_build_configuration_not_created(self, external_id: str) -> None:
-        with self.client.snapshot() as database:
-            mapping = database.fetch_one(
-                "build_type_mapping", {"ext_id": external_id, "main": True}
+        with self.client.snapshot() as executor:
+            mapping = executor.fetch_one(
+                DBRequest.select(
+                    "build_type_mapping", {"ext_id": external_id, "main": True}
+                )
             )
         assert mapping is None, (
             f"Build configuration {external_id!r} should not exist in "
@@ -137,8 +147,8 @@ class DatabaseSteps:
         )
 
     def get_user_by_username(self, username: str) -> UserDao:
-        with self.client.snapshot() as database:
-            user = database.fetch_one("users", {"username": username})
+        with self.client.snapshot() as executor:
+            user = executor.fetch_one(DBRequest.select("users", {"username": username}))
         assert user is not None, f"User {username!r} was not found in USERS"
 
         last_login_timestamp = user["LAST_LOGIN_TIMESTAMP"]
@@ -163,16 +173,16 @@ class DatabaseSteps:
 
     @allure.step("Verify user {username} is deleted from TeamCity database")
     def verify_user_deleted(self, username: str) -> None:
-        with self.client.snapshot() as database:
-            user = database.fetch_one("users", {"username": username})
+        with self.client.snapshot() as executor:
+            user = executor.fetch_one(DBRequest.select("users", {"username": username}))
         assert user is None, (
             f"User {username!r} should be deleted from USERS, but row was found: {user}"
         )
 
     @allure.step("Verify user {username} was not created in TeamCity database")
     def verify_user_not_created(self, username: str) -> None:
-        with self.client.snapshot() as database:
-            user = database.fetch_one("users", {"username": username})
+        with self.client.snapshot() as executor:
+            user = executor.fetch_one(DBRequest.select("users", {"username": username}))
         assert user is None, (
             f"User {username!r} should not exist in USERS, but row was found: {user}"
         )

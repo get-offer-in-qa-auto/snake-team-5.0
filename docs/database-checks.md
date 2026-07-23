@@ -36,7 +36,16 @@ TeamCity Data Directory для конфигурации.
 
 ## Единый интерфейс и два способа доступа
 
-`DatabaseClient` скрывает способ получения данных. `DatabaseSteps` работает с его snapshot-интерфейсом, поэтому сценарий не меняется при смене backend.
+DB-слой разделён на три ответственности:
+
+- `DBRequest` описывает read-only запрос: таблицу, параметризованные условия и limit; там же валидируются имена таблиц и колонок;
+- `DBExecutor` исполняет запрос и нормализует результат конкретного backend;
+- `DatabaseClient` управляет lifecycle snapshot/соединения и выбирает executor.
+
+`DatabaseSteps` создаёт `DBRequest` и передаёт его executor-у из
+`DatabaseClient.snapshot()`. Поэтому доменный сценарий и описание запроса не
+меняются при переключении между backup и PostgreSQL, а transport-детали не
+смешиваются с query model.
 
 ### TeamCity backup adapter
 
@@ -92,10 +101,11 @@ TeamCity хранит логические флаги в PostgreSQL как `smal
 ## Добавление новой проверки
 
 1. Добавить DAO с нужными полями в `src/main/api/database/dao.py`.
-2. Добавить доменный метод в `DatabaseSteps`.
-3. Читать только те таблицы, которые доказывают дополнительную гарантию по сравнению с REST response.
-4. Оставить тест тонким: действие через API step, persisted-state assertion через database step.
-5. Проверить запуск с `-n 0` и с обычным количеством xdist workers.
+2. В доменном методе `DatabaseSteps` собрать `DBRequest`, не добавляя SQL.
+3. Передать request executor-у внутри одного snapshot-контекста.
+4. Читать только те таблицы, которые доказывают дополнительную гарантию по сравнению с REST response.
+5. Оставить тест тонким: действие через API step, persisted-state assertion через database step.
+6. Проверить запуск с `-n 0` и с обычным количеством xdist workers.
 
 ## Источники
 
