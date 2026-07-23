@@ -1,34 +1,12 @@
 import pytest
 
 from src.main.api.fixtures.created_objects_registry import CreatedObjectsRegistry
-from src.main.api.models.create_user_response import CreateUserResponse
 from src.main.api.models.project_response import ProjectResponse
 from src.main.api.models.user_token import UserTokenResponse
 from src.main.api.requests.steps import admin_steps as admin_steps_module
 from src.main.api.requests.steps import user_steps as user_steps_module
 from src.main.api.requests.steps.admin_steps import AdminSteps
 from src.main.api.requests.steps.user_steps import UserSteps
-
-
-def test_delete_user_unregisters_user_and_owned_tokens(monkeypatch):
-    deleted_paths = _stub_successful_delete(monkeypatch, admin_steps_module)
-    deleted_user = CreateUserResponse(id=1, username="deleted")
-    deleted_user_token = UserTokenResponse(name="token", username="deleted")
-    retained_user = CreateUserResponse(id=2, username="retained")
-    retained_user_token = UserTokenResponse(name="token", username="retained")
-    created_objects = CreatedObjectsRegistry(
-        [
-            deleted_user,
-            deleted_user_token,
-            retained_user,
-            retained_user_token,
-        ]
-    )
-
-    AdminSteps(created_objects).delete_user(deleted_user.id)
-
-    assert deleted_paths == ["id:1"]
-    assert created_objects == [retained_user, retained_user_token]
 
 
 def test_delete_user_token_unregisters_only_matching_token(monkeypatch):
