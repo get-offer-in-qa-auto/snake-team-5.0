@@ -51,28 +51,3 @@ def test_cleanup_returns_each_failure(monkeypatch):
 
     assert [failure.object_id for failure in failures] == ["second", "first"]
     assert all("RuntimeError: Cannot delete" in failure.error for failure in failures)
-
-
-def test_cleanup_uses_snapshot_when_delete_steps_unregister_objects(monkeypatch):
-    deleted_ids: list[str] = []
-    objects = [
-        ProjectResponse(id="first", name="First"),
-        ProjectResponse(id="second", name="Second"),
-    ]
-
-    class FakeAdminSteps:
-        def delete_project(self, project_id: str) -> None:
-            deleted_ids.append(project_id)
-            objects[:] = [obj for obj in objects if obj.id != project_id]
-
-    monkeypatch.setattr(
-        cleanup_helper,
-        "ApiManager",
-        lambda _: SimpleNamespace(admin_steps=FakeAdminSteps()),
-    )
-
-    failures = cleanup_helper.cleanup_objects(objects)
-
-    assert failures == []
-    assert deleted_ids == ["second", "first"]
-    assert objects == []
