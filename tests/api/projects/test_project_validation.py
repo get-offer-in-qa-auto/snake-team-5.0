@@ -2,6 +2,7 @@ import allure
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
+from src.main.api.constants.teamcity import TeamCityLocator
 from src.main.api.specs.response_specs import ResponseError
 
 
@@ -47,10 +48,12 @@ def test_create_project_with_existing_name_in_same_parent(
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_project_with_unknown_parent(
-    api_manager: ApiManager, project_request_factory
+    api_manager: ApiManager,
+    project_request_factory,
+    nonexistent_project_id: str,
 ):
     project_request = project_request_factory(
-        parent_locator="id:MissingParentForAutotest"
+        parent_locator=TeamCityLocator.by_id(nonexistent_project_id)
     )
 
     api_manager.admin_steps.create_project_not_found(

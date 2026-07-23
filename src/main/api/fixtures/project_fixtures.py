@@ -1,5 +1,6 @@
 import pytest
 
+from src.main.api.constants.teamcity import ROOT_PROJECT_ID
 from src.main.api.generators.random_model_generator import RandomModelGenerator
 from src.main.api.models.create_project_request import (
     CreateProjectRequest,
@@ -12,7 +13,7 @@ def project_request_factory():
     def create_project_request(
         project_id: str | None = None,
         name: str | None = None,
-        parent_locator: str = "_Root",
+        parent_locator: str = ROOT_PROJECT_ID,
     ) -> CreateProjectRequest:
         generated_project = RandomModelGenerator.generate(CreateProjectRequest)
         return CreateProjectRequest(
@@ -32,3 +33,8 @@ def project_request(project_request_factory) -> CreateProjectRequest:
 @pytest.fixture(scope="function")
 def project(api_manager, project_request):
     return api_manager.admin_steps.create_project(project_request)
+
+
+@pytest.fixture(scope="function")
+def nonexistent_project_id(project_request_factory) -> str:
+    return project_request_factory().id
