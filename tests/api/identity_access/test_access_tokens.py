@@ -79,7 +79,6 @@ def test_request_with_revoked_token(
     api_manager: ApiManager,
     user_request: CreateUserRequest,
     user_token_request: CreateUserTokenRequest,
-    created_objects: list,
 ):
     api_manager.admin_steps.create_user(user_request)
     token = api_manager.user_steps.create_user_token(user_request, user_token_request)
@@ -88,7 +87,6 @@ def test_request_with_revoked_token(
     api_manager.user_steps.delete_user_token(
         user_request.username, user_request.password, token.name
     )
-    created_objects.remove(token)
 
     api_manager.user_steps.check_token_cannot_authenticate(
         user_request.username, token.value
@@ -103,15 +101,12 @@ def test_delete_user_revokes_its_tokens(
     api_manager: ApiManager,
     user_request: CreateUserRequest,
     user_token_request: CreateUserTokenRequest,
-    created_objects: list,
 ):
     user = api_manager.admin_steps.create_user(user_request)
     token = api_manager.user_steps.create_user_token(user_request, user_token_request)
     api_manager.user_steps.get_user_with_token(user_request.username, token.value)
 
     api_manager.admin_steps.delete_user(user.id)
-    created_objects.remove(token)
-    created_objects.remove(user)
 
     api_manager.user_steps.check_token_cannot_authenticate(
         user_request.username, token.value

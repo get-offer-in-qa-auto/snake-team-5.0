@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from src.main.api.classes.api_manager import ApiManager
+from src.main.api.fixtures.created_objects_registry import CreatedObjectsRegistry
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.create_user_response import CreateUserResponse
 from src.main.api.models.project_response import ProjectResponse
@@ -18,7 +19,7 @@ class CleanupFailure:
     traceback: str
 
 
-def cleanup_objects(objects: list[Any]) -> list[CleanupFailure]:
+def cleanup_objects(objects: CreatedObjectsRegistry) -> list[CleanupFailure]:
     """Clean up all registered objects and return every cleanup failure.
 
     Cleanup runs in reverse creation order so dependent objects are removed
@@ -27,7 +28,9 @@ def cleanup_objects(objects: list[Any]) -> list[CleanupFailure]:
     """
     api_manager = ApiManager(objects)
     failures: list[CleanupFailure] = []
-    for obj in reversed(objects):
+    # Delete steps unregister successfully removed entities, so iterate over a
+    # stable snapshot instead of the mutable cleanup registry itself.
+    for obj in reversed(objects.copy()):
         try:
             _cleanup_object(api_manager, obj)
         except Exception as error:

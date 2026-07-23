@@ -1,15 +1,15 @@
 import logging
-from typing import Any
 
 import allure
 import pytest
 
+from src.main.api.fixtures.created_objects_registry import CreatedObjectsRegistry
 from src.main.api.utils.cleanup_helper import CleanupFailure, cleanup_objects
 
 
 @pytest.fixture
 def created_objects(request: pytest.FixtureRequest):
-    objects: list[Any] = []
+    objects = CreatedObjectsRegistry()
     yield objects
 
     failures = cleanup_objects(objects)

@@ -89,6 +89,8 @@ class UserSteps(BaseSteps):
             ResponseSpecs.entity_was_deleted(),
         ).delete(f"username:{username}/tokens/{token_name}")
 
+        self.created_objects.unregister_user_token(username, token_name)
+
     @allure.step("Get user {username} with token")
     def get_user_with_token(self, username: str, token: str) -> CreateUserResponse:
         return ValidatedCrudRequester(

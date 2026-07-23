@@ -121,6 +121,8 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._user_locator(user_id))
 
+        self.created_objects.unregister_user(user_id)
+
     @allure.step("Assign role {role_id} with scope {scope} to user {username}")
     def assign_user_role(
         self, username: str, role_id: str, scope: str
@@ -256,6 +258,8 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._project_locator(project_id))
 
+        self.created_objects.unregister_project(project_id)
+
     @allure.step("Create build configuration in project {project_id}")
     def create_build_configuration(
         self, project_id: str, configuration_request: CreateBuildConfigurationRequest
@@ -369,6 +373,8 @@ class AdminSteps(BaseSteps):
             Endpoint.DELETE_BUILD_CONFIGURATION,
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._build_configuration_locator(build_configuration_id))
+
+        self.created_objects.unregister_build_configuration(build_configuration_id)
 
     def create_build_step(
         self, build_configuration_id: str, build_step_request: CreateBuildStepRequest
