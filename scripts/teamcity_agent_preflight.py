@@ -6,6 +6,7 @@ from typing import Any
 
 import requests
 
+from src.main.api.constants.teamcity import TeamCityLocator
 from src.main.api.specs.request_specs import RequestSpecs
 
 
@@ -51,7 +52,7 @@ def main() -> int:
             if agent.get("authorized"):
                 continue
             authorize = requests.put(
-                f"{base_url}/agents/id:{agent['id']}/authorized",
+                f"{base_url}/agents/{TeamCityLocator.by_id(agent['id'])}/authorized",
                 data="true",
                 headers={
                     **headers,
