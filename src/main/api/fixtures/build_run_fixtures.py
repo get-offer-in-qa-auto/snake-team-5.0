@@ -2,6 +2,11 @@ from collections.abc import Callable
 
 import pytest
 
+from src.main.api.generators.build_run_data import (
+    BuildRunData,
+    BuildRunScenario,
+    CancellableBuildRunScenario,
+)
 from src.main.api.models.create_build_step_request import CreateBuildStepRequest
 
 
@@ -21,3 +26,23 @@ def runnable_build_configuration_factory(
         return configuration.id
 
     return create
+
+
+@pytest.fixture
+def successful_build_run_scenario() -> BuildRunScenario:
+    return BuildRunData.successful()
+
+
+@pytest.fixture
+def failed_build_run_scenario() -> BuildRunScenario:
+    return BuildRunData.failed()
+
+
+@pytest.fixture
+def runtime_parameter_build_run_scenario() -> BuildRunScenario:
+    return BuildRunData.with_runtime_parameter()
+
+
+@pytest.fixture
+def cancellable_build_run_scenario() -> CancellableBuildRunScenario:
+    return BuildRunData.cancellable()

@@ -57,5 +57,5 @@ def admin_user_request():
     return CreateUserRequest(
         username=str(username),
         password=str(password),
-        name="Admin User",
+        name=Config.get("ADMIN_NAME", "TeamCity Administrator"),
     )

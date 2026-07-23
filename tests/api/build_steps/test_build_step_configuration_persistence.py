@@ -40,21 +40,19 @@ def test_updated_build_step_is_persisted_in_configuration(
     project: ProjectResponse,
     build_configuration: BuildConfigurationResponse,
     build_step_request: CreateBuildStepRequest,
-    build_step_request_factory,
+    updated_build_step_request: CreateBuildStepRequest,
 ):
     created_step = api_manager.admin_steps.create_build_step(
         build_configuration.id, build_step_request
     )
-    updated_request = build_step_request_factory(script="echo persisted update")
-
     api_manager.admin_steps.update_build_step(
-        build_configuration.id, created_step.id, updated_request
+        build_configuration.id, created_step.id, updated_build_step_request
     )
     api_manager.configuration_steps.verify_build_step_persisted(
         project.id,
         build_configuration.id,
         created_step.id,
-        updated_request,
+        updated_build_step_request,
     )
 
 

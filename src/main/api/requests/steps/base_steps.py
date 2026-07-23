@@ -2,11 +2,12 @@ from typing import Any
 
 import allure
 
+from src.main.api.fixtures.created_objects_registry import CreatedObjectsRegistry
 from src.main.api.models.comparison.model_assertions import ModelAssertions
 
 
 class BaseSteps:
-    def __init__(self, created_objects: list[Any]):
+    def __init__(self, created_objects: CreatedObjectsRegistry):
         self.created_objects = created_objects
 
     @allure.step("Verify response matches expected model")

@@ -6,14 +6,14 @@ import sys
 import psycopg
 import requests
 
-from src.main.api.database import create_database_client
+from src.main.api.database import DBRequest, create_database_client
 
 
 def run_database_preflight() -> int:
     try:
         client = create_database_client()
-        with client.snapshot() as database:
-            database.fetch_all("users")
+        with client.snapshot() as executor:
+            executor.fetch_all(DBRequest.select("users"))
     except (
         AssertionError,
         LookupError,

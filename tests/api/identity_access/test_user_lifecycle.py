@@ -65,13 +65,10 @@ def test_create_user_without_authorization(
 @allure.tag("api", "regression", "user", "database")
 @pytest.mark.api
 @pytest.mark.regression
-def test_delete_user(
-    api_manager: ApiManager, user_request: CreateUserRequest, created_objects: list
-):
+def test_delete_user(api_manager: ApiManager, user_request: CreateUserRequest):
     user = api_manager.admin_steps.create_user(user_request)
 
     api_manager.admin_steps.delete_user(user.id)
-    created_objects.remove(user)
 
     api_manager.admin_steps.check_user_does_not_exist(user.username)
     api_manager.database_steps.verify_user_deleted(user.username)
@@ -82,14 +79,13 @@ def test_delete_user(
 @pytest.mark.api
 @pytest.mark.regression
 def test_deleted_user_cannot_authenticate(
-    api_manager: ApiManager, user_request: CreateUserRequest, created_objects: list
+    api_manager: ApiManager, user_request: CreateUserRequest
 ):
     user = api_manager.admin_steps.create_user(user_request)
     authenticated_user = api_manager.admin_steps.get_user_as(user_request)
     api_manager.user_steps.verify_response_matches(user_request, authenticated_user)
 
     api_manager.admin_steps.delete_user(user.id)
-    created_objects.remove(user)
 
     api_manager.admin_steps.check_user_cannot_authenticate(user_request)
     api_manager.admin_steps.check_user_does_not_exist(user.username)

@@ -38,12 +38,6 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_created_or_ok(),
         ).post(user_request)
 
-        CrudRequester(
-            RequestSpecs.admin_auth_spec(),
-            Endpoint.CREATE_USER,
-            ResponseSpecs.request_returns_ok(),
-        ).update(user_request, path=self._user_locator(user_response.id))
-
         self.created_objects.append(user_response)
         return user_response
 
@@ -120,6 +114,8 @@ class AdminSteps(BaseSteps):
             Endpoint.DELETE_USER,
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._user_locator(user_id))
+
+        self.created_objects.unregister_user(user_id)
 
     @allure.step("Assign role {role_id} with scope {scope} to user {username}")
     def assign_user_role(
@@ -256,6 +252,8 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._project_locator(project_id))
 
+        self.created_objects.unregister_project(project_id)
+
     @allure.step("Delete project {project_id} if it exists")
     def delete_project_if_exists(self, project_id: str):
         CrudRequester(
@@ -377,6 +375,8 @@ class AdminSteps(BaseSteps):
             Endpoint.DELETE_BUILD_CONFIGURATION,
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._build_configuration_locator(build_configuration_id))
+
+        self.created_objects.unregister_build_configuration(build_configuration_id)
 
     def create_build_step(
         self, build_configuration_id: str, build_step_request: CreateBuildStepRequest

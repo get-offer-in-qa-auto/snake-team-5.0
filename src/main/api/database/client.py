@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-import csv
-import re
 import subprocess
 import time
 import uuid
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any
-from zipfile import ZipFile
 
 import psycopg
 import requests
@@ -19,73 +15,18 @@ from filelock import FileLock
 from psycopg.rows import dict_row
 
 from src.main.api.configs.config import Config
+from src.main.api.database.executor import (
+    DBExecutor,
+    PostgreSQLExecutor,
+    TeamCityBackupExecutor,
+)
 from src.main.api.specs.request_specs import RequestSpecs
-
-DatabaseRow = dict[str, Any]
-_IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_$]*$")
-
-
-class DatabaseSnapshot(ABC):
-    @abstractmethod
-    def fetch_one(self, table: str, where: Mapping[str, Any]) -> DatabaseRow | None: ...
-
-    @abstractmethod
-    def fetch_all(
-        self, table: str, where: Mapping[str, Any] | None = None
-    ) -> list[DatabaseRow]: ...
 
 
 class DatabaseClient(ABC):
     @abstractmethod
     @contextmanager
-    def snapshot(self) -> Iterator[DatabaseSnapshot]: ...
-
-
-class TeamCityBackupSnapshot(DatabaseSnapshot):
-    def __init__(self, archive_path: Path):
-        self.archive_path = archive_path
-
-    def fetch_one(self, table: str, where: Mapping[str, Any]) -> DatabaseRow | None:
-        rows = self.fetch_all(table, where)
-        return rows[0] if rows else None
-
-    def fetch_all(
-        self, table: str, where: Mapping[str, Any] | None = None
-    ) -> list[DatabaseRow]:
-        _validate_identifier(table)
-        normalized_where = {
-            key.upper(): _normalize_comparison_value(value)
-            for key, value in (where or {}).items()
-        }
-        for column in normalized_where:
-            _validate_identifier(column)
-
-        member = f"database_dump/{table.lower()}"
-        with ZipFile(self.archive_path) as archive:
-            try:
-                with archive.open(member) as table_file:
-                    lines = (line.decode("utf-8") for line in table_file)
-                    reader = csv.DictReader(lines, skipinitialspace=True)
-                    rows = [
-                        {
-                            str(key).upper(): _normalize_snapshot_value(value)
-                            for key, value in row.items()
-                        }
-                        for row in reader
-                    ]
-            except KeyError as error:
-                raise LookupError(
-                    f"Table {table!r} is absent from the TeamCity database snapshot"
-                ) from error
-
-        return [
-            row
-            for row in rows
-            if all(
-                _normalize_comparison_value(row.get(column)) == expected
-                for column, expected in normalized_where.items()
-            )
-        ]
+    def snapshot(self) -> Iterator[DBExecutor]: ...
 
 
 class TeamCityBackupDatabaseClient(DatabaseClient):
@@ -106,12 +47,12 @@ class TeamCityBackupDatabaseClient(DatabaseClient):
         self.lock = FileLock(lock_dir / ".database-snapshot.lock")
 
     @contextmanager
-    def snapshot(self) -> Iterator[DatabaseSnapshot]:
+    def snapshot(self) -> Iterator[DBExecutor]:
         with self.lock.acquire(timeout=self.backup_timeout):
             with TemporaryDirectory(prefix="teamcity-db-") as temp_dir:
                 archive_path = self._create_backup(Path(temp_dir))
                 try:
-                    yield TeamCityBackupSnapshot(archive_path)
+                    yield TeamCityBackupExecutor(archive_path)
                 finally:
                     self._remove_server_backup(archive_path.name)
 
@@ -205,55 +146,15 @@ class TeamCityBackupDatabaseClient(DatabaseClient):
         )
 
 
-class PostgreSQLSnapshot(DatabaseSnapshot):
-    def __init__(self, connection: psycopg.Connection[DatabaseRow]):
-        self.connection = connection
-
-    def fetch_one(self, table: str, where: Mapping[str, Any]) -> DatabaseRow | None:
-        rows = self._select(table, where, limit=1)
-        return rows[0] if rows else None
-
-    def fetch_all(
-        self, table: str, where: Mapping[str, Any] | None = None
-    ) -> list[DatabaseRow]:
-        return self._select(table, where or {})
-
-    def _select(
-        self, table: str, where: Mapping[str, Any], limit: int | None = None
-    ) -> list[DatabaseRow]:
-        _validate_identifier(table)
-        columns = list(where)
-        for column in columns:
-            _validate_identifier(column)
-
-        query = f"SELECT * FROM {table}"
-        params: list[Any] = []
-        if columns:
-            query += " WHERE " + " AND ".join(f"{column} = %s" for column in columns)
-            params.extend(
-                int(where[column]) if isinstance(where[column], bool) else where[column]
-                for column in columns
-            )
-        if limit is not None:
-            query += f" LIMIT {limit}"
-
-        with self.connection.cursor() as cursor:
-            cursor.execute(query, params)
-            return [
-                {str(key).upper(): value for key, value in row.items()}
-                for row in cursor.fetchall()
-            ]
-
-
 class PostgreSQLDatabaseClient(DatabaseClient):
     def __init__(self, dsn: str):
         self.dsn = dsn
 
     @contextmanager
-    def snapshot(self) -> Iterator[DatabaseSnapshot]:
+    def snapshot(self) -> Iterator[DBExecutor]:
         with psycopg.connect(self.dsn, row_factory=dict_row) as connection:
             connection.execute("SET TRANSACTION READ ONLY")
-            yield PostgreSQLSnapshot(connection)
+            yield PostgreSQLExecutor(connection)
 
 
 def create_database_client() -> DatabaseClient:
@@ -281,22 +182,3 @@ def _configured_backup_dir() -> Path | None:
         Path(__file__).parents[4] / "teamcity-local" / "teamcity-data" / "backup"
     )
     return local_dir if local_dir.is_dir() else None
-
-
-def _validate_identifier(value: str) -> None:
-    if not _IDENTIFIER.fullmatch(value):
-        raise ValueError(f"Unsafe database identifier: {value!r}")
-
-
-def _normalize_snapshot_value(value: str | None) -> str | None:
-    if value is None or value == "":
-        return None
-    return value
-
-
-def _normalize_comparison_value(value: Any) -> str | None:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return "1" if value else "0"
-    return str(value)
