@@ -27,7 +27,9 @@ def cleanup_objects(objects: list[Any]) -> list[CleanupFailure]:
     """
     api_manager = ApiManager(objects)
     failures: list[CleanupFailure] = []
-    for obj in reversed(objects):
+    # Delete steps unregister successfully removed entities, so iterate over a
+    # stable snapshot instead of the mutable cleanup registry itself.
+    for obj in reversed(objects.copy()):
         try:
             _cleanup_object(api_manager, obj)
         except Exception as error:

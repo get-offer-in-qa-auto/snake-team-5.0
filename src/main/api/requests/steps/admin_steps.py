@@ -19,6 +19,7 @@ from src.main.api.models.role_assignment import (
     RoleAssignmentResponse,
     RoleAssignmentsResponse,
 )
+from src.main.api.models.user_token import UserTokenResponse
 from src.main.api.requests.skeleton.endpoint import Endpoint
 from src.main.api.requests.skeleton.requesters.crud_requester import CrudRequester
 from src.main.api.requests.skeleton.requesters.validated_crud_requester import (
@@ -115,11 +116,31 @@ class AdminSteps(BaseSteps):
 
     @allure.step("Delete user {user_id}")
     def delete_user(self, user_id: int | str):
+        deleted_usernames = {
+            obj.username
+            for obj in self.created_objects
+            if isinstance(obj, CreateUserResponse)
+            and self._user_matches_locator(obj, user_id)
+        }
+
         CrudRequester(
             RequestSpecs.admin_auth_spec(),
             Endpoint.DELETE_USER,
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._user_locator(user_id))
+
+        self._unregister_created_objects(
+            lambda obj: (
+                (
+                    isinstance(obj, CreateUserResponse)
+                    and self._user_matches_locator(obj, user_id)
+                )
+                or (
+                    isinstance(obj, UserTokenResponse)
+                    and obj.username in deleted_usernames
+                )
+            )
+        )
 
     @allure.step("Assign role {role_id} with scope {scope} to user {username}")
     def assign_user_role(
@@ -250,11 +271,23 @@ class AdminSteps(BaseSteps):
 
     @allure.step("Delete project {project_id}")
     def delete_project(self, project_id: str):
+        deleted_project_ids = self._registered_project_tree(project_id)
+
         CrudRequester(
             RequestSpecs.admin_auth_spec(),
             Endpoint.DELETE_PROJECT,
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._project_locator(project_id))
+
+        self._unregister_created_objects(
+            lambda obj: (
+                (isinstance(obj, ProjectResponse) and obj.id in deleted_project_ids)
+                or (
+                    isinstance(obj, BuildConfigurationResponse)
+                    and self._build_configuration_project_id(obj) in deleted_project_ids
+                )
+            )
+        )
 
     @allure.step("Create build configuration in project {project_id}")
     def create_build_configuration(
@@ -369,6 +402,15 @@ class AdminSteps(BaseSteps):
             Endpoint.DELETE_BUILD_CONFIGURATION,
             ResponseSpecs.entity_was_deleted(),
         ).delete(self._build_configuration_locator(build_configuration_id))
+
+        self._unregister_created_objects(
+            lambda obj: (
+                isinstance(obj, BuildConfigurationResponse)
+                and self._build_configuration_matches_locator(
+                    obj, build_configuration_id
+                )
+            )
+        )
 
     def create_build_step(
         self, build_configuration_id: str, build_step_request: CreateBuildStepRequest
@@ -551,3 +593,57 @@ class AdminSteps(BaseSteps):
             if ":" in user_id_or_username
             else f"username:{user_id_or_username}"
         )
+
+    @staticmethod
+    def _user_matches_locator(
+        user: CreateUserResponse, user_id_or_username: int | str
+    ) -> bool:
+        if isinstance(user_id_or_username, int):
+            return user.id == user_id_or_username
+        if user_id_or_username.startswith("id:"):
+            return str(user.id) == user_id_or_username.removeprefix("id:")
+        if user_id_or_username.startswith("username:"):
+            return user.username == user_id_or_username.removeprefix("username:")
+        return user.username == user_id_or_username
+
+    def _registered_project_tree(self, project_id: str) -> set[str]:
+        normalized_project_id = project_id.removeprefix("id:")
+        project_ids = {normalized_project_id}
+
+        while True:
+            child_ids = {
+                obj.id
+                for obj in self.created_objects
+                if isinstance(obj, ProjectResponse)
+                and self._parent_project_id(obj) in project_ids
+            }
+            if child_ids <= project_ids:
+                return project_ids
+            project_ids.update(child_ids)
+
+    @staticmethod
+    def _parent_project_id(project: ProjectResponse) -> str | None:
+        if project.parentProject is None:
+            return None
+        if project.parentProject.id is not None:
+            return project.parentProject.id
+        if project.parentProject.locator is not None:
+            return project.parentProject.locator.removeprefix("id:")
+        return None
+
+    @staticmethod
+    def _build_configuration_project_id(
+        configuration: BuildConfigurationResponse,
+    ) -> str | None:
+        if configuration.projectId is not None:
+            return configuration.projectId
+        if configuration.project is not None:
+            return configuration.project.id
+        return None
+
+    @staticmethod
+    def _build_configuration_matches_locator(
+        configuration: BuildConfigurationResponse,
+        build_configuration_id: str,
+    ) -> bool:
+        return configuration.id == build_configuration_id.removeprefix("id:")

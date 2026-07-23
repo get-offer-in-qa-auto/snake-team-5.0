@@ -38,12 +38,10 @@ def test_created_project_is_persisted_in_database(
 def test_delete_project(
     api_manager: ApiManager,
     project_request: CreateProjectRequest,
-    created_objects: list,
 ):
     project = api_manager.admin_steps.create_project(project_request)
 
     api_manager.admin_steps.delete_project(project.id)
-    created_objects.remove(project)
 
     api_manager.admin_steps.check_project_does_not_exist(project.id)
     api_manager.database_steps.verify_project_deleted(project.id)
