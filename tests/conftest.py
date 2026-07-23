@@ -8,6 +8,7 @@ pytest_plugins = [
     "src.main.api.fixtures.role_fixtures",
     "src.main.api.fixtures.token_fixtures",
     "src.main.api.fixtures.user_fixtures",
+    "src.main.ui.fixtures.ui_fixtures",
 ]
 
 import allure  # noqa: E402
@@ -96,6 +97,12 @@ ALLURE_HIERARCHY_BY_PATH = {
         "API Utilities",
         "Cleanup",
     ),
+    ("ui", "auth", "test_login.py"): ("UI", "Authentication", "Login"),
+    ("ui", "projects", "test_project_creation.py"): (
+        "UI",
+        "Projects",
+        "Creation",
+    ),
 }
 
 
@@ -118,8 +125,27 @@ def apply_allure_hierarchy(request: pytest.FixtureRequest) -> None:
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """Keep the call-phase result available to fixture teardown."""
+    """Keep reports for teardown and attach UI state on a test failure."""
     outcome = yield
     report = outcome.get_result()
-    if report.when == "call":
-        item.rep_call = report
+    setattr(item, f"rep_{report.when}", report)
+
+    if (
+        not report.failed
+        or "page" not in item.funcargs
+        or getattr(item, "ui_failure_screenshot_attached", False)
+    ):
+        return
+
+    try:
+        screenshot = item.funcargs["page"].screenshot(full_page=True)
+        allure.attach(
+            screenshot,
+            "UI failure",
+            attachment_type=allure.attachment_type.PNG,
+        )
+        item.ui_failure_screenshot_attached = True
+    except Exception as error:  # pragma: no cover - diagnostic best effort
+        item.add_report_section(
+            report.when, "screenshot", f"Could not capture screenshot: {error}"
+        )

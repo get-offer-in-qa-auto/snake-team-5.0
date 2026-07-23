@@ -11,4 +11,4 @@ ignore = ["E501"]
 python_version = "3.12"
 files = ["src/main"]
 explicit_package_bases = true
-exclude = ["artifacts", "teamcity-local", "src/main/api/fixtures/setup_hook.py"]
+exclude = ["artifacts", "teamcity-local"]

@@ -42,8 +42,20 @@ def user_factory(api_manager: ApiManager, user_request_factory):
 
 @pytest.fixture
 def admin_user_request():
+    username = (
+        Config.get("TEAMCITY_UI_USERNAME")
+        or Config.get("TEAMCITY_USERNAME")
+        or Config.get("ADMIN_USERNAME")
+    )
+    password = (
+        Config.get("TEAMCITY_UI_PASSWORD")
+        or Config.get("TEAMCITY_PASSWORD")
+        or Config.get("ADMIN_PASSWORD")
+    )
+    if not username or not password:
+        raise ValueError("TeamCity UI administrator credentials are not configured")
     return CreateUserRequest(
-        username=Config.get("ADMIN_USERNAME"),
-        password=Config.get("ADMIN_PASSWORD"),
+        username=str(username),
+        password=str(password),
         name=Config.get("ADMIN_NAME", "TeamCity Administrator"),
     )

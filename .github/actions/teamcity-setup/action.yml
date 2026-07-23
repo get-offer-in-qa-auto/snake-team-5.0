@@ -57,6 +57,10 @@ runs:
       shell: bash
       run: python3 -m pip install -r requirements.txt
 
+    - name: Install Chromium for UI tests
+      shell: bash
+      run: python3 -m playwright install --with-deps chromium
+
     - name: Generate TeamCity CI administrator credentials
       shell: bash
       run: |
@@ -66,6 +70,8 @@ runs:
         echo "::add-mask::$super_user_token"
         echo "TEAMCITY_USERNAME=ci-initial-admin" >> "$GITHUB_ENV"
         echo "TEAMCITY_PASSWORD=$password" >> "$GITHUB_ENV"
+        echo "TEAMCITY_UI_USERNAME=ci-initial-admin" >> "$GITHUB_ENV"
+        echo "TEAMCITY_UI_PASSWORD=$password" >> "$GITHUB_ENV"
         echo "TEAMCITY_SUPER_USER_TOKEN=$super_user_token" >> "$GITHUB_ENV"
 
     - name: Start TeamCity server and agent

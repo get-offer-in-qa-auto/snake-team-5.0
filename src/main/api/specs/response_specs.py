@@ -54,6 +54,18 @@ class ResponseSpecs:
         )
 
     @staticmethod
+    def entity_was_deleted_or_not_found() -> Callable[[Response], None]:
+        """Accept idempotent teardown when an expected entity was never created."""
+        return ResponseSpecs._make_status_checker(
+            [
+                HTTPStatus.OK,
+                HTTPStatus.ACCEPTED,
+                HTTPStatus.NO_CONTENT,
+                HTTPStatus.NOT_FOUND,
+            ]
+        )
+
+    @staticmethod
     def request_returns_bad_request(
         error_key: str, error_value: str
     ) -> Callable[[Response], None]:
