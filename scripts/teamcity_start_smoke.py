@@ -15,7 +15,10 @@ from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
 
 import requests
 
-from src.main.api.constants.teamcity import TeamCityLocator
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from src.main.api.constants.teamcity import TeamCityLocator  # noqa: E402
 
 FIRST_START_MARKERS = (
     "startup confirmation",
