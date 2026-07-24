@@ -10,10 +10,11 @@ from src.main.api.models.create_project_request import CreateProjectRequest
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.project_response import ProjectResponse
 from src.main.api.models.role import Role, RoleScope
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Assign role to user")
-@allure.tag("api", "regression", "permissions", "user")
+@api_regression_tags(AllureTag.PERMISSIONS, AllureTag.USER)
 @pytest.mark.api
 @pytest.mark.regression
 def test_assign_role_to_user(api_manager: ApiManager, user_request: CreateUserRequest):
@@ -31,7 +32,7 @@ def test_assign_role_to_user(api_manager: ApiManager, user_request: CreateUserRe
 
 
 @allure.title("Administrator user can create project")
-@allure.tag("api", "regression", "permissions", "project")
+@api_regression_tags(AllureTag.PERMISSIONS, AllureTag.PROJECT)
 @pytest.mark.api
 @pytest.mark.regression
 def test_admin_can_create_project(
@@ -50,7 +51,7 @@ def test_admin_can_create_project(
 
 
 @allure.title("Limited user cannot create project")
-@allure.tag("api", "regression", "permissions", "project", "negative")
+@api_regression_tags(AllureTag.PERMISSIONS, AllureTag.PROJECT, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_limited_user_cannot_create_project(
@@ -64,7 +65,7 @@ def test_limited_user_cannot_create_project(
 
 
 @allure.title("Administrator user can create build configuration")
-@allure.tag("api", "regression", "permissions", "build-configuration")
+@api_regression_tags(AllureTag.PERMISSIONS, AllureTag.BUILD_CONFIGURATION)
 @pytest.mark.api
 @pytest.mark.regression
 def test_admin_can_create_build_configuration(
@@ -86,7 +87,9 @@ def test_admin_can_create_build_configuration(
 
 
 @allure.title("Limited user cannot create build configuration")
-@allure.tag("api", "regression", "permissions", "build-configuration", "negative")
+@api_regression_tags(
+    AllureTag.PERMISSIONS, AllureTag.BUILD_CONFIGURATION, AllureTag.NEGATIVE
+)
 @pytest.mark.api
 @pytest.mark.regression
 def test_limited_user_cannot_create_build_configuration(

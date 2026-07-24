@@ -4,10 +4,11 @@ import pytest
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.create_build_step_request import CreateBuildStepRequest
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Create build step")
-@allure.tag("api", "smoke", "regression", "build-step")
+@api_regression_tags(AllureTag.BUILD_STEP, smoke=True)
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
@@ -29,7 +30,7 @@ def test_create_build_step(
 
 
 @allure.title("Update build step")
-@allure.tag("api", "regression", "build-step")
+@api_regression_tags(AllureTag.BUILD_STEP)
 @pytest.mark.api
 @pytest.mark.regression
 def test_update_build_step(
@@ -56,7 +57,7 @@ def test_update_build_step(
 
 
 @allure.title("Delete build step")
-@allure.tag("api", "smoke", "regression", "build-step")
+@api_regression_tags(AllureTag.BUILD_STEP, smoke=True)
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
@@ -76,7 +77,7 @@ def test_delete_build_step(
 
 
 @allure.title("Create multiple build steps")
-@allure.tag("api", "regression", "build-step")
+@api_regression_tags(AllureTag.BUILD_STEP)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_multiple_build_steps(

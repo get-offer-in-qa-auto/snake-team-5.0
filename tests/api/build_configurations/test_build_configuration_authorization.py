@@ -6,10 +6,13 @@ from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
 )
 from src.main.api.models.project_response import ProjectResponse
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Build configuration cannot be created without authorization")
-@allure.tag("api", "regression", "build-configuration", "authorization", "negative")
+@api_regression_tags(
+    AllureTag.BUILD_CONFIGURATION, AllureTag.AUTHORIZATION, AllureTag.NEGATIVE
+)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_without_authorization(

@@ -5,10 +5,11 @@ from src.main.api.classes.api_manager import ApiManager
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.create_build_step_request import CreateBuildStepRequest
 from src.main.api.models.project_response import ProjectResponse
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Created build step is persisted in TeamCity configuration")
-@allure.tag("api", "regression", "build-step", "configuration")
+@api_regression_tags(AllureTag.BUILD_STEP, AllureTag.CONFIGURATION)
 @pytest.mark.api
 @pytest.mark.regression
 @pytest.mark.configuration
@@ -31,7 +32,7 @@ def test_created_build_step_is_persisted_in_configuration(
 
 
 @allure.title("Updated build step is persisted in TeamCity configuration")
-@allure.tag("api", "regression", "build-step", "configuration")
+@api_regression_tags(AllureTag.BUILD_STEP, AllureTag.CONFIGURATION)
 @pytest.mark.api
 @pytest.mark.regression
 @pytest.mark.configuration
@@ -57,7 +58,7 @@ def test_updated_build_step_is_persisted_in_configuration(
 
 
 @allure.title("Deleted build step is removed from TeamCity configuration")
-@allure.tag("api", "regression", "build-step", "configuration")
+@api_regression_tags(AllureTag.BUILD_STEP, AllureTag.CONFIGURATION)
 @pytest.mark.api
 @pytest.mark.regression
 @pytest.mark.configuration

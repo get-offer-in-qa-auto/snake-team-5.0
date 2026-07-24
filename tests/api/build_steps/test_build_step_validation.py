@@ -3,10 +3,11 @@ import pytest
 
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.models.create_build_step_request import CreateBuildStepRequest
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Build step cannot be created for nonexistent build configuration")
-@allure.tag("api", "regression", "build-step", "negative")
+@api_regression_tags(AllureTag.BUILD_STEP, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_step_for_nonexistent_build_configuration(

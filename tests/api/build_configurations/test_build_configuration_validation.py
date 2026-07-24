@@ -7,10 +7,11 @@ from src.main.api.models.create_build_configuration_request import (
 )
 from src.main.api.models.project_response import ProjectResponse
 from src.main.api.specs.response_specs import ResponseError
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Build configuration cannot be created in unknown project")
-@allure.tag("api", "regression", "build-configuration", "negative")
+@api_regression_tags(AllureTag.BUILD_CONFIGURATION, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_with_unknown_project(
@@ -33,7 +34,7 @@ def test_create_build_configuration_with_unknown_project(
 
 
 @allure.title("Build configuration cannot be created with existing id")
-@allure.tag("api", "regression", "build-configuration", "negative")
+@api_regression_tags(AllureTag.BUILD_CONFIGURATION, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_with_existing_id(
@@ -64,7 +65,7 @@ def test_create_build_configuration_with_existing_id(
 @allure.title(
     "Build configuration cannot be created with existing name in same project"
 )
-@allure.tag("api", "regression", "build-configuration", "negative")
+@api_regression_tags(AllureTag.BUILD_CONFIGURATION, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_with_existing_name_in_same_project(

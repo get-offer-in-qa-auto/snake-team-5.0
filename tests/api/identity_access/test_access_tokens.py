@@ -4,10 +4,11 @@ import pytest
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.user_token import CreateUserTokenRequest
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Create user token")
-@allure.tag("api", "smoke", "regression", "token", "user")
+@api_regression_tags(AllureTag.TOKEN, AllureTag.USER, smoke=True)
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
@@ -25,7 +26,7 @@ def test_create_user_token(
 
 
 @allure.title("Request with valid token is authorized")
-@allure.tag("api", "regression", "token", "authorization")
+@api_regression_tags(AllureTag.TOKEN, AllureTag.AUTHORIZATION)
 @pytest.mark.api
 @pytest.mark.regression
 def test_request_with_valid_token(
@@ -44,7 +45,7 @@ def test_request_with_valid_token(
 
 
 @allure.title("Request without token is rejected")
-@allure.tag("api", "regression", "token", "authorization", "negative")
+@api_regression_tags(AllureTag.TOKEN, AllureTag.AUTHORIZATION, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_request_without_token(
@@ -56,7 +57,7 @@ def test_request_without_token(
 
 
 @allure.title("Request with invalid token is rejected")
-@allure.tag("api", "regression", "token", "authorization", "negative")
+@api_regression_tags(AllureTag.TOKEN, AllureTag.AUTHORIZATION, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_request_with_invalid_token(
@@ -72,7 +73,7 @@ def test_request_with_invalid_token(
 
 
 @allure.title("Request with revoked token is rejected")
-@allure.tag("api", "regression", "token", "authorization", "negative")
+@api_regression_tags(AllureTag.TOKEN, AllureTag.AUTHORIZATION, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_request_with_revoked_token(
@@ -94,7 +95,7 @@ def test_request_with_revoked_token(
 
 
 @allure.title("Deleting user revokes its tokens")
-@allure.tag("api", "regression", "token", "user")
+@api_regression_tags(AllureTag.TOKEN, AllureTag.USER)
 @pytest.mark.api
 @pytest.mark.regression
 def test_delete_user_revokes_its_tokens(
