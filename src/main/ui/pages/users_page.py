@@ -15,10 +15,14 @@ if TYPE_CHECKING:
 
 class UsersPage(BasePage):
     path = "/admin/admin.html?item=users"
+    CREATE_USER_LINK_NAME = "Create user account"
+    USER_ROW_SELECTOR = "table.userList tr"
 
     @property
     def create_user_link(self) -> Locator:
-        return self.page.get_by_role("link", name="Create user account", exact=True)
+        return self.page.get_by_role(
+            "link", name=self.CREATE_USER_LINK_NAME, exact=True
+        )
 
     def user_link(self, user_request: CreateUserRequest) -> Locator:
         return self.page.get_by_role(
@@ -26,7 +30,7 @@ class UsersPage(BasePage):
         )
 
     def user_row(self, user_request: CreateUserRequest) -> Locator:
-        return self.page.locator("table.userList tr").filter(
+        return self.page.locator(self.USER_ROW_SELECTOR).filter(
             has=self.user_link(user_request)
         )
 

@@ -14,15 +14,17 @@ if TYPE_CHECKING:
 
 class UserPage(BasePage):
     path = "/admin/editUser.html"
+    ACCESS_TOKENS_LINK_TEXT = "Access Tokens"
+    DELETE_USER_LINK_NAME = "Delete user account"
 
     @property
     def access_tokens_link(self) -> Locator:
-        return self.page.get_by_text("Access Tokens", exact=True)
+        return self.page.get_by_text(self.ACCESS_TOKENS_LINK_TEXT, exact=True)
 
     @property
     def delete_button(self) -> Locator:
         return self.page.get_by_role(
-            "link", name="Delete user account", exact=True
+            "link", name=self.DELETE_USER_LINK_NAME, exact=True
         )
 
     @allure.step("Open user access tokens")
