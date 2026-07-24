@@ -30,6 +30,12 @@ def user_request(user_request_factory):
 
 
 @pytest.fixture(scope="function")
+def user(api_manager: ApiManager, user_request: CreateUserRequest) -> CreateUserRequest:
+    api_manager.admin_steps.create_user(user_request)
+    return user_request
+
+
+@pytest.fixture(scope="function")
 def user_factory(api_manager: ApiManager, user_request_factory):
     def create_user() -> CreateUserRequest:
         user_data = user_request_factory()

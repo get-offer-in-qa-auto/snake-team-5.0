@@ -261,8 +261,8 @@ API-тесты без этих маркеров не запускают брау
 PostgreSQL regression всегда используют 2 worker и 2 отдельных TeamCity agent.
 Количество workers в ручном запуске не настраивается.
 
-В pull request сначала в 2 worker выполняются 8 smoke-тестов, затем в 2 worker —
-44 остальных regression-теста. Локально количество workers задаётся так:
+В pull request сначала в 2 worker выполняются 10 smoke-тестов, затем в 2 worker —
+45 остальных regression-тестов. Локально количество workers задаётся так:
 
 ```bash
 python3 -m pytest -m regression -n 2

@@ -117,6 +117,16 @@ class AdminSteps(BaseSteps):
 
         self.created_objects.unregister_user(user_id)
 
+    @allure.step("Delete user {user_id} if it exists")
+    def delete_user_if_exists(self, user_id: int | str):
+        CrudRequester(
+            RequestSpecs.admin_auth_spec(),
+            Endpoint.DELETE_USER,
+            ResponseSpecs.entity_was_deleted_or_not_found(),
+        ).delete(self._user_locator(user_id))
+
+        self.created_objects.unregister_user(user_id)
+
     @allure.step("Assign role {role_id} with scope {scope} to user {username}")
     def assign_user_role(
         self, username: str, role_id: str, scope: str
