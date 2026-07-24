@@ -10,7 +10,12 @@ from src.main.ui.pages.base_page import BasePage
 
 
 class AccessTokensPage(BasePage):
-    path = "/admin/editUser.html?item=accessTokens"
+    @property
+    def path(self) -> str:
+        raise NotImplementedError(
+            "AccessTokensPage cannot be opened directly; "
+            "use UserPage.open_access_tokens()"
+        )
 
     @property
     def create_token_link(self) -> Locator:

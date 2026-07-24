@@ -13,9 +13,14 @@ if TYPE_CHECKING:
 
 
 class UserPage(BasePage):
-    path = "/admin/editUser.html"
     ACCESS_TOKENS_LINK_TEXT = "Access Tokens"
     DELETE_USER_LINK_NAME = "Delete user account"
+
+    @property
+    def path(self) -> str:
+        raise NotImplementedError(
+            "UserPage cannot be opened directly; use UsersPage.open_user()"
+        )
 
     @property
     def access_tokens_link(self) -> Locator:
