@@ -2,6 +2,8 @@ import pytest
 
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.constants.teamcity import ROOT_PROJECT_ID
+from src.main.api.models.create_user_request import CreateUserRequest
+from src.main.api.models.project_response import ProjectResponse
 from src.main.api.models.role import Role, RoleScope
 
 
@@ -26,3 +28,10 @@ def limited_user_factory(api_manager: ApiManager, user_request_factory):
         return user_request
 
     return create_limited_user
+
+
+@pytest.fixture(scope="function")
+def project_viewer_user(
+    project: ProjectResponse, limited_user_factory
+) -> CreateUserRequest:
+    return limited_user_factory(project.id)

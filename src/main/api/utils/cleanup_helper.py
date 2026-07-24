@@ -7,6 +7,7 @@ from src.main.api.classes.api_manager import ApiManager
 from src.main.api.fixtures.created_objects_registry import CreatedObjectsRegistry
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.create_project_request import CreateProjectRequest
+from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.create_user_response import CreateUserResponse
 from src.main.api.models.project_response import ProjectResponse
 from src.main.api.models.user_token import UserTokenResponse
@@ -53,6 +54,8 @@ def _cleanup_object(api_manager: ApiManager, obj: Any) -> None:
         if obj.username is None or obj.password is None:
             raise ValueError("Token has no credentials required for cleanup")
         api_manager.user_steps.delete_user_token(obj.username, obj.password, obj.name)
+    elif isinstance(obj, CreateUserRequest):
+        api_manager.admin_steps.delete_user_if_exists(obj.username)
     elif isinstance(obj, CreateUserResponse):
         api_manager.admin_steps.delete_user(obj.id)
     elif isinstance(obj, BuildConfigurationResponse):

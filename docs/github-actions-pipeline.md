@@ -8,7 +8,7 @@ PR pipeline поднимает один чистый TeamCity стенд с на
 build agents и выполняет gated regression. Один параметр `parallelism` задаёт
 одинаковое количество TeamCity agents и pytest workers. Поддерживаются режимы
 `1`, `2` и `3`, по умолчанию — `2`. Этапы идут последовательно: database
-preflight, 8 smoke-тестов и затем 44 остальных regression-теста. Если preflight
+preflight, 10 smoke-тестов и затем 45 остальных regression-теста. Если preflight
 или smoke падает, следующий этап не запускается.
 
 - поднять TeamCity Server;
@@ -67,7 +67,7 @@ xdist workers, и количеством отдельных TeamCity agents. В 
 
 ```text
 PostgreSQL health → TeamCity external DB bootstrap → read-only DB preflight
-→ 8 smoke tests → 44 regression tests with selected parallelism
+→ 10 smoke tests → 45 regression tests with selected parallelism
 ```
 
 Workflow не запускается на каждый PR и не публикует GitHub Pages. JUnit, Allure

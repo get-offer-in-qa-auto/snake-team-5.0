@@ -4,6 +4,7 @@ from typing import Any
 from src.main.api.models.build_configuration_response import (
     BuildConfigurationResponse,
 )
+from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.models.create_user_response import CreateUserResponse
 from src.main.api.models.project_response import ProjectResponse
 from src.main.api.models.user_token import UserTokenResponse
@@ -36,13 +37,13 @@ class CreatedObjectsRegistry(list[Any]):
         deleted_usernames = {
             obj.username
             for obj in self
-            if isinstance(obj, CreateUserResponse)
+            if isinstance(obj, (CreateUserRequest, CreateUserResponse))
             and self._user_matches_locator(obj, user_id_or_username)
         }
         self._discard(
             lambda obj: (
                 (
-                    isinstance(obj, CreateUserResponse)
+                    isinstance(obj, (CreateUserRequest, CreateUserResponse))
                     and self._user_matches_locator(obj, user_id_or_username)
                 )
                 or (
@@ -99,12 +100,16 @@ class CreatedObjectsRegistry(list[Any]):
 
     @staticmethod
     def _user_matches_locator(
-        user: CreateUserResponse, user_id_or_username: int | str
+        user: CreateUserRequest | CreateUserResponse,
+        user_id_or_username: int | str,
     ) -> bool:
+        user_id = getattr(user, "id", None)
         if isinstance(user_id_or_username, int):
-            return user.id == user_id_or_username
+            return user_id == user_id_or_username
         if user_id_or_username.startswith("id:"):
-            return str(user.id) == user_id_or_username.removeprefix("id:")
+            return user_id is not None and str(
+                user_id
+            ) == user_id_or_username.removeprefix("id:")
         if user_id_or_username.startswith("username:"):
             return user.username == user_id_or_username.removeprefix("username:")
         return user.username == user_id_or_username

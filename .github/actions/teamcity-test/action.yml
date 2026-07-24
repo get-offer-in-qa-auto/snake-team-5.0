@@ -45,7 +45,7 @@ runs:
         mkdir -p artifacts/test-results
         pytest_args=()
         if [ "$PRESERVE_ALLURE_RESULTS" = "true" ]; then
-          pytest_args+=(-o "addopts=--alluredir=artifacts/allure-results --browser=chromium --tracing=retain-on-failure --video=retain-on-failure --screenshot=only-on-failure --output=artifacts/playwright")
+          pytest_args+=(-o "addopts=--alluredir=artifacts/allure-results --browser=firefox --tracing=retain-on-failure --video=retain-on-failure --screenshot=only-on-failure --output=artifacts/playwright")
         fi
         python3 -m pytest \
           "${pytest_args[@]}" \
