@@ -4,10 +4,11 @@ import pytest
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.specs.response_specs import ResponseError
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Create user")
-@allure.tag("api", "smoke", "regression", "user")
+@api_regression_tags(AllureTag.USER, smoke=True)
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
@@ -19,7 +20,7 @@ def test_create_user(api_manager: ApiManager, user_request: CreateUserRequest):
 
 
 @allure.title("Created user is persisted in database")
-@allure.tag("api", "regression", "user", "database")
+@api_regression_tags(AllureTag.USER, AllureTag.DATABASE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_created_user_is_persisted_in_database(
@@ -31,7 +32,7 @@ def test_created_user_is_persisted_in_database(
 
 
 @allure.title("User cannot be created with existing username")
-@allure.tag("api", "regression", "user", "negative")
+@api_regression_tags(AllureTag.USER, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_user_with_existing_username(
@@ -49,7 +50,7 @@ def test_create_user_with_existing_username(
 
 
 @allure.title("User cannot be created without authorization")
-@allure.tag("api", "regression", "user", "authorization", "negative")
+@api_regression_tags(AllureTag.USER, AllureTag.AUTHORIZATION, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_user_without_authorization(
@@ -62,7 +63,7 @@ def test_create_user_without_authorization(
 
 
 @allure.title("Delete user")
-@allure.tag("api", "regression", "user", "database")
+@api_regression_tags(AllureTag.USER, AllureTag.DATABASE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_delete_user(api_manager: ApiManager, user_request: CreateUserRequest):
@@ -75,7 +76,7 @@ def test_delete_user(api_manager: ApiManager, user_request: CreateUserRequest):
 
 
 @allure.title("Deleted user cannot authenticate")
-@allure.tag("api", "regression", "user", "authorization")
+@api_regression_tags(AllureTag.USER, AllureTag.AUTHORIZATION)
 @pytest.mark.api
 @pytest.mark.regression
 def test_deleted_user_cannot_authenticate(

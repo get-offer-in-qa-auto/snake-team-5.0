@@ -3,10 +3,11 @@ import pytest
 
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.models.create_project_request import CreateProjectRequest
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Project cannot be created without authorization")
-@allure.tag("api", "regression", "project", "authorization", "negative")
+@api_regression_tags(AllureTag.PROJECT, AllureTag.AUTHORIZATION, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_project_without_authorization(

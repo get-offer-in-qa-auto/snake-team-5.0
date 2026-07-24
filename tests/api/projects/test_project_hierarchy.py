@@ -3,10 +3,11 @@ import pytest
 
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.constants.teamcity import TeamCityLocator
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Create subproject")
-@allure.tag("api", "regression", "project")
+@api_regression_tags(AllureTag.PROJECT)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_subproject(api_manager: ApiManager, project_request_factory):
@@ -25,7 +26,7 @@ def test_create_subproject(api_manager: ApiManager, project_request_factory):
 
 
 @allure.title("Projects with same name can be created in different parents")
-@allure.tag("api", "regression", "project")
+@api_regression_tags(AllureTag.PROJECT)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_projects_with_same_name_in_different_parents(

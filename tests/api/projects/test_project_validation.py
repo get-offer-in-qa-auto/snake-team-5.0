@@ -4,10 +4,11 @@ import pytest
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.constants.teamcity import TeamCityLocator
 from src.main.api.specs.response_specs import ResponseError
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Project cannot be created with existing id")
-@allure.tag("api", "regression", "project", "negative")
+@api_regression_tags(AllureTag.PROJECT, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_project_with_existing_id(
@@ -26,7 +27,7 @@ def test_create_project_with_existing_id(
 
 
 @allure.title("Project cannot be created with existing name in same parent")
-@allure.tag("api", "regression", "project", "negative")
+@api_regression_tags(AllureTag.PROJECT, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_project_with_existing_name_in_same_parent(
@@ -44,7 +45,7 @@ def test_create_project_with_existing_name_in_same_parent(
 
 
 @allure.title("Project cannot be created with unknown parent")
-@allure.tag("api", "regression", "project", "negative")
+@api_regression_tags(AllureTag.PROJECT, AllureTag.NEGATIVE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_project_with_unknown_parent(
