@@ -3,10 +3,11 @@ import pytest
 
 from src.main.api.classes.api_manager import ApiManager
 from src.main.api.models.create_project_request import CreateProjectRequest
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Create project")
-@allure.tag("api", "smoke", "regression", "project")
+@api_regression_tags(AllureTag.PROJECT, smoke=True)
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
@@ -20,7 +21,7 @@ def test_create_project(api_manager: ApiManager, project_request: CreateProjectR
 
 
 @allure.title("Created project is persisted in database")
-@allure.tag("api", "regression", "project", "database")
+@api_regression_tags(AllureTag.PROJECT, AllureTag.DATABASE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_created_project_is_persisted_in_database(
@@ -32,7 +33,7 @@ def test_created_project_is_persisted_in_database(
 
 
 @allure.title("Delete project")
-@allure.tag("api", "regression", "project", "database")
+@api_regression_tags(AllureTag.PROJECT, AllureTag.DATABASE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_delete_project(
@@ -48,7 +49,7 @@ def test_delete_project(
 
 
 @allure.title("Create project with different id and name")
-@allure.tag("api", "regression", "project")
+@api_regression_tags(AllureTag.PROJECT)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_project_with_different_id_and_name(

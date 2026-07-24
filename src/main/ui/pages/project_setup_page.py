@@ -8,6 +8,8 @@ from src.main.ui.pages.base_page import BasePage
 
 
 class ProjectSetupPage(BasePage):
+    PROJECT_SETUP_LOCATOR = '[data-test="setup-project-page"]'
+
     def __init__(self, page, project_id: str) -> None:
         super().__init__(page)
         self.project_id = project_id
@@ -19,7 +21,7 @@ class ProjectSetupPage(BasePage):
 
     @property
     def project_setup(self) -> Locator:
-        return self.page.locator('[data-test="setup-project-page"]')
+        return self.page.locator(self.PROJECT_SETUP_LOCATOR)
 
     @allure.step("Verify project setup page is opened")
     def should_be_opened(self) -> "ProjectSetupPage":

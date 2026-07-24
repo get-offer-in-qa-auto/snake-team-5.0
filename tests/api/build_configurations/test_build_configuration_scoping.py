@@ -6,10 +6,11 @@ from src.main.api.constants.teamcity import TeamCityLocator
 from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
 )
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Create build configuration in subproject")
-@allure.tag("api", "regression", "build-configuration")
+@api_regression_tags(AllureTag.BUILD_CONFIGURATION)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_in_subproject(
@@ -37,7 +38,7 @@ def test_create_build_configuration_in_subproject(
 @allure.title(
     "Build configurations with same name can be created in different projects"
 )
-@allure.tag("api", "regression", "build-configuration")
+@api_regression_tags(AllureTag.BUILD_CONFIGURATION)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configurations_with_same_name_in_different_projects(

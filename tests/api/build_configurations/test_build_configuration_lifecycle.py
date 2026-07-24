@@ -6,10 +6,11 @@ from src.main.api.models.create_build_configuration_request import (
     CreateBuildConfigurationRequest,
 )
 from src.main.api.models.project_response import ProjectResponse
+from src.main.reporting.allure.tags import AllureTag, api_regression_tags
 
 
 @allure.title("Create build configuration")
-@allure.tag("api", "smoke", "regression", "build-configuration")
+@api_regression_tags(AllureTag.BUILD_CONFIGURATION, smoke=True)
 @pytest.mark.api
 @pytest.mark.smoke
 @pytest.mark.regression
@@ -34,7 +35,7 @@ def test_create_build_configuration(
 
 
 @allure.title("Created build configuration is persisted in database")
-@allure.tag("api", "regression", "build-configuration", "database")
+@api_regression_tags(AllureTag.BUILD_CONFIGURATION, AllureTag.DATABASE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_created_build_configuration_is_persisted_in_database(
@@ -50,7 +51,7 @@ def test_created_build_configuration_is_persisted_in_database(
 
 
 @allure.title("Delete build configuration")
-@allure.tag("api", "regression", "build-configuration", "database")
+@api_regression_tags(AllureTag.BUILD_CONFIGURATION, AllureTag.DATABASE)
 @pytest.mark.api
 @pytest.mark.regression
 def test_delete_build_configuration(
@@ -69,7 +70,7 @@ def test_delete_build_configuration(
 
 
 @allure.title("Delete project with build configuration")
-@allure.tag("api", "regression", "build-configuration", "project")
+@api_regression_tags(AllureTag.BUILD_CONFIGURATION, AllureTag.PROJECT)
 @pytest.mark.api
 @pytest.mark.regression
 def test_delete_project_with_build_configuration(
@@ -88,7 +89,7 @@ def test_delete_project_with_build_configuration(
 
 
 @allure.title("Create build configuration with different id and name")
-@allure.tag("api", "regression", "build-configuration")
+@api_regression_tags(AllureTag.BUILD_CONFIGURATION)
 @pytest.mark.api
 @pytest.mark.regression
 def test_create_build_configuration_with_different_id_and_name(
