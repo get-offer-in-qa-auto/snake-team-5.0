@@ -48,9 +48,7 @@ class AccessTokensPage(BasePage):
         )
 
     @allure.step("Create access token")
-    def create_token(
-        self, token_request: CreateUserTokenRequest
-    ) -> AccessTokensPage:
+    def create_token(self, token_request: CreateUserTokenRequest) -> AccessTokensPage:
         self.create_token_link.click(force=True)
         self.token_dialog.evaluate("dialog => dialog.style.display = 'block'")
         self.token_name_input.fill(token_request.name)

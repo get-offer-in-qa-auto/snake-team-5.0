@@ -25,9 +25,7 @@ class UsersPage(BasePage):
         )
 
     def user_link(self, user_request: CreateUserRequest) -> Locator:
-        return self.page.get_by_role(
-            "link", name=user_request.username, exact=True
-        )
+        return self.page.get_by_role("link", name=user_request.username, exact=True)
 
     def user_row(self, user_request: CreateUserRequest) -> Locator:
         return self.page.locator(self.USER_ROW_SELECTOR).filter(
@@ -53,8 +51,6 @@ class UsersPage(BasePage):
         return self
 
     @allure.step("Verify user is not displayed")
-    def should_not_contain_user(
-        self, user_request: CreateUserRequest
-    ) -> UsersPage:
+    def should_not_contain_user(self, user_request: CreateUserRequest) -> UsersPage:
         expect(self.user_row(user_request)).to_have_count(0)
         return self

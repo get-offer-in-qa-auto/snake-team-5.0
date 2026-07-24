@@ -107,10 +107,9 @@ class CreatedObjectsRegistry(list[Any]):
         if isinstance(user_id_or_username, int):
             return user_id == user_id_or_username
         if user_id_or_username.startswith("id:"):
-            return (
-                user_id is not None
-                and str(user_id) == user_id_or_username.removeprefix("id:")
-            )
+            return user_id is not None and str(
+                user_id
+            ) == user_id_or_username.removeprefix("id:")
         if user_id_or_username.startswith("username:"):
             return user.username == user_id_or_username.removeprefix("username:")
         return user.username == user_id_or_username

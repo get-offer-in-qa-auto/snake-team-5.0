@@ -36,9 +36,7 @@ class CreateUserPage(BasePage):
 
     @property
     def create_button(self) -> Locator:
-        return self.page.get_by_role(
-            "button", name=self.CREATE_BUTTON_NAME, exact=True
-        )
+        return self.page.get_by_role("button", name=self.CREATE_BUTTON_NAME, exact=True)
 
     @allure.step("Submit creation form")
     def submit_empty_form(self) -> CreateUserPage:
@@ -47,12 +45,8 @@ class CreateUserPage(BasePage):
 
     @allure.step("Verify required user fields validation errors")
     def should_show_required_fields_errors(self) -> CreateUserPage:
-        expect(
-            self.page.locator(self.USERNAME_EMPTY_ERROR_SELECTOR)
-        ).to_be_visible()
-        expect(
-            self.page.locator(self.PASSWORD_EMPTY_ERROR_SELECTOR)
-        ).to_be_visible()
+        expect(self.page.locator(self.USERNAME_EMPTY_ERROR_SELECTOR)).to_be_visible()
+        expect(self.page.locator(self.PASSWORD_EMPTY_ERROR_SELECTOR)).to_be_visible()
         return self
 
     @allure.step("Create user")
