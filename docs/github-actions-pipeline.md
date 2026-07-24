@@ -4,18 +4,20 @@
 
 ## Текущий этап
 
-PR pipeline поднимает один чистый TeamCity стенд с двумя build agents и выполняет
-gated regression. Этапы идут последовательно: database preflight, 10 smoke-тестов
-в 2 worker и затем 45 остальных regression-тестов в 2 worker. Если preflight или
-smoke падает, следующий этап не запускается.
+PR pipeline поднимает один чистый TeamCity стенд с настраиваемым количеством
+build agents и выполняет gated regression. Один параметр `parallelism` задаёт
+одинаковое количество TeamCity agents и pytest workers. Поддерживаются режимы
+`1`, `2` и `3`, по умолчанию — `2`. Этапы идут последовательно: database
+preflight, 10 smoke-тестов и затем 45 остальных regression-теста. Если preflight
+или smoke падает, следующий этап не запускается.
 
 - поднять TeamCity Server;
-- поднять два TeamCity Agent;
+- поднять `parallelism` экземпляров TeamCity Agent;
 - дождаться HTTP-ответа от `http://localhost:8111/login.html`;
 - показать понятное readiness-состояние: `READY_LOGIN_PAGE`, `AUTH_REQUIRED` или `FIRST_START_REQUIRED`;
 - проверить полный backup/copy/read/remove lifecycle через database preflight;
-- запустить smoke gate через `pytest -m smoke -n 2`;
-- после успешного smoke запустить `pytest -m "regression and not smoke" -n 2`;
+- запустить smoke gate через `pytest -m smoke -n <parallelism>`;
+- после успешного smoke запустить `pytest -m "regression and not smoke" -n <parallelism>`;
 - сохранить отдельные JUnit XML для smoke gate и оставшегося regression;
 - сохранить Allure results;
 - сразу собрать Allure HTML-report;
@@ -50,7 +52,7 @@ ci/teamcity/postgresql/compose.yaml
 поднимает один production-like стенд:
 
 ```text
-TeamCity Server + 2 TeamCity Agents + PostgreSQL 17.5
+TeamCity Server + 1–3 TeamCity Agents + PostgreSQL 17.5
 ```
 
 Он запускается:
@@ -58,13 +60,14 @@ TeamCity Server + 2 TeamCity Agents + PostgreSQL 17.5
 - nightly в `02:00 UTC` (`05:00 МСК`);
 - вручную через `Actions → TeamCity PostgreSQL Regression → Run workflow`.
 
-Для ручного и scheduled запуска regression stage всегда использует 2 xdist
-worker и 2 отдельных TeamCity agent. Smoke gate остаётся последовательным.
-Количество workers в ручном запуске не настраивается. Порядок выполнения:
+Для ручного и scheduled запуска один `parallelism` управляет и количеством
+xdist workers, и количеством отдельных TeamCity agents. В ручном запуске
+доступен выбор `1`, `2` или `3`; scheduled workflow читает repository variable
+`TEAMCITY_PARALLELISM` и использует `2`, если она не задана. Порядок выполнения:
 
 ```text
 PostgreSQL health → TeamCity external DB bootstrap → read-only DB preflight
-→ 10 smoke tests → 45 regression tests in 2 workers
+→ 10 smoke tests → 45 regression tests with selected parallelism
 ```
 
 Workflow не запускается на каждый PR и не публикует GitHub Pages. JUnit, Allure
@@ -93,8 +96,8 @@ Pipeline считается успешным, если:
 - Docker Compose успешно поднял containers;
 - TeamCity web endpoint начал отвечать;
 - database preflight подтвердил доступность Backup API и snapshot;
-- все smoke-тесты прошли в 2 xdist worker;
-- остальные regression-тесты прошли в 2 xdist worker;
+- все smoke-тесты прошли с выбранным количеством xdist workers;
+- остальные regression-тесты прошли с тем же количеством xdist workers;
 - GitHub Step Summary показывает итоговое состояние TeamCity readiness;
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
@@ -118,10 +121,11 @@ teamcity-login-page
 - `headers.txt` — HTTP headers;
 - `readiness.txt` — человекочитаемая классификация состояния.
 
-Основной HSQLDB workflow можно запустить вручную через `Run workflow`. PR и
-ручной HSQLDB regression используют фиксированный режим `pytest_workers: 2`
-для smoke и остальных regression-тестов. В PostgreSQL workflow smoke gate
-остаётся последовательным, а остальные regression-тесты используют 2 worker.
+Основной HSQLDB и PostgreSQL workflow можно запустить вручную через
+`Run workflow`, выбрав `parallelism` равным `1`, `2` или `3`. Это значение
+одновременно масштабирует TeamCity Agent service и передаётся в `pytest -n`
+для smoke и оставшегося regression. Для pull request и scheduled запуска
+используется repository variable `TEAMCITY_PARALLELISM` с fallback `2`.
 
 ## Allure report
 

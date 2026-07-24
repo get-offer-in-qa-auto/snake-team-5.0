@@ -3,7 +3,17 @@ name: TeamCity PostgreSQL Regression
 on:
   schedule:
     - cron: "0 2 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      parallelism:
+        description: Number of pytest workers and TeamCity agents.
+        required: true
+        default: "2"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
 
 concurrency:
   group: teamcity-postgresql-regression-${{ github.ref }}
@@ -13,6 +23,8 @@ jobs:
   postgresql-regression:
     name: Run TeamCity PostgreSQL regression
     runs-on: ubuntu-latest
+    env:
+      TEAMCITY_PARALLELISM: ${{ inputs.parallelism || vars.TEAMCITY_PARALLELISM || '2' }}
     timeout-minutes: 60
     permissions:
       contents: read
@@ -36,7 +48,7 @@ jobs:
         with:
           compose_file: ci/teamcity/postgresql/compose.yaml
           server_container: teamcity-server-postgresql-ci
-          agent_names: postgresql-ci-agent-1,postgresql-ci-agent-2
+          agent_count: ${{ env.TEAMCITY_PARALLELISM }}
           database_mode: external
           database_preflight: "true"
 
@@ -44,7 +56,7 @@ jobs:
         uses: ./.github/actions/teamcity-test
         with:
           pytest_marker: smoke
-          pytest_workers: "0"
+          pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
           junit_filename: smoke-teamcity-postgresql-regression.xml
           server_container: teamcity-server-postgresql-ci
 
@@ -52,7 +64,7 @@ jobs:
         uses: ./.github/actions/teamcity-test
         with:
           pytest_marker: "(regression) and not smoke"
-          pytest_workers: "2"
+          pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
           junit_filename: teamcity-postgresql-regression.xml
           server_container: teamcity-server-postgresql-ci
           preserve_allure_results: "true"
