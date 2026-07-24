@@ -38,6 +38,10 @@ inputs:
     description: Run a real TeamCity database backup preflight before pytest.
     required: false
     default: "false"
+  playwright_browser:
+    description: "Playwright browser to install: none, chromium, firefox, webkit, or all."
+    required: false
+    default: all
 
 runs:
   using: composite
@@ -70,9 +74,26 @@ runs:
       shell: bash
       run: python3 -m pip install -r requirements.txt
 
-    - name: Install browsers for UI tests
+    - name: Install Playwright browser for UI tests
+      if: ${{ inputs.playwright_browser != 'none' }}
       shell: bash
-      run: python3 -m playwright install --with-deps chromium firefox webkit
+      env:
+        PLAYWRIGHT_BROWSER: ${{ inputs.playwright_browser }}
+      run: |
+        case "$PLAYWRIGHT_BROWSER" in
+          chromium|firefox|webkit)
+            browsers=("$PLAYWRIGHT_BROWSER")
+            ;;
+          all)
+            browsers=(chromium firefox webkit)
+            ;;
+          *)
+            echo "Playwright browser must be none, chromium, firefox, webkit, or all; got: $PLAYWRIGHT_BROWSER" >&2
+            exit 1
+            ;;
+        esac
+
+        python3 -m playwright install --with-deps "${browsers[@]}"
 
     - name: Generate TeamCity CI administrator credentials
       shell: bash

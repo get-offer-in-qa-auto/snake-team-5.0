@@ -43,8 +43,8 @@ jobs:
       - name: Check static types
         run: python3 -m mypy src/main
 
-  teamcity-regression:
-    name: TeamCity regression
+  teamcity-api:
+    name: TeamCity API regression
     needs: code-quality
     runs-on: ubuntu-latest
     env:
@@ -52,47 +52,135 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-      pages: write
-      id-token: write
-    outputs:
-      allure_pages_ready: ${{ steps.teamcity-report.outputs.allure_pages_ready }}
     steps:
-      # Скачиваем код репозитория, чтобы runner видел local action, scripts, tests и compose-файл.
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Setup, тесты и сбор результатов остаются в одном job, чтобы Docker-стенд
-      # и временный TeamCity access token сохранялись на одном runner.
-      - name: Start and prepare TeamCity
+      - name: Start and prepare TeamCity for API tests
         uses: ./.github/actions/teamcity-setup
         with:
           agent_count: ${{ env.TEAMCITY_PARALLELISM }}
           database_preflight: "true"
+          playwright_browser: none
 
-      - name: Run TeamCity smoke gate
+      - name: Run TeamCity API smoke gate
         uses: ./.github/actions/teamcity-test
         with:
-          pytest_marker: smoke
+          pytest_marker: "smoke and api"
           pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
-          junit_filename: smoke-teamcity-regression.xml
+          junit_filename: smoke-teamcity-api-regression.xml
+          browser: none
 
-      - name: Run remaining TeamCity regression tests
+      - name: Run remaining TeamCity API regression tests
         uses: ./.github/actions/teamcity-test
         with:
-          pytest_marker: "(regression) and not smoke"
+          pytest_marker: "(regression and api) and not smoke"
           pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
-          junit_filename: teamcity-regression.xml
+          junit_filename: teamcity-api-regression.xml
           preserve_allure_results: "true"
+          browser: none
 
-      - name: Build reports and stop TeamCity
-        id: teamcity-report
+      - name: Collect API results and stop TeamCity
         if: always()
         uses: ./.github/actions/teamcity-report
         with:
+          test_label: regression-api
+          logs_artifact_name: teamcity-regression-api-logs
+          results_artifact_name: teamcity-regression-api-test-results
+          page_artifact_name: teamcity-regression-api-login-page
+          generate_allure_report: "false"
+
+  teamcity-ui:
+    name: TeamCity UI · ${{ matrix.title }}
+    needs: code-quality
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - browser: chromium
+            title: Chromium
+          - browser: firefox
+            title: Firefox
+          - browser: webkit
+            title: WebKit
+    env:
+      TEAMCITY_PARALLELISM: ${{ inputs.parallelism || vars.TEAMCITY_PARALLELISM || '2' }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start and prepare TeamCity for ${{ matrix.title }}
+        uses: ./.github/actions/teamcity-setup
+        with:
+          agent_count: ${{ env.TEAMCITY_PARALLELISM }}
+          playwright_browser: ${{ matrix.browser }}
+
+      - name: Run TeamCity UI tests in ${{ matrix.title }}
+        uses: ./.github/actions/teamcity-test
+        with:
+          pytest_marker: "(regression) and ui"
+          pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
+          junit_filename: "teamcity-ui-${{ matrix.browser }}-regression.xml"
+          browser: ${{ matrix.browser }}
+
+      - name: Collect ${{ matrix.title }} results and stop TeamCity
+        if: always()
+        uses: ./.github/actions/teamcity-report
+        with:
+          test_label: "regression-${{ matrix.browser }}"
+          logs_artifact_name: "teamcity-regression-${{ matrix.browser }}-logs"
+          results_artifact_name: "teamcity-regression-${{ matrix.browser }}-test-results"
+          page_artifact_name: "teamcity-regression-${{ matrix.browser }}-login-page"
+          generate_allure_report: "false"
+
+  teamcity-regression:
+    name: TeamCity regression
+    if: ${{ always() }}
+    needs:
+      - teamcity-api
+      - teamcity-ui
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      allure_pages_ready: ${{ steps.allure-report.outputs.ready }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build combined Allure report
+        id: allure-report
+        uses: ./.github/actions/allure-aggregate
+        with:
+          source_artifact_pattern: teamcity-regression-*-allure-results
+          expected_artifact_names: >-
+            teamcity-regression-api-allure-results
+            teamcity-regression-chromium-allure-results
+            teamcity-regression-firefox-allure-results
+            teamcity-regression-webkit-allure-results
           test_label: regression
-          logs_artifact_name: teamcity-regression-logs
-          results_artifact_name: teamcity-regression-test-results
-          page_artifact_name: teamcity-regression-login-page
+          results_artifact_name: teamcity-regression-allure-results
+          report_artifact_name: teamcity-regression-allure-report
+          pytest_workers: ${{ inputs.parallelism || vars.TEAMCITY_PARALLELISM || '2' }}
+
+      - name: Verify API and browser jobs
+        if: always()
+        shell: bash
+        env:
+          API_RESULT: ${{ needs.teamcity-api.result }}
+          UI_RESULT: ${{ needs.teamcity-ui.result }}
+        run: |
+          if [ "$API_RESULT" != "success" ] || [ "$UI_RESULT" != "success" ]; then
+            echo "API job result: $API_RESULT" >&2
+            echo "UI matrix result: $UI_RESULT" >&2
+            exit 1
+          fi
 
   deploy-allure-pages:
     name: Publish Allure report page

@@ -20,6 +20,10 @@ inputs:
     description: Append to existing Allure results instead of cleaning them first.
     required: false
     default: "false"
+  browser:
+    description: "Playwright browser mode: none, chromium, firefox, webkit, or all."
+    required: false
+    default: all
 
 runs:
   using: composite
@@ -31,6 +35,7 @@ runs:
         PYTEST_WORKERS: ${{ inputs.pytest_workers }}
         JUNIT_FILENAME: ${{ inputs.junit_filename }}
         PRESERVE_ALLURE_RESULTS: ${{ inputs.preserve_allure_results }}
+        PYTEST_BROWSER: ${{ inputs.browser }}
         TEAMCITY_DB_CONTAINER: ${{ inputs.server_container }}
         TEAMCITY_CONFIG_CONTAINER: ${{ inputs.server_container }}
       run: |
@@ -43,11 +48,25 @@ runs:
         esac
 
         mkdir -p artifacts/test-results
-        browser_args=(
-          --browser=chromium
-          --browser=firefox
-          --browser=webkit
-        )
+        browser_args=()
+        case "$PYTEST_BROWSER" in
+          none) ;;
+          chromium|firefox|webkit)
+            browser_args+=("--browser=$PYTEST_BROWSER")
+            ;;
+          all)
+            browser_args+=(
+              --browser=chromium
+              --browser=firefox
+              --browser=webkit
+            )
+            ;;
+          *)
+            echo "Browser mode must be none, chromium, firefox, webkit, or all; got: $PYTEST_BROWSER" >&2
+            exit 1
+            ;;
+        esac
+
         pytest_args=()
         if [ "$PRESERVE_ALLURE_RESULTS" = "true" ]; then
           pytest_args+=(-o "addopts=--alluredir=artifacts/allure-results --tracing=retain-on-failure --video=retain-on-failure --screenshot=only-on-failure --output=artifacts/playwright")

@@ -105,16 +105,30 @@ ALLURE_HIERARCHY_BY_PATH = {
     ),
 }
 
+BROWSER_TITLES = {
+    "chromium": "Chromium",
+    "firefox": "Firefox",
+    "webkit": "WebKit",
+}
 
-@pytest.fixture(autouse=True)
-def apply_allure_hierarchy(request: pytest.FixtureRequest) -> None:
-    """Map filesystem test areas to a stable Allure product hierarchy."""
-    relative_path = request.node.path.relative_to(request.config.rootpath / "tests")
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    """Apply stable Allure metadata before browser and other fixture setup."""
+    relative_path = item.path.relative_to(item.config.rootpath / "tests")
     hierarchy = ALLURE_HIERARCHY_BY_PATH.get(relative_path.parts)
     if hierarchy is None:
         return
 
     parent_suite, suite, sub_suite = hierarchy
+    callspec = getattr(item, "callspec", None)
+    browser_name = callspec.params.get("browser_name") if callspec else None
+    if parent_suite == "UI" and isinstance(browser_name, str):
+        browser_title = BROWSER_TITLES.get(browser_name, browser_name)
+        parent_suite = f"{parent_suite} · {browser_title}"
+        allure.dynamic.label("browser", browser_title)
+        allure.dynamic.parameter("browser_name", browser_title)
+
     allure.dynamic.epic("TeamCity")
     allure.dynamic.parent_suite(parent_suite)
     allure.dynamic.suite(suite)

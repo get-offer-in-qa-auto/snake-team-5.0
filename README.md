@@ -234,7 +234,9 @@ python3 -m playwright install chromium firefox webkit
 
 В `requirements.txt` входят `allure-pytest` и `pytest-playwright`. Первый сохраняет
 Allure results, второй предоставляет изолированные Playwright browser context и
-`page` для UI-тестов. В CI каждый UI-тест запускается в Chromium, Firefox и WebKit.
+`page` для UI-тестов. В PR pipeline Chromium, Firefox и WebKit запускаются как
+три независимых GitHub Actions jobs, после чего их результаты объединяются с
+API-результатами в один Allure report.
 
 Запустить только UI-тесты в тех же трёх вариантах, что и в CI:
 

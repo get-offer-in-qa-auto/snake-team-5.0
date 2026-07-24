@@ -1,33 +1,42 @@
 # GitHub Actions Pipeline
 
-Дата решения: 2026-07-06
+Дата решения: 2026-07-24
 
 ## Текущий этап
 
-PR pipeline поднимает один чистый TeamCity стенд с настраиваемым количеством
-build agents и выполняет gated regression. Один параметр `parallelism` задаёт
-одинаковое количество TeamCity agents и pytest workers. Поддерживаются режимы
-`1`, `2` и `3`, по умолчанию — `2`. Этапы идут последовательно: database
-preflight, 12 smoke test items и затем 44 остальных regression-теста. Smoke
-содержит 6 API-проверок, запущенных один раз, и 2 UI-сценария в трёх браузерах.
-Если preflight или smoke падает, следующий этап не запускается.
+После Code Quality PR pipeline параллельно запускает четыре независимых jobs:
 
-- поднять TeamCity Server;
-- поднять `parallelism` экземпляров TeamCity Agent;
+```text
+TeamCity API regression
+TeamCity UI · Chromium
+TeamCity UI · Firefox
+TeamCity UI · WebKit
+```
+
+Каждая job получает отдельный GitHub-hosted runner и собственный чистый TeamCity
+стенд. Один параметр `parallelism` задаёт одинаковое количество TeamCity agents
+и pytest workers внутри каждого стенда. Поддерживаются режимы `1`, `2` и `3`,
+по умолчанию — `2`.
+
+API job выполняет database preflight, 6 smoke API-тестов и после успешного gate
+ещё 44 API regression-теста. Каждая UI job запускает 2 UI-сценария только в
+своём браузере. Matrix использует `fail-fast: false`, поэтому падение одного
+браузера не отменяет остальные и итоговый отчёт содержит полную диагностику.
+
+- поднять отдельный TeamCity Server для API и каждого браузера;
+- поднять в каждом стенде `parallelism` экземпляров TeamCity Agent;
 - дождаться HTTP-ответа от `http://localhost:8111/login.html`;
 - показать понятное readiness-состояние: `READY_LOGIN_PAGE`, `AUTH_REQUIRED` или `FIRST_START_REQUIRED`;
-- проверить полный backup/copy/read/remove lifecycle через database preflight;
-- запустить smoke gate через `pytest -m smoke -n <parallelism>` с UI-вариантами
-  для Chromium, Firefox и WebKit;
-- после успешного smoke запустить `pytest -m "regression and not smoke"
-  -n <parallelism>` с теми же UI-вариантами;
-- сохранить отдельные JUnit XML для smoke gate и оставшегося regression;
-- сохранить Allure results;
-- сразу собрать Allure HTML-report;
+- проверить полный backup/copy/read/remove lifecycle в API job;
+- запустить API smoke gate и оставшийся API regression без браузеров;
+- запустить UI regression в отдельных Chromium, Firefox и WebKit jobs;
+- сохранить отдельные JUnit, Playwright diagnostics, TeamCity logs и raw Allure
+  results для каждой job;
+- объединить четыре Allure result artifacts без перезаписи файлов;
+- восстановить общую Allure history и один раз собрать HTML-report;
 - опубликовать Allure HTML-report как GitHub Pages page с постоянной ссылкой для любого запуска;
 - сохранить snapshot реальной страницы `login.html`, headers и readiness summary;
-- сохранить Docker Compose status и logs как GitHub Actions artifacts;
-- остановить контейнеры и удалить временные volumes после проверки.
+- остановить контейнеры и удалить временные volumes на каждом runner.
 
 Workflow:
 
@@ -87,36 +96,40 @@ PostgreSQL compose-файл: `ci/teamcity/postgresql/compose.yaml`.
 setup wizard. Pipeline автоматически подтверждает новый стенд, выбирает internal
 HSQLDB, принимает лицензию и создает временного CI-администратора.
 
-Пароль администратора генерируется внутри runner и маскируется. После setup
-bootstrap выпускает временный access token, и административные REST-запросы
-выполняются через Bearer authentication. До pytest запускается реальный TeamCity
-database backup preflight. TeamCity стартует один раз для всех трёх этапов.
+Пароль администратора генерируется внутри каждого runner и маскируется. После
+setup bootstrap выпускает временный access token, и административные
+REST-запросы выполняются через Bearer authentication. Реальный TeamCity database
+backup preflight выполняется только в API job. Docker-контейнеры и `localhost`
+нельзя разделить между GitHub-hosted jobs, поэтому API и каждый браузер
+используют собственный стенд.
 
 ## Что считается успехом сейчас
 
 Pipeline считается успешным, если:
 
-- Docker Compose успешно поднял containers;
-- TeamCity web endpoint начал отвечать;
+- Docker Compose успешно поднял containers во всех четырёх test jobs;
+- каждый TeamCity web endpoint начал отвечать;
 - database preflight подтвердил доступность Backup API и snapshot;
-- все smoke-тесты прошли с выбранным количеством xdist workers;
-- остальные regression-тесты прошли с тем же количеством xdist workers;
+- API smoke gate и остальные API regression-тесты прошли;
 - каждый UI-тест прошёл в Chromium, Firefox и WebKit;
 - GitHub Step Summary показывает итоговое состояние TeamCity readiness;
-- контейнеры не упали во время smoke-проверки;
-- JUnit XML и логи собраны в artifacts.
-- Allure results и готовый Allure HTML-report собраны в artifacts.
-- для pull_request и workflow_dispatch запуска опубликована постоянная ссылка на конкретный Allure report.
-- страница `login.html` сохранена в artifact `teamcity-login-page`.
+- JUnit XML, Playwright diagnostics и логи каждой job собраны в artifacts;
+- четыре raw Allure artifacts объединены в один отчёт;
+- Allure results и готовый Allure HTML-report собраны в artifacts;
+- для pull request и workflow_dispatch опубликована постоянная ссылка на отчёт;
+- snapshot `login.html` сохранён отдельно для API и каждого браузера.
 
 ## Debug artifacts
 
 Runner GitHub Actions недоступен снаружи, поэтому открыть `localhost:8111` руками во время CI нельзя.
 
-Чтобы посмотреть, что реально вернул TeamCity, pipeline сохраняет artifact:
+Чтобы посмотреть, что реально вернул каждый TeamCity стенд, pipeline сохраняет:
 
 ```text
-teamcity-login-page
+teamcity-regression-api-login-page
+teamcity-regression-chromium-login-page
+teamcity-regression-firefox-login-page
+teamcity-regression-webkit-login-page
 ```
 
 Внутри:
@@ -128,45 +141,48 @@ teamcity-login-page
 Основной HSQLDB и PostgreSQL workflow можно запустить вручную через
 `Run workflow`, выбрав `parallelism` равным `1`, `2` или `3`. Это значение
 одновременно масштабирует TeamCity Agent service и передаётся в `pytest -n`
-для smoke и оставшегося regression. Для pull request и scheduled запуска
-используется repository variable `TEAMCITY_PARALLELISM` с fallback `2`.
+внутри каждой test job. Для pull request и scheduled запуска используется
+repository variable `TEAMCITY_PARALLELISM` с fallback `2`.
 
 ## Allure report
 
-Pytest автоматически пишет Allure results в:
+Pytest автоматически пишет raw Allure results внутри каждой test job в:
 
 ```text
 artifacts/allure-results
 ```
 
-Local composite action после pytest-прогона устанавливает Allure commandline, генерирует статический HTML-report и загружает два artifacts:
+Test jobs загружают отдельные raw artifacts:
 
 ```text
-teamcity-<suite>-allure-results
-teamcity-<suite>-allure-report
+teamcity-regression-api-allure-results
+teamcity-regression-chromium-allure-results
+teamcity-regression-firefox-allure-results
+teamcity-regression-webkit-allure-results
 ```
 
-Для отдельной smoke suite это будут:
-
-```text
-teamcity-smoke-allure-results
-teamcity-smoke-allure-report
-```
-
-Gated PR pipeline публикует объединённый regression report, содержащий результаты
-smoke gate и остальных regression-тестов:
+Финальная job `TeamCity regression` скачивает их в отдельные каталоги, один раз
+проверяет наличие всех четырёх shards и копирует файлы в плоский
+`allure-results` с защитой от совпадающих имён. Поэтому combined raw artifact
+можно напрямую передать в `allure generate`. Затем workflow один раз
+восстанавливает history и публикует результат под прежними стабильными именами:
 
 ```text
 teamcity-regression-allure-results
 teamcity-regression-allure-report
 ```
 
-Все три браузерных варианта попадают в один Allure report. Pytest автоматически
-добавляет к имени UI-теста суффикс `[chromium]`, `[firefox]` или `[webkit]`,
-а Allure показывает `browser_name` в Parameters и ведёт отдельную историю для
-каждого варианта. API-тесты при этом не размножаются по браузерам.
+В Suites browser-варианты сгруппированы как `UI · Chromium`, `UI · Firefox` и
+`UI · WebKit`, при этом Authentication/Projects и Login/Creation сохраняются
+следующими уровнями. Pytest добавляет к имени теста browser-суффикс, Allure
+показывает `browser_name` в Parameters и ведёт отдельную историю для каждого
+варианта. API-тесты выполняются и отображаются один раз. В Environment и
+Executor блоках отчёта видны topology запуска и ссылка на GitHub Actions run.
 
-Перед генерацией HTML-report workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. Для этого используется ветка `gh-pages`: `smoke` берет историю только из прошлых `reports/smoke/...`, а gated regression — только из прошлых `reports/regression/...`.
+Перед генерацией HTML-report workflow восстанавливает Allure `history` из
+последнего опубликованного `reports/regression/...` в ветке `gh-pages`.
+Если хотя бы один shard отсутствует, частичный HTML сохраняется как
+диагностический artifact, но не публикуется в canonical Pages history.
 
 GitHub Actions artifacts хранятся 7 дней:
 
