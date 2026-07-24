@@ -8,18 +8,33 @@ from src.main.ui.pages.projects_page import ProjectsPage
 
 class LoginPage(BasePage):
     path = "/login.html"
+    USERNAME_INPUT_NAME = "Username"
+    PASSWORD_INPUT_NAME = "Password"
+    LOGIN_BUTTON_NAME = "Log in"
 
     @property
     def username_input(self) -> Locator:
-        return self.page.get_by_role("textbox", name="Username", exact=True)
+        return self.page.get_by_role(
+            "textbox",
+            name=self.USERNAME_INPUT_NAME,
+            exact=True,
+        )
 
     @property
     def password_input(self) -> Locator:
-        return self.page.get_by_role("textbox", name="Password", exact=True)
+        return self.page.get_by_role(
+            "textbox",
+            name=self.PASSWORD_INPUT_NAME,
+            exact=True,
+        )
 
     @property
     def login_button(self) -> Locator:
-        return self.page.get_by_role("button", name="Log in", exact=True)
+        return self.page.get_by_role(
+            "button",
+            name=self.LOGIN_BUTTON_NAME,
+            exact=True,
+        )
 
     @allure.step("Log in")
     def login(self, user_request: CreateUserRequest) -> "LoginPage":

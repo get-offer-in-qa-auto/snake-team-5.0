@@ -15,6 +15,8 @@ if TYPE_CHECKING:
 
 class ProjectsPage(BasePage):
     path = "/favorite/projects"
+    CREATE_PROJECT_LINK_LOCATOR = '[data-test="sidebar"] [data-test-title="Create"] a'
+    PROJECT_CARD_LOCATOR = '[data-test="subproject"][data-project-id="{project_id}"]'
 
     @property
     def header(self) -> TeamCityHeader:
@@ -22,7 +24,7 @@ class ProjectsPage(BasePage):
 
     @property
     def create_project_link(self) -> Locator:
-        return self.page.locator('[data-test="sidebar"] [data-test-title="Create"] a')
+        return self.page.locator(self.CREATE_PROJECT_LINK_LOCATOR)
 
     @allure.step("Open project creation page")
     def open_create_project(self) -> CreateProjectPage:
@@ -41,7 +43,7 @@ class ProjectsPage(BasePage):
         self, project_request: CreateProjectRequest
     ) -> ProjectsPage:
         project_card = self.page.locator(
-            f'[data-test="subproject"][data-project-id="{project_request.id}"]'
+            self.PROJECT_CARD_LOCATOR.format(project_id=project_request.id)
         )
         expect(project_card).to_be_visible()
         expect(project_card).to_contain_text(project_request.name)

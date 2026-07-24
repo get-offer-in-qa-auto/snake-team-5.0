@@ -14,7 +14,7 @@ def test_create_subproject(api_manager: ApiManager, project_request_factory):
     parent_request = project_request_factory()
     parent_project = api_manager.admin_steps.create_project(parent_request)
     child_request = project_request_factory(
-        parent_locator=TeamCityLocator.by_id(parent_project.id)
+        parent_locator=TeamCityLocator.ID.build(parent_project.id)
     )
 
     child_project = api_manager.admin_steps.create_project(child_request)
@@ -36,10 +36,10 @@ def test_create_projects_with_same_name_in_different_parents(
     second_parent = api_manager.admin_steps.create_project(project_request_factory())
     shared_name = project_request_factory().name
     first_child_request = project_request_factory(
-        name=shared_name, parent_locator=TeamCityLocator.by_id(first_parent.id)
+        name=shared_name, parent_locator=TeamCityLocator.ID.build(first_parent.id)
     )
     second_child_request = project_request_factory(
-        name=shared_name, parent_locator=TeamCityLocator.by_id(second_parent.id)
+        name=shared_name, parent_locator=TeamCityLocator.ID.build(second_parent.id)
     )
 
     first_child = api_manager.admin_steps.create_project(first_child_request)

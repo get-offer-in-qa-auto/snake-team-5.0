@@ -1,5 +1,6 @@
 import allure
 
+from src.main.api.constants.teamcity import TeamCityLocator
 from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.build_step_response import (
     BuildStepResponse,
@@ -65,7 +66,7 @@ class AdminSteps(BaseSteps):
             RequestSpecs.admin_auth_spec(),
             Endpoint.GET_USER,
             ResponseSpecs.request_returns_ok(),
-        ).get(self._user_locator(username))
+        ).get(TeamCityLocator.for_user(username))
 
     @allure.step("Get current user")
     def get_user_as(self, user_request: CreateUserRequest) -> CreateUserResponse:
@@ -73,7 +74,7 @@ class AdminSteps(BaseSteps):
             RequestSpecs.auth_as_user(user_request.username, user_request.password),
             Endpoint.GET_USER,
             ResponseSpecs.request_returns_ok(),
-        ).get(self._user_locator(user_request.username))
+        ).get(TeamCityLocator.for_user(user_request.username))
 
     @allure.step("Verify user was created")
     def verify_user_created(
@@ -95,7 +96,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_not_found_with_text(
                 ResponseError.USER_NOT_FOUND
             ),
-        ).get(self._user_locator(username))
+        ).get(TeamCityLocator.for_user(username))
 
     @allure.step("Verify user cannot authenticate")
     def check_user_cannot_authenticate(self, user_request: CreateUserRequest):
@@ -105,7 +106,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_unauthorized_with_text(
                 ResponseError.INCORRECT_USERNAME_OR_PASSWORD
             ),
-        ).get(self._user_locator(user_request.username))
+        ).get(TeamCityLocator.for_user(user_request.username))
 
     @allure.step("Delete user {user_id}")
     def delete_user(self, user_id: int | str):
@@ -113,7 +114,7 @@ class AdminSteps(BaseSteps):
             RequestSpecs.admin_auth_spec(),
             Endpoint.DELETE_USER,
             ResponseSpecs.entity_was_deleted(),
-        ).delete(self._user_locator(user_id))
+        ).delete(TeamCityLocator.for_user(user_id))
 
         self.created_objects.unregister_user(user_id)
 
@@ -126,7 +127,7 @@ class AdminSteps(BaseSteps):
             RequestSpecs.admin_auth_spec(),
             Endpoint.ASSIGN_USER_ROLE,
             ResponseSpecs.entity_was_created_or_ok(),
-        ).post(role_request, path=f"{self._user_locator(username)}/roles")
+        ).post(role_request, path=f"{TeamCityLocator.for_user(username)}/roles")
 
     @allure.step("Get roles for user {username}")
     def get_user_roles(self, username: str) -> RoleAssignmentsResponse:
@@ -134,7 +135,7 @@ class AdminSteps(BaseSteps):
             RequestSpecs.admin_auth_spec(),
             Endpoint.GET_USER_ROLES,
             ResponseSpecs.request_returns_ok(),
-        ).get(f"{self._user_locator(username)}/roles")
+        ).get(f"{TeamCityLocator.for_user(username)}/roles")
 
     @allure.step(
         "Verify role {role_id} with scope {scope} is assigned to user {username}"
@@ -211,7 +212,7 @@ class AdminSteps(BaseSteps):
             RequestSpecs.admin_auth_spec(),
             Endpoint.GET_PROJECT,
             ResponseSpecs.request_returns_ok(),
-        ).get(self._project_locator(project_id))
+        ).get(TeamCityLocator.ID.build(project_id))
 
     @allure.step("Verify project was created")
     def verify_project_created(
@@ -242,7 +243,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_not_found_with_text(
                 ResponseError.PROJECT_NOT_FOUND
             ),
-        ).get(self._project_locator(project_id))
+        ).get(TeamCityLocator.ID.build(project_id))
 
     @allure.step("Delete project {project_id}")
     def delete_project(self, project_id: str):
@@ -250,7 +251,7 @@ class AdminSteps(BaseSteps):
             RequestSpecs.admin_auth_spec(),
             Endpoint.DELETE_PROJECT,
             ResponseSpecs.entity_was_deleted(),
-        ).delete(self._project_locator(project_id))
+        ).delete(TeamCityLocator.ID.build(project_id))
 
         self.created_objects.unregister_project(project_id)
 
@@ -260,7 +261,7 @@ class AdminSteps(BaseSteps):
             RequestSpecs.admin_auth_spec(),
             Endpoint.DELETE_PROJECT,
             ResponseSpecs.entity_was_deleted_or_not_found(),
-        ).delete(self._project_locator(project_id))
+        ).delete(TeamCityLocator.ID.build(project_id))
 
     @allure.step("Create build configuration in project {project_id}")
     def create_build_configuration(
@@ -272,7 +273,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.entity_was_created_or_ok(),
         ).post(
             configuration_request,
-            path=f"{self._project_locator(project_id)}/buildTypes",
+            path=f"{TeamCityLocator.ID.build(project_id)}/buildTypes",
         )
 
         self.created_objects.append(configuration_response)
@@ -291,7 +292,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_bad_request_with_text(error_text),
         ).post(
             configuration_request,
-            path=f"{self._project_locator(project_id)}/buildTypes",
+            path=f"{TeamCityLocator.ID.build(project_id)}/buildTypes",
         )
 
     @allure.step("Verify build configuration cannot be created: {error_text}")
@@ -307,7 +308,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_not_found_with_text(error_text),
         ).post(
             configuration_request,
-            path=f"{self._project_locator(project_id)}/buildTypes",
+            path=f"{TeamCityLocator.ID.build(project_id)}/buildTypes",
         )
 
     @allure.step("Verify build configuration cannot be created without authorization")
@@ -320,7 +321,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_unauthorized(),
         ).post(
             configuration_request,
-            path=f"{self._project_locator(project_id)}/buildTypes",
+            path=f"{TeamCityLocator.ID.build(project_id)}/buildTypes",
             allow_redirects=False,
         )
 
@@ -332,7 +333,7 @@ class AdminSteps(BaseSteps):
             RequestSpecs.admin_auth_spec(),
             Endpoint.GET_BUILD_CONFIGURATION,
             ResponseSpecs.request_returns_ok(),
-        ).get(self._build_configuration_locator(build_configuration_id))
+        ).get(TeamCityLocator.ID.build(build_configuration_id))
 
     @allure.step("Verify build configuration was created")
     def verify_build_configuration_created(
@@ -366,7 +367,7 @@ class AdminSteps(BaseSteps):
             ResponseSpecs.request_returns_not_found_with_text(
                 ResponseError.BUILD_CONFIGURATION_NOT_FOUND
             ),
-        ).get(self._build_configuration_locator(build_configuration_id))
+        ).get(TeamCityLocator.ID.build(build_configuration_id))
 
     @allure.step("Delete build configuration {build_configuration_id}")
     def delete_build_configuration(self, build_configuration_id: str):
@@ -374,16 +375,14 @@ class AdminSteps(BaseSteps):
             RequestSpecs.admin_auth_spec(),
             Endpoint.DELETE_BUILD_CONFIGURATION,
             ResponseSpecs.entity_was_deleted(),
-        ).delete(self._build_configuration_locator(build_configuration_id))
+        ).delete(TeamCityLocator.ID.build(build_configuration_id))
 
         self.created_objects.unregister_build_configuration(build_configuration_id)
 
     def create_build_step(
         self, build_configuration_id: str, build_step_request: CreateBuildStepRequest
     ) -> BuildStepResponse:
-        build_configuration_locator = self._build_configuration_locator(
-            build_configuration_id
-        )
+        build_configuration_locator = TeamCityLocator.ID.build(build_configuration_id)
 
         return ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -394,9 +393,7 @@ class AdminSteps(BaseSteps):
     def get_build_step(
         self, build_configuration_id: str, step_id: str
     ) -> BuildStepResponse:
-        build_configuration_locator = self._build_configuration_locator(
-            build_configuration_id
-        )
+        build_configuration_locator = TeamCityLocator.ID.build(build_configuration_id)
 
         return ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -410,9 +407,7 @@ class AdminSteps(BaseSteps):
         step_id: str,
         build_step_request: CreateBuildStepRequest,
     ) -> BuildStepResponse:
-        build_configuration_locator = self._build_configuration_locator(
-            build_configuration_id
-        )
+        build_configuration_locator = TeamCityLocator.ID.build(build_configuration_id)
 
         return ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -424,9 +419,7 @@ class AdminSteps(BaseSteps):
         )
 
     def delete_build_step(self, build_configuration_id: str, step_id: str) -> None:
-        build_configuration_locator = self._build_configuration_locator(
-            build_configuration_id
-        )
+        build_configuration_locator = TeamCityLocator.ID.build(build_configuration_id)
 
         ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -439,9 +432,7 @@ class AdminSteps(BaseSteps):
         build_configuration_id: str,
         step_id: str,
     ) -> None:
-        build_configuration_locator = self._build_configuration_locator(
-            build_configuration_id
-        )
+        build_configuration_locator = TeamCityLocator.ID.build(build_configuration_id)
 
         CrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -457,9 +448,7 @@ class AdminSteps(BaseSteps):
         self,
         build_configuration_id: str,
     ) -> BuildStepsResponse:
-        build_configuration_locator = self._build_configuration_locator(
-            build_configuration_id
-        )
+        build_configuration_locator = TeamCityLocator.ID.build(build_configuration_id)
 
         return ValidatedCrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -523,9 +512,7 @@ class AdminSteps(BaseSteps):
         build_configuration_id: str,
         build_step_request: CreateBuildStepRequest,
     ) -> None:
-        build_configuration_locator = self._build_configuration_locator(
-            build_configuration_id
-        )
+        build_configuration_locator = TeamCityLocator.ID.build(build_configuration_id)
 
         CrudRequester(
             RequestSpecs.admin_auth_spec(),
@@ -536,26 +523,4 @@ class AdminSteps(BaseSteps):
         ).post(
             build_step_request,
             path=f"{build_configuration_locator}/steps",
-        )
-
-    @staticmethod
-    def _project_locator(project_id: str) -> str:
-        return project_id if ":" in project_id else f"id:{project_id}"
-
-    @staticmethod
-    def _build_configuration_locator(build_configuration_id: str) -> str:
-        return (
-            build_configuration_id
-            if ":" in build_configuration_id
-            else f"id:{build_configuration_id}"
-        )
-
-    @staticmethod
-    def _user_locator(user_id_or_username: int | str) -> str:
-        if isinstance(user_id_or_username, int):
-            return f"id:{user_id_or_username}"
-        return (
-            user_id_or_username
-            if ":" in user_id_or_username
-            else f"username:{user_id_or_username}"
         )

@@ -54,7 +54,7 @@ def test_create_project_with_unknown_parent(
     nonexistent_project_id: str,
 ):
     project_request = project_request_factory(
-        parent_locator=TeamCityLocator.by_id(nonexistent_project_id)
+        parent_locator=TeamCityLocator.ID.build(nonexistent_project_id)
     )
 
     api_manager.admin_steps.create_project_not_found(

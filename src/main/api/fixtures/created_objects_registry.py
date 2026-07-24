@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import Any
 
+from src.main.api.constants.teamcity import TeamCityLocator
 from src.main.api.models.build_configuration_response import (
     BuildConfigurationResponse,
 )
@@ -25,7 +26,7 @@ class CreatedObjectsRegistry(list[Any]):
         )
 
     def unregister_build_configuration(self, build_configuration_id: str) -> None:
-        normalized_id = build_configuration_id.removeprefix("id:")
+        normalized_id = TeamCityLocator.ID.extract(build_configuration_id)
         self._discard(
             lambda obj: (
                 isinstance(obj, BuildConfigurationResponse) and obj.id == normalized_id
@@ -65,7 +66,7 @@ class CreatedObjectsRegistry(list[Any]):
         self[:] = [obj for obj in self if not predicate(obj)]
 
     def _registered_project_tree(self, project_id: str) -> set[str]:
-        project_ids = {project_id.removeprefix("id:")}
+        project_ids = {TeamCityLocator.ID.extract(project_id)}
 
         while True:
             child_ids = {
@@ -83,9 +84,9 @@ class CreatedObjectsRegistry(list[Any]):
         if project.parentProject is None:
             return None
         if project.parentProject.id is not None:
-            return project.parentProject.id.removeprefix("id:")
+            return TeamCityLocator.ID.extract(project.parentProject.id)
         if project.parentProject.locator is not None:
-            return project.parentProject.locator.removeprefix("id:")
+            return TeamCityLocator.ID.extract(project.parentProject.locator)
         return None
 
     @staticmethod
@@ -95,7 +96,9 @@ class CreatedObjectsRegistry(list[Any]):
         project_id = configuration.projectId
         if project_id is None and configuration.project is not None:
             project_id = configuration.project.id
-        return project_id.removeprefix("id:") if project_id is not None else None
+        return (
+            TeamCityLocator.ID.extract(project_id) if project_id is not None else None
+        )
 
     @staticmethod
     def _user_matches_locator(
@@ -103,8 +106,10 @@ class CreatedObjectsRegistry(list[Any]):
     ) -> bool:
         if isinstance(user_id_or_username, int):
             return user.id == user_id_or_username
-        if user_id_or_username.startswith("id:"):
-            return str(user.id) == user_id_or_username.removeprefix("id:")
-        if user_id_or_username.startswith("username:"):
-            return user.username == user_id_or_username.removeprefix("username:")
+        if TeamCityLocator.ID.matches(user_id_or_username):
+            return str(user.id) == TeamCityLocator.ID.extract(user_id_or_username)
+        if TeamCityLocator.USERNAME.matches(user_id_or_username):
+            return user.username == TeamCityLocator.USERNAME.extract(
+                user_id_or_username
+            )
         return user.username == user_id_or_username

@@ -4,6 +4,7 @@ import allure
 import requests
 
 from src.main.api.configs.config import Config
+from src.main.api.constants.teamcity import TeamCityLocator
 from src.main.api.models.build_run import BuildRunResponse, BuildState, BuildStatus
 from src.main.api.models.start_build_request import (
     BuildCancelRequest,
@@ -56,7 +57,7 @@ class BuildRunSteps:
             RequestSpecs.admin_auth_spec(),
             Endpoint.GET_BUILD_RUN,
             ResponseSpecs.request_returns_ok(),
-        ).get(f"id:{build_id}")
+        ).get(TeamCityLocator.ID.build(build_id))
 
     @allure.step("Wait until build {build_id} reaches {expected_state}")
     def wait_for_state(
@@ -140,7 +141,7 @@ class BuildRunSteps:
             ResponseSpecs.entity_was_created_or_ok(),
         ).post(
             BuildCancelRequest(comment=comment),
-            path=f"id:{build_id}",
+            path=TeamCityLocator.ID.build(build_id),
         )
 
     @allure.step("Get plain-text log for build {build_id}")
