@@ -47,3 +47,10 @@ class UsersPage(BasePage):
         expect(self.user_link(user_request)).to_be_visible()
         expect(self.user_row(user_request)).to_contain_text(user_request.name)
         return self
+
+    @allure.step("Verify user is not displayed")
+    def should_not_contain_user(
+        self, user_request: CreateUserRequest
+    ) -> UsersPage:
+        expect(self.user_row(user_request)).to_have_count(0)
+        return self
