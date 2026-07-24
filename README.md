@@ -257,12 +257,15 @@ Credentials выбираются в порядке:
 фикстурами, сохранить их в `SessionStorage` и выбрать активного пользователя.
 API-тесты без этих маркеров не запускают браузер.
 
-`pytest-xdist` запускает тесты параллельно. Основной PR regression и отдельный
-PostgreSQL regression всегда используют 2 worker и 2 отдельных TeamCity agent.
-Количество workers в ручном запуске не настраивается.
+`pytest-xdist` запускает тесты параллельно. В GitHub Actions один параметр
+`parallelism` одновременно задаёт количество pytest workers и отдельных
+TeamCity agents. Поддерживаются значения `1`, `2` и `3`; по умолчанию
+используется `2`.
 
-В pull request сначала в 2 worker выполняются 8 smoke-тестов, затем в 2 worker —
-44 остальных regression-теста. Локально количество workers задаётся так:
+В ручном запуске значение выбирается в форме `Run workflow`. Pull request и
+scheduled workflow читают repository variable `TEAMCITY_PARALLELISM`, а если
+она не задана, используют `2`. Smoke и оставшийся regression выполняются с
+одинаковой параллельностью. Локально количество workers задаётся так:
 
 ```bash
 python3 -m pytest -m regression -n 2

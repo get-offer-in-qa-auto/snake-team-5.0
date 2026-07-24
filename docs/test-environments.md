@@ -162,9 +162,9 @@ Nightly / scheduled:
 Oracle и Microsoft SQL Server могут быть тяжелее для локального и CI-запуска, поэтому их можно вынести в scheduled/manual job, если инфраструктура или лицензирование усложнят регулярный запуск.
 
 Реализованный PostgreSQL workflow запускается ежедневно в `02:00 UTC`
-(`05:00 МСК`) и вручную. Regression stage всегда использует 2 xdist worker и
-2 отдельных TeamCity agent, а database adapter читает ту же PostgreSQL напрямую
-в read-only транзакциях.
+(`05:00 МСК`) и вручную. Один параметр `parallelism` со значением `1`, `2` или
+`3` задаёт одинаковое количество xdist workers и отдельных TeamCity agents,
+а database adapter читает ту же PostgreSQL напрямую в read-only транзакциях.
 
 ## Источники
 

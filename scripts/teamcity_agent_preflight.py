@@ -2,26 +2,34 @@
 import argparse
 import sys
 import time
+from pathlib import Path
 from typing import Any
 
 import requests
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.main.api.specs.request_specs import RequestSpecs
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Authorize CI TeamCity agents and wait until all are connected."
+        description=(
+            "Authorize the requested number of CI TeamCity agents and wait until "
+            "all are ready."
+        )
     )
     parser.add_argument(
-        "--name",
+        "--count",
         required=True,
-        action="append",
-        help="Expected TeamCity agent name. Repeat for multiple agents.",
+        type=int,
+        choices=(1, 2, 3),
+        help="Number of TeamCity agents to prepare.",
     )
     parser.add_argument("--timeout", type=int, default=120)
     args = parser.parse_args()
-    expected_names = set(args.name)
+    expected_count = args.count
 
     deadline = time.monotonic() + args.timeout
     base_url = f"{RequestSpecs._server_url()}/app/rest"
@@ -41,13 +49,15 @@ def main() -> int:
         )
         response.raise_for_status()
         last_agents = response.json().get("agent", [])
-        agents_by_name = {
-            item.get("name"): item
-            for item in last_agents
-            if item.get("name") in expected_names
-        }
+        candidates = sorted(
+            (agent for agent in last_agents if agent.get("connected")),
+            key=lambda item: (
+                str(item.get("name") or ""),
+                str(item.get("id") or ""),
+            ),
+        )[:expected_count]
 
-        for agent in agents_by_name.values():
+        for agent in candidates:
             if agent.get("authorized"):
                 continue
             authorize = requests.put(
@@ -62,23 +72,26 @@ def main() -> int:
             )
             authorize.raise_for_status()
 
-        ready_names = {
-            name
-            for name, agent in agents_by_name.items()
+        ready_agents = [
+            agent
+            for agent in candidates
             if agent.get("authorized")
             and agent.get("connected")
             and agent.get("enabled")
-        }
-        if ready_names == expected_names:
+        ]
+        if len(ready_agents) == expected_count:
+            ready_names = sorted(
+                str(agent.get("name") or agent.get("id")) for agent in ready_agents
+            )
             print(
                 "TeamCity agents are authorized, connected, and enabled: "
-                f"{', '.join(sorted(ready_names))}."
+                f"{', '.join(ready_names)}."
             )
             return 0
         time.sleep(1)
 
     print(
-        f"TeamCity agents {sorted(expected_names)!r} did not become ready. "
+        f"{expected_count} TeamCity agents did not become ready. "
         f"Last agents: {last_agents}",
         file=sys.stderr,
     )
