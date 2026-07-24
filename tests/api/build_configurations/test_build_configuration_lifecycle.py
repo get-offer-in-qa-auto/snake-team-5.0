@@ -47,7 +47,7 @@ def test_created_build_configuration_is_persisted_in_database(
         project.id, build_configuration_request
     )
 
-    api_manager.database_steps.verify_build_configuration_persisted(configuration)
+    api_manager.database_steps.verify_build_configuration_persisted(configuration.id)
 
 
 @allure.title("Delete build configuration")
