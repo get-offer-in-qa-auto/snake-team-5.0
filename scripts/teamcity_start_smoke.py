@@ -15,11 +15,6 @@ from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
 
 import requests
 
-if __package__ in {None, ""}:
-    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from src.main.api.constants.teamcity import TeamCityLocator  # noqa: E402
-
 FIRST_START_MARKERS = (
     "startup confirmation",
     "confirm first start",
@@ -210,9 +205,8 @@ def create_ci_access_token(
             raise RuntimeError("TeamCity returned an empty administrator CSRF token")
 
         encoded_username = quote(username, safe="")
-        username_locator = TeamCityLocator.USERNAME.build(encoded_username)
         token_response = session.post(
-            f"{base_url}/app/rest/users/{username_locator}/tokens",
+            f"{base_url}/app/rest/users/username:{encoded_username}/tokens",
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/json",

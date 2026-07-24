@@ -1,6 +1,5 @@
 import allure
 
-from src.main.api.constants.teamcity import TeamCityLocator
 from src.main.api.models.build_configuration_response import (
     BuildConfigurationResponse,
 )
@@ -37,10 +36,7 @@ class UserSteps(BaseSteps):
             ),
             Endpoint.CREATE_USER_TOKEN,
             ResponseSpecs.entity_was_created_or_ok(),
-        ).post(
-            token_request,
-            path=f"{TeamCityLocator.USERNAME.build(user_request.username)}/tokens",
-        )
+        ).post(token_request, path=f"username:{user_request.username}/tokens")
         token_response = token_response.model_copy(
             update={
                 "username": user_request.username,
@@ -57,7 +53,7 @@ class UserSteps(BaseSteps):
             RequestSpecs.auth_as_user(user_request.username, user_request.password),
             Endpoint.GET_USER_TOKENS,
             ResponseSpecs.request_returns_ok(),
-        ).get(f"{TeamCityLocator.USERNAME.build(user_request.username)}/tokens")
+        ).get(f"username:{user_request.username}/tokens")
 
     @allure.step("Verify user token was created")
     def verify_user_token_created(
@@ -91,7 +87,7 @@ class UserSteps(BaseSteps):
             RequestSpecs.auth_as_user(username, password, csrf=True),
             Endpoint.DELETE_USER_TOKEN,
             ResponseSpecs.entity_was_deleted(),
-        ).delete(f"{TeamCityLocator.USERNAME.build(username)}/tokens/{token_name}")
+        ).delete(f"username:{username}/tokens/{token_name}")
 
         self.created_objects.unregister_user_token(username, token_name)
 
@@ -101,7 +97,7 @@ class UserSteps(BaseSteps):
             RequestSpecs.auth_with_token(token),
             Endpoint.GET_USER,
             ResponseSpecs.request_returns_ok(),
-        ).get(TeamCityLocator.USERNAME.build(username))
+        ).get(f"username:{username}")
 
     @allure.step("Verify request for user {username} without token is rejected")
     def check_request_without_token(self, username: str):
@@ -109,7 +105,7 @@ class UserSteps(BaseSteps):
             RequestSpecs.unauth_spec(),
             Endpoint.GET_USER,
             ResponseSpecs.request_returns_unauthorized(),
-        ).get(TeamCityLocator.USERNAME.build(username))
+        ).get(f"username:{username}")
 
     @allure.step("Verify token cannot authenticate user {username}")
     def check_token_cannot_authenticate(self, username: str, token: str):
@@ -117,7 +113,7 @@ class UserSteps(BaseSteps):
             RequestSpecs.auth_with_token(token),
             Endpoint.GET_USER,
             ResponseSpecs.request_returns_unauthorized_status(),
-        ).get(TeamCityLocator.USERNAME.build(username))
+        ).get(f"username:{username}")
 
     @allure.step("Create project as user")
     def create_project(
@@ -159,10 +155,7 @@ class UserSteps(BaseSteps):
             ),
             Endpoint.CREATE_BUILD_CONFIGURATION,
             ResponseSpecs.entity_was_created_or_ok(),
-        ).post(
-            configuration_request,
-            path=f"{TeamCityLocator.ID.build(project_id)}/buildTypes",
-        )
+        ).post(configuration_request, path=f"id:{project_id}/buildTypes")
 
         self.created_objects.append(configuration_response)
         return configuration_response
@@ -182,7 +175,4 @@ class UserSteps(BaseSteps):
             ),
             Endpoint.CREATE_BUILD_CONFIGURATION,
             ResponseSpecs.request_returns_forbidden(),
-        ).post(
-            configuration_request,
-            path=f"{TeamCityLocator.ID.build(project_id)}/buildTypes",
-        )
+        ).post(configuration_request, path=f"id:{project_id}/buildTypes")

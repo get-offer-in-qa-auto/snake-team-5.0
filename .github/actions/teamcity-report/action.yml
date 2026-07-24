@@ -79,7 +79,7 @@ runs:
     - name: Capture TeamCity login page
       if: always()
       shell: bash
-      run: python3 -m scripts.teamcity_capture_page --url "${{ inputs.teamcity_url }}" --output-dir artifacts/teamcity-page
+      run: python3 scripts/teamcity_capture_page.py --url "${{ inputs.teamcity_url }}" --output-dir artifacts/teamcity-page
 
     - name: Show container status
       if: always()

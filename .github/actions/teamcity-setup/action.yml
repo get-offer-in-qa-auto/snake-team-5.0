@@ -81,7 +81,7 @@ runs:
     - name: Wait for TeamCity web endpoint
       shell: bash
       run: |
-        python3 -m scripts.teamcity_start_smoke \
+        python3 scripts/teamcity_start_smoke.py \
           --url "${{ inputs.teamcity_url }}" \
           --timeout "${{ inputs.wait_timeout_seconds }}" \
           --interval "${{ inputs.wait_interval_seconds }}" \

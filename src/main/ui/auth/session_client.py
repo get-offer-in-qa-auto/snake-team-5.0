@@ -4,7 +4,6 @@ import requests
 from playwright.sync_api import BrowserContext
 
 from src.main.api.configs.config import Config
-from src.main.api.constants.teamcity import TeamCityLocator
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.specs.request_specs import RequestSpecs
 from src.main.ui.configuration import teamcity_ui_base_url
@@ -52,6 +51,5 @@ class UiAuthClient:
 
     def _user_url(self, username: str) -> str:
         api_base_path = str(Config.get("apiBasePath", "/app/rest")).rstrip("/")
-        encoded_username = quote(username, safe="")
-        username_locator = TeamCityLocator.USERNAME.build(encoded_username)
-        return f"{self.base_url}{api_base_path}/users/{username_locator}"
+        username_locator = quote(username, safe="")
+        return f"{self.base_url}{api_base_path}/users/username:{username_locator}"

@@ -20,9 +20,7 @@ def test_create_build_configuration_in_subproject(
 ):
     parent_project = api_manager.admin_steps.create_project(project_request_factory())
     subproject = api_manager.admin_steps.create_project(
-        project_request_factory(
-            parent_locator=TeamCityLocator.ID.build(parent_project.id)
-        )
+        project_request_factory(parent_locator=TeamCityLocator.by_id(parent_project.id))
     )
 
     configuration = api_manager.admin_steps.create_build_configuration(
