@@ -2,7 +2,6 @@ import allure
 
 from src.main.api.database import DatabaseClient, DBRequest, create_database_client
 from src.main.api.database.dao import BuildConfigurationDao, ProjectDao, UserDao
-from src.main.api.models.build_configuration_response import BuildConfigurationResponse
 from src.main.api.models.create_user_response import CreateUserResponse
 from src.main.api.models.project_response import ProjectResponse
 
@@ -10,6 +9,30 @@ from src.main.api.models.project_response import ProjectResponse
 class DatabaseSteps:
     def __init__(self, client: DatabaseClient | None = None):
         self.client = client or create_database_client()
+
+    @staticmethod
+    def _verify_active_entity(
+        entity: ProjectDao | BuildConfigurationDao,
+        *,
+        expected_external_id: str,
+        internal_id_prefix: str,
+        entity_name: str,
+    ) -> None:
+        assert entity.delete_time is None, (
+            f"{entity_name} {expected_external_id!r} is marked as deleted in the "
+            f"database: delete_time={entity.delete_time}"
+        )
+        assert entity.external_id == expected_external_id, (
+            f"{entity_name} external id mismatch: expected {expected_external_id!r}, "
+            f"got {entity.external_id!r}"
+        )
+        assert entity.internal_id.startswith(internal_id_prefix), (
+            f"{entity_name} {expected_external_id!r} has unexpected internal id "
+            f"{entity.internal_id!r}; expected prefix {internal_id_prefix!r}"
+        )
+        assert entity.config_id, (
+            f"{entity_name} {expected_external_id!r} has an empty config id"
+        )
 
     def get_project_by_external_id(self, external_id: str) -> ProjectDao:
         with self.client.snapshot() as executor:
@@ -42,13 +65,12 @@ class DatabaseSteps:
     @allure.step("Verify project is persisted in TeamCity database")
     def verify_project_persisted(self, project_response: ProjectResponse) -> ProjectDao:
         project = self.get_project_by_external_id(project_response.id)
-        assert project.delete_time is None, (
-            f"Project {project_response.id!r} is marked as deleted in the database: "
-            f"delete_time={project.delete_time}"
+        self._verify_active_entity(
+            project,
+            expected_external_id=project_response.id,
+            internal_id_prefix="project",
+            entity_name="Project",
         )
-        assert project.external_id == project_response.id
-        assert project.internal_id.startswith("project")
-        assert project.config_id
         return project
 
     @allure.step("Verify project {external_id} is deleted in TeamCity database")
@@ -103,21 +125,20 @@ class DatabaseSteps:
             delete_time=int(delete_time) if delete_time is not None else None,
         )
 
-    @allure.step("Verify build configuration is persisted in TeamCity database")
+    @allure.step(
+        "Verify build configuration {external_id} is persisted in TeamCity database"
+    )
     def verify_build_configuration_persisted(
-        self, build_configuration: BuildConfigurationResponse
+        self, external_id: str
     ) -> BuildConfigurationDao:
-        database_configuration = self.get_build_configuration_by_external_id(
-            build_configuration.id
+        build_configuration = self.get_build_configuration_by_external_id(external_id)
+        self._verify_active_entity(
+            build_configuration,
+            expected_external_id=external_id,
+            internal_id_prefix="bt",
+            entity_name="Build configuration",
         )
-        assert database_configuration.delete_time is None, (
-            f"Build configuration {build_configuration.id!r} is marked as deleted in the "
-            f"database: delete_time={database_configuration.delete_time}"
-        )
-        assert database_configuration.external_id == build_configuration.id
-        assert database_configuration.internal_id.startswith("bt")
-        assert database_configuration.config_id
-        return database_configuration
+        return build_configuration
 
     @allure.step(
         "Verify build configuration {external_id} is deleted in TeamCity database"
