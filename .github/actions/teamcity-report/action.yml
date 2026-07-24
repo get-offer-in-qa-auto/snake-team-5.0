@@ -26,6 +26,10 @@ inputs:
     description: TeamCity server container name used for log collection.
     required: false
     default: teamcity-server-ci
+  generate_allure_report:
+    description: Generate and upload an Allure HTML report for this job.
+    required: false
+    default: "true"
 
 outputs:
   allure_pages_ready:
@@ -36,14 +40,14 @@ runs:
   using: composite
   steps:
     - name: Set up Java for Allure
-      if: always()
+      if: ${{ always() && inputs.generate_allure_report == 'true' }}
       uses: actions/setup-java@v4
       with:
         distribution: temurin
         java-version: "17"
 
     - name: Restore Allure history
-      if: always()
+      if: ${{ always() && inputs.generate_allure_report == 'true' }}
       shell: bash
       env:
         GITHUB_TOKEN: ${{ github.token }}
@@ -66,7 +70,7 @@ runs:
         fi
 
     - name: Generate Allure report
-      if: always()
+      if: ${{ always() && inputs.generate_allure_report == 'true' }}
       shell: bash
       run: |
         if [ -d artifacts/allure-results ] && [ "$(find artifacts/allure-results -type f | wc -l)" -gt 0 ]; then
@@ -128,7 +132,7 @@ runs:
         retention-days: 7
 
     - name: Upload Allure report
-      if: always()
+      if: ${{ always() && inputs.generate_allure_report == 'true' }}
       uses: actions/upload-artifact@v4
       with:
         name: teamcity-${{ inputs.test_label }}-allure-report

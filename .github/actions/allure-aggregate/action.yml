@@ -1,0 +1,212 @@
+name: Aggregate Allure Report
+description: Combine Allure result shards, restore history, and build one report.
+
+inputs:
+  source_artifact_pattern:
+    description: Glob pattern matching Allure result artifacts from test jobs.
+    required: true
+  expected_artifact_names:
+    description: Space-separated names of all required Allure result artifacts.
+    required: true
+  test_label:
+    description: Suite label used for Allure history and report publication.
+    required: true
+  results_artifact_name:
+    description: Name of the combined raw Allure results artifact.
+    required: true
+  report_artifact_name:
+    description: Name of the generated Allure HTML report artifact.
+    required: true
+  database:
+    description: TeamCity database shown in Allure environment metadata.
+    required: false
+    default: HSQLDB
+  browsers:
+    description: UI browsers shown in Allure environment metadata.
+    required: false
+    default: Chromium, Firefox, WebKit
+  pytest_workers:
+    description: Pytest worker count shown in Allure environment metadata.
+    required: true
+
+outputs:
+  ready:
+    description: "true when the combined report contains index.html."
+    value: ${{ steps.allure-pages.outputs.ready }}
+
+runs:
+  using: composite
+  steps:
+    - name: Download Allure result shards
+      uses: actions/download-artifact@v4
+      with:
+        pattern: ${{ inputs.source_artifact_pattern }}
+        path: artifacts/allure-shards
+        merge-multiple: false
+
+    - name: Validate Allure result shards
+      id: validate-shards
+      if: always()
+      shell: bash
+      env:
+        EXPECTED_ARTIFACT_NAMES: ${{ inputs.expected_artifact_names }}
+      run: |
+        complete=true
+        expected_count=0
+        for artifact_name in $EXPECTED_ARTIFACT_NAMES; do
+          expected_count=$((expected_count + 1))
+          artifact_directory="artifacts/allure-shards/$artifact_name"
+          if [ ! -d "$artifact_directory" ] || [ "$(find "$artifact_directory" -type f -name '*-result.json' | wc -l)" -eq 0 ]; then
+            echo "::warning title=Missing Allure shard::$artifact_name has no test results."
+            complete=false
+          fi
+        done
+
+        actual_count=0
+        if [ -d artifacts/allure-shards ]; then
+          actual_count="$(find artifacts/allure-shards -mindepth 1 -maxdepth 1 -type d | wc -l)"
+        fi
+        if [ "$actual_count" -ne "$expected_count" ]; then
+          echo "::warning title=Incomplete Allure launch::Expected $expected_count shards, found $actual_count."
+          complete=false
+        fi
+
+        echo "complete=$complete" >> "$GITHUB_OUTPUT"
+
+    - name: Merge Allure results without collisions
+      id: merge-results
+      if: always()
+      shell: bash
+      run: |
+        mkdir -p artifacts/allure-results
+        if [ ! -d artifacts/allure-shards ]; then
+          echo "No Allure result shards found."
+          echo "valid=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        while IFS= read -r -d '' source_file; do
+          destination="artifacts/allure-results/$(basename "$source_file")"
+          if [ -e "$destination" ]; then
+            echo "Allure result filename collision: $(basename "$source_file")" >&2
+            exit 1
+          fi
+          cp "$source_file" "$destination"
+        done < <(find artifacts/allure-shards -type f -print0 | sort -z)
+
+        echo "valid=true" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Java for Allure
+      if: always()
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: "17"
+
+    - name: Prepare Allure launch metadata
+      if: always()
+      shell: bash
+      env:
+        ALLURE_TEST_LABEL: ${{ inputs.test_label }}
+        ALLURE_DATABASE: ${{ inputs.database }}
+        ALLURE_BROWSERS: ${{ inputs.browsers }}
+        ALLURE_PYTEST_WORKERS: ${{ inputs.pytest_workers }}
+        ALLURE_SHARDS_COMPLETE: ${{ steps.validate-shards.outputs.complete }}
+      run: |
+        mkdir -p artifacts/allure-results
+
+        {
+          echo "TeamCity\\ database = $ALLURE_DATABASE"
+          echo "UI\\ browsers = $ALLURE_BROWSERS"
+          echo "Pytest\\ workers = $ALLURE_PYTEST_WORKERS"
+          echo "Execution\\ topology = API and separate browser jobs"
+          echo "Allure\\ shards\\ complete = $ALLURE_SHARDS_COMPLETE"
+        } > artifacts/allure-results/environment.properties
+
+        repository_name="${GITHUB_REPOSITORY#*/}"
+        run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+        report_url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${repository_name}/reports/${ALLURE_TEST_LABEL}/${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}/"
+        jq -n \
+          --arg report_name "TeamCity regression #${GITHUB_RUN_NUMBER}" \
+          --arg report_url "$report_url" \
+          --arg build_name "${GITHUB_WORKFLOW} #${GITHUB_RUN_NUMBER}" \
+          --arg build_url "$run_url" \
+          --argjson build_order "$GITHUB_RUN_NUMBER" \
+          '{
+            reportName: $report_name,
+            buildOrder: $build_order,
+            reportUrl: $report_url,
+            name: "GitHub Actions",
+            type: "github",
+            buildName: $build_name,
+            buildUrl: $build_url
+          }' > artifacts/allure-results/executor.json
+
+    - name: Restore combined Allure history
+      if: always()
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        if [ ! -d artifacts/allure-results ] || [ "$(find artifacts/allure-results -type f -name '*-result.json' | wc -l)" -eq 0 ]; then
+          echo "No Allure test results found, skipping history restore."
+          exit 0
+        fi
+
+        remote_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+        if git ls-remote --exit-code --heads "$remote_url" gh-pages >/dev/null 2>&1; then
+          rm -rf pages-history
+          git clone --depth=1 --branch gh-pages "$remote_url" pages-history
+          python3 .github/scripts/restore_allure_history.py \
+            --site-dir pages-history \
+            --suite "${{ inputs.test_label }}" \
+            --results-dir artifacts/allure-results
+        else
+          echo "No gh-pages branch found, skipping history restore."
+        fi
+
+    - name: Generate combined Allure report
+      if: always()
+      shell: bash
+      run: |
+        if [ ! -d artifacts/allure-results ] || [ "$(find artifacts/allure-results -type f -name '*-result.json' | wc -l)" -eq 0 ]; then
+          echo "No Allure test results found, skipping report generation."
+          exit 0
+        fi
+
+        npm install -g allure-commandline
+        allure generate artifacts/allure-results --clean -o artifacts/allure-report
+
+    - name: Upload combined Allure results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.results_artifact_name }}
+        path: artifacts/allure-results
+        if-no-files-found: ignore
+        retention-days: 7
+
+    - name: Upload combined Allure report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.report_artifact_name }}
+        path: artifacts/allure-report
+        if-no-files-found: ignore
+        retention-days: 7
+
+    - name: Check combined Allure report for Pages
+      id: allure-pages
+      if: always()
+      shell: bash
+      env:
+        ALLURE_SHARDS_COMPLETE: ${{ steps.validate-shards.outputs.complete }}
+        ALLURE_RESULTS_VALID: ${{ steps.merge-results.outputs.valid }}
+      run: |
+        if [ "$ALLURE_SHARDS_COMPLETE" = "true" ] \
+          && [ "$ALLURE_RESULTS_VALID" = "true" ] \
+          && [ -f artifacts/allure-report/index.html ]; then
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+        fi
