@@ -8,18 +8,25 @@ from src.main.ui.pages.project_setup_page import ProjectSetupPage
 
 class CreateProjectPage(BasePage):
     path = "/projects/create?projectId=_Root"
+    PROJECT_NAME_INPUT_LOCATOR = '[data-test="project-name-input"]'
+    PROJECT_ID_INPUT_LOCATOR = '[data-test="project-id-input"]'
+    CREATE_BUTTON_NAME = "Create"
 
     @property
     def project_name_input(self) -> Locator:
-        return self.page.locator('[data-test="project-name-input"]')
+        return self.page.locator(self.PROJECT_NAME_INPUT_LOCATOR)
 
     @property
     def project_id_input(self) -> Locator:
-        return self.page.locator('[data-test="project-id-input"]')
+        return self.page.locator(self.PROJECT_ID_INPUT_LOCATOR)
 
     @property
     def create_button(self) -> Locator:
-        return self.page.get_by_role("button", name="Create", exact=True)
+        return self.page.get_by_role(
+            "button",
+            name=self.CREATE_BUTTON_NAME,
+            exact=True,
+        )
 
     @allure.step("Create project")
     def create_project(
