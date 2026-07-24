@@ -40,7 +40,7 @@ class CreateUserPage(BasePage):
 
     @allure.step("Submit creation form")
     def submit_empty_form(self) -> CreateUserPage:
-        self.create_button.click(force=True)
+        self.create_button.click()
         return self
 
     @allure.step("Verify required user fields validation errors")
@@ -55,5 +55,5 @@ class CreateUserPage(BasePage):
         self.name_input.fill(user_request.name)
         self.password_input.fill(user_request.password)
         self.confirm_password_input.fill(user_request.password)
-        self.create_button.click(force=True)
+        self.create_button.click()
         return UsersPage(self.page)

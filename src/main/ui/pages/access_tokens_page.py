@@ -49,10 +49,10 @@ class AccessTokensPage(BasePage):
 
     @allure.step("Create access token")
     def create_token(self, token_request: CreateUserTokenRequest) -> AccessTokensPage:
-        self.create_token_link.click(force=True)
+        self.create_token_link.click()
         self.token_dialog.evaluate("dialog => dialog.style.display = 'block'")
         self.token_name_input.fill(token_request.name)
-        self.create_button.click(force=True)
+        self.create_button.click()
         return self
 
     @allure.step("Verify access token was created")
@@ -63,7 +63,7 @@ class AccessTokensPage(BasePage):
 
     @allure.step("Close created access token dialog")
     def close_created_token_dialog(self) -> AccessTokensPage:
-        self.close_dialog_link.click(force=True)
+        self.close_dialog_link.click()
         return self
 
     @allure.step("Verify access token is displayed in the table")

@@ -29,7 +29,7 @@ class UserPage(BasePage):
 
     @allure.step("Open user access tokens")
     def open_access_tokens(self) -> AccessTokensPage:
-        self.access_tokens_link.click(force=True)
+        self.access_tokens_link.click()
         access_tokens_page = AccessTokensPage(self.page)
         expect(access_tokens_page.create_token_link).to_be_visible()
         return access_tokens_page
@@ -39,5 +39,5 @@ class UserPage(BasePage):
         from src.main.ui.pages.users_page import UsersPage
 
         self.page.once("dialog", lambda dialog: dialog.accept())
-        self.delete_button.click(force=True)
+        self.delete_button.click()
         return UsersPage(self.page)

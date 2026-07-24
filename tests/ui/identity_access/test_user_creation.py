@@ -46,6 +46,5 @@ def test_admin_can_delete_user(
         .open()
         .open_user(user_to_delete)
         .delete_user()
-        .open()
         .should_not_contain_user(user_to_delete)
     )
