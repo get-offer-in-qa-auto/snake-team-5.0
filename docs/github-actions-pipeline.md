@@ -19,9 +19,10 @@ TeamCity UI · WebKit
 по умолчанию — `2`.
 
 API job выполняет database preflight, 6 smoke API-тестов и после успешного gate
-ещё 44 API regression-теста. Каждая UI job запускает 2 UI-сценария только в
-своём браузере. Matrix использует `fail-fast: false`, поэтому падение одного
-браузера не отменяет остальные и итоговый отчёт содержит полную диагностику.
+ещё 44 API regression-теста. Каждая UI job запускает 7 UI-сценариев только в
+своём браузере. В объединённый Allure report попадает 71 результат. Matrix
+использует `fail-fast: false`, поэтому падение одного браузера не отменяет
+остальные и итоговый отчёт содержит полную диагностику.
 
 - поднять отдельный TeamCity Server для API и каждого браузера;
 - поднять в каждом стенде `parallelism` экземпляров TeamCity Agent;
@@ -79,7 +80,7 @@ xdist workers, и количеством отдельных TeamCity agents. В 
 
 ```text
 PostgreSQL health → TeamCity external DB bootstrap → read-only DB preflight
-→ 12 smoke test items → 44 regression tests with selected parallelism
+→ 21 smoke test items → 50 remaining regression items
 ```
 
 Workflow не запускается на каждый PR и не публикует GitHub Pages. JUnit, Allure

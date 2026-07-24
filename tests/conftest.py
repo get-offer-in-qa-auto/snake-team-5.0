@@ -103,6 +103,21 @@ ALLURE_HIERARCHY_BY_PATH = {
         "Projects",
         "Creation",
     ),
+    ("ui", "identity_access", "test_user_creation.py"): (
+        "UI",
+        "Identity & Access",
+        "Users",
+    ),
+    ("ui", "identity_access", "test_access_tokens.py"): (
+        "UI",
+        "Identity & Access",
+        "Access Tokens",
+    ),
+    ("ui", "identity_access", "test_permissions.py"): (
+        "UI",
+        "Identity & Access",
+        "Permissions",
+    ),
 }
 
 BROWSER_TITLES = {

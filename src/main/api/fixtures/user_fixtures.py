@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 import pytest
 
 from src.main.api.classes.api_manager import ApiManager
@@ -27,6 +29,21 @@ def user_request_factory():
 @pytest.fixture(scope="function")
 def user_request(user_request_factory):
     return user_request_factory()
+
+
+@pytest.fixture(scope="function")
+def user(api_manager: ApiManager, user_request: CreateUserRequest) -> CreateUserRequest:
+    api_manager.admin_steps.create_user(user_request)
+    return user_request
+
+
+@pytest.fixture(scope="function")
+def user_to_delete(
+    api_manager: ApiManager,
+    user: CreateUserRequest,
+) -> Iterator[CreateUserRequest]:
+    yield user
+    api_manager.admin_steps.delete_user_if_exists(user.username)
 
 
 @pytest.fixture(scope="function")
