@@ -6,9 +6,9 @@ inputs:
     description: Pytest marker expression to run.
     required: true
   pytest_workers:
-    description: Number of pytest-xdist workers. Use 0 for serial execution.
+    description: Number of pytest-xdist workers. Supported values are 1, 2, and 3.
     required: false
-    default: "3"
+    default: "2"
   junit_filename:
     description: JUnit XML filename saved under artifacts/test-results.
     required: true
@@ -34,6 +34,14 @@ runs:
         TEAMCITY_DB_CONTAINER: ${{ inputs.server_container }}
         TEAMCITY_CONFIG_CONTAINER: ${{ inputs.server_container }}
       run: |
+        case "$PYTEST_WORKERS" in
+          1|2|3) ;;
+          *)
+            echo "Pytest worker count must be 1, 2, or 3; got: $PYTEST_WORKERS" >&2
+            exit 1
+            ;;
+        esac
+
         mkdir -p artifacts/test-results
         pytest_args=()
         if [ "$PRESERVE_ALLURE_RESULTS" = "true" ]; then

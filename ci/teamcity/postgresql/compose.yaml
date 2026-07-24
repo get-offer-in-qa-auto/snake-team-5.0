@@ -46,51 +46,16 @@ services:
       - teamcity-data:/data/teamcity_server/datadir
       - teamcity-logs:/opt/teamcity/logs
 
+  # CI agents are ephemeral. Keep this service free of container_name and shared
+  # volumes so Docker Compose can create isolated replicas with --scale.
   teamcity-agent:
     image: jetbrains/teamcity-agent:2026.1.1
-    container_name: teamcity-agent-postgresql-ci
     depends_on:
       - teamcity-server
     environment:
       SERVER_URL: http://teamcity-server:8111
-      AGENT_NAME: postgresql-ci-agent-1
-    volumes:
-      - teamcity-agent-conf:/data/teamcity_agent/conf
-      - teamcity-agent-work:/opt/buildagent/work
-      - teamcity-agent-system:/opt/buildagent/system
-      - teamcity-agent-temp:/opt/buildagent/temp
-      - teamcity-agent-tools:/opt/buildagent/tools
-      - teamcity-agent-plugins:/opt/buildagent/plugins
-
-  teamcity-agent-2:
-    image: jetbrains/teamcity-agent:2026.1.1
-    container_name: teamcity-agent-2-postgresql-ci
-    depends_on:
-      - teamcity-server
-    environment:
-      SERVER_URL: http://teamcity-server:8111
-      AGENT_NAME: postgresql-ci-agent-2
-    volumes:
-      - teamcity-agent-2-conf:/data/teamcity_agent/conf
-      - teamcity-agent-2-work:/opt/buildagent/work
-      - teamcity-agent-2-system:/opt/buildagent/system
-      - teamcity-agent-2-temp:/opt/buildagent/temp
-      - teamcity-agent-2-tools:/opt/buildagent/tools
-      - teamcity-agent-2-plugins:/opt/buildagent/plugins
 
 volumes:
   teamcity-postgresql-data:
   teamcity-data:
   teamcity-logs:
-  teamcity-agent-conf:
-  teamcity-agent-work:
-  teamcity-agent-system:
-  teamcity-agent-temp:
-  teamcity-agent-tools:
-  teamcity-agent-plugins:
-  teamcity-agent-2-conf:
-  teamcity-agent-2-work:
-  teamcity-agent-2-system:
-  teamcity-agent-2-temp:
-  teamcity-agent-2-tools:
-  teamcity-agent-2-plugins:

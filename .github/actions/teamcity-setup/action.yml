@@ -18,10 +18,10 @@ inputs:
     description: First-start database mode, either internal or external.
     required: false
     default: internal
-  agent_names:
-    description: Comma-separated TeamCity agent names that must be ready before tests.
+  agent_count:
+    description: Number of TeamCity agents to start. Supported values are 1, 2, and 3.
     required: false
-    default: ci-agent-1
+    default: "2"
   wait_timeout_seconds:
     description: Maximum time to wait until TeamCity starts answering HTTP.
     required: false
@@ -42,6 +42,19 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Validate TeamCity parallelism
+      shell: bash
+      env:
+        TEAMCITY_AGENT_COUNT: ${{ inputs.agent_count }}
+      run: |
+        case "$TEAMCITY_AGENT_COUNT" in
+          1|2|3) ;;
+          *)
+            echo "TeamCity agent count must be 1, 2, or 3; got: $TEAMCITY_AGENT_COUNT" >&2
+            exit 1
+            ;;
+        esac
+
     - name: Check Docker availability
       shell: bash
       run: |
@@ -74,9 +87,13 @@ runs:
         echo "TEAMCITY_UI_PASSWORD=$password" >> "$GITHUB_ENV"
         echo "TEAMCITY_SUPER_USER_TOKEN=$super_user_token" >> "$GITHUB_ENV"
 
-    - name: Start TeamCity server and agent
+    - name: Start TeamCity server and agents
       shell: bash
-      run: docker compose -f "${{ inputs.compose_file }}" up -d
+      env:
+        TEAMCITY_AGENT_COUNT: ${{ inputs.agent_count }}
+      run: |
+        docker compose -f "${{ inputs.compose_file }}" up -d \
+          --scale "teamcity-agent=$TEAMCITY_AGENT_COUNT"
 
     - name: Wait for TeamCity web endpoint
       shell: bash
@@ -107,21 +124,11 @@ runs:
     - name: Authorize and wait for TeamCity build agents
       shell: bash
       env:
-        TEAMCITY_AGENT_NAMES: ${{ inputs.agent_names }}
+        TEAMCITY_AGENT_COUNT: ${{ inputs.agent_count }}
       run: |
-        agent_args=()
-        IFS=',' read -ra agent_names <<< "$TEAMCITY_AGENT_NAMES"
-        for agent_name in "${agent_names[@]}"; do
-          trimmed_name="$(echo "$agent_name" | xargs)"
-          if [ -n "$trimmed_name" ]; then
-            agent_args+=(--name "$trimmed_name")
-          fi
-        done
-        if [ "${#agent_args[@]}" -eq 0 ]; then
-          echo "At least one TeamCity agent name is required." >&2
-          exit 1
-        fi
-        python3 -m scripts.teamcity_agent_preflight "${agent_args[@]}"
+        python3 -m scripts.teamcity_agent_preflight \
+          --count "$TEAMCITY_AGENT_COUNT" \
+          --timeout "${{ inputs.wait_timeout_seconds }}"
 
     - name: Verify TeamCity database backup access
       if: ${{ inputs.database_preflight == 'true' }}

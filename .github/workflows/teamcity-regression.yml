@@ -3,6 +3,16 @@ name: TeamCity Regression
 on:
   pull_request:
   workflow_dispatch:
+    inputs:
+      parallelism:
+        description: Number of pytest workers and TeamCity agents.
+        required: true
+        default: "2"
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "3"
 
 jobs:
   code-quality:
@@ -37,6 +47,8 @@ jobs:
     name: TeamCity regression
     needs: code-quality
     runs-on: ubuntu-latest
+    env:
+      TEAMCITY_PARALLELISM: ${{ inputs.parallelism || vars.TEAMCITY_PARALLELISM || '2' }}
     timeout-minutes: 20
     permissions:
       contents: read
@@ -54,21 +66,21 @@ jobs:
       - name: Start and prepare TeamCity
         uses: ./.github/actions/teamcity-setup
         with:
-          agent_names: ci-agent-1,ci-agent-2
+          agent_count: ${{ env.TEAMCITY_PARALLELISM }}
           database_preflight: "true"
 
       - name: Run TeamCity smoke gate
         uses: ./.github/actions/teamcity-test
         with:
           pytest_marker: smoke
-          pytest_workers: "2"
+          pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
           junit_filename: smoke-teamcity-regression.xml
 
       - name: Run remaining TeamCity regression tests
         uses: ./.github/actions/teamcity-test
         with:
           pytest_marker: "(regression) and not smoke"
-          pytest_workers: "2"
+          pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
           junit_filename: teamcity-regression.xml
           preserve_allure_results: "true"
 
