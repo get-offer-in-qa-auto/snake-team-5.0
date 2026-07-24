@@ -229,17 +229,20 @@ python3 -m pre_commit run --all-files
 
 ```bash
 python3 -m pip install -r requirements.txt
-python3 -m playwright install chromium
+python3 -m playwright install chromium firefox webkit
 ```
 
 В `requirements.txt` входят `allure-pytest` и `pytest-playwright`. Первый сохраняет
 Allure results, второй предоставляет изолированные Playwright browser context и
-`page` для UI-тестов. На первом этапе поддерживается Chromium.
+`page` для UI-тестов. В CI каждый UI-тест запускается в Chromium, Firefox и WebKit.
 
-Запустить только UI-тесты:
+Запустить только UI-тесты в тех же трёх вариантах, что и в CI:
 
 ```bash
-python3 -m pytest -m ui --browser chromium
+python3 -m pytest -m ui \
+  --browser chromium \
+  --browser firefox \
+  --browser webkit
 ```
 
 Обычные UI-тесты получают `TCSESSIONID` через TeamCity REST API и добавляют cookie

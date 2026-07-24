@@ -70,9 +70,9 @@ runs:
       shell: bash
       run: python3 -m pip install -r requirements.txt
 
-    - name: Install Chromium for UI tests
+    - name: Install browsers for UI tests
       shell: bash
-      run: python3 -m playwright install --with-deps chromium
+      run: python3 -m playwright install --with-deps chromium firefox webkit
 
     - name: Generate TeamCity CI administrator credentials
       shell: bash

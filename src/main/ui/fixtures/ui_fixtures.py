@@ -23,7 +23,7 @@ window.addEventListener(
 
 @pytest.fixture(autouse=True)
 def disable_ui_view_transitions(request: pytest.FixtureRequest) -> None:
-    """Keep Chromium page navigation paintable in headed UI test runs."""
+    """Keep TeamCity page navigation paintable in headed UI test runs."""
     if request.node.get_closest_marker("ui") is None:
         return
 

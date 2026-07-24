@@ -43,12 +43,18 @@ runs:
         esac
 
         mkdir -p artifacts/test-results
+        browser_args=(
+          --browser=chromium
+          --browser=firefox
+          --browser=webkit
+        )
         pytest_args=()
         if [ "$PRESERVE_ALLURE_RESULTS" = "true" ]; then
-          pytest_args+=(-o "addopts=--alluredir=artifacts/allure-results --browser=chromium --tracing=retain-on-failure --video=retain-on-failure --screenshot=only-on-failure --output=artifacts/playwright")
+          pytest_args+=(-o "addopts=--alluredir=artifacts/allure-results --tracing=retain-on-failure --video=retain-on-failure --screenshot=only-on-failure --output=artifacts/playwright")
         fi
         python3 -m pytest \
           "${pytest_args[@]}" \
+          "${browser_args[@]}" \
           -m "$PYTEST_MARKER" \
           -n "$PYTEST_WORKERS" \
           --junitxml="artifacts/test-results/$JUNIT_FILENAME"

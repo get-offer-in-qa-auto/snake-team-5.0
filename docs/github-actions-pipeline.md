@@ -8,16 +8,19 @@ PR pipeline поднимает один чистый TeamCity стенд с на
 build agents и выполняет gated regression. Один параметр `parallelism` задаёт
 одинаковое количество TeamCity agents и pytest workers. Поддерживаются режимы
 `1`, `2` и `3`, по умолчанию — `2`. Этапы идут последовательно: database
-preflight, 8 smoke-тестов и затем 44 остальных regression-теста. Если preflight
-или smoke падает, следующий этап не запускается.
+preflight, 12 smoke test items и затем 44 остальных regression-теста. Smoke
+содержит 6 API-проверок, запущенных один раз, и 2 UI-сценария в трёх браузерах.
+Если preflight или smoke падает, следующий этап не запускается.
 
 - поднять TeamCity Server;
 - поднять `parallelism` экземпляров TeamCity Agent;
 - дождаться HTTP-ответа от `http://localhost:8111/login.html`;
 - показать понятное readiness-состояние: `READY_LOGIN_PAGE`, `AUTH_REQUIRED` или `FIRST_START_REQUIRED`;
 - проверить полный backup/copy/read/remove lifecycle через database preflight;
-- запустить smoke gate через `pytest -m smoke -n <parallelism>`;
-- после успешного smoke запустить `pytest -m "regression and not smoke" -n <parallelism>`;
+- запустить smoke gate через `pytest -m smoke -n <parallelism>` с UI-вариантами
+  для Chromium, Firefox и WebKit;
+- после успешного smoke запустить `pytest -m "regression and not smoke"
+  -n <parallelism>` с теми же UI-вариантами;
 - сохранить отдельные JUnit XML для smoke gate и оставшегося regression;
 - сохранить Allure results;
 - сразу собрать Allure HTML-report;
@@ -67,7 +70,7 @@ xdist workers, и количеством отдельных TeamCity agents. В 
 
 ```text
 PostgreSQL health → TeamCity external DB bootstrap → read-only DB preflight
-→ 8 smoke tests → 44 regression tests with selected parallelism
+→ 12 smoke test items → 44 regression tests with selected parallelism
 ```
 
 Workflow не запускается на каждый PR и не публикует GitHub Pages. JUnit, Allure
@@ -98,6 +101,7 @@ Pipeline считается успешным, если:
 - database preflight подтвердил доступность Backup API и snapshot;
 - все smoke-тесты прошли с выбранным количеством xdist workers;
 - остальные regression-тесты прошли с тем же количеством xdist workers;
+- каждый UI-тест прошёл в Chromium, Firefox и WebKit;
 - GitHub Step Summary показывает итоговое состояние TeamCity readiness;
 - контейнеры не упали во время smoke-проверки;
 - JUnit XML и логи собраны в artifacts.
@@ -156,6 +160,11 @@ smoke gate и остальных regression-тестов:
 teamcity-regression-allure-results
 teamcity-regression-allure-report
 ```
+
+Все три браузерных варианта попадают в один Allure report. Pytest автоматически
+добавляет к имени UI-теста суффикс `[chromium]`, `[firefox]` или `[webkit]`,
+а Allure показывает `browser_name` в Parameters и ведёт отдельную историю для
+каждого варианта. API-тесты при этом не размножаются по браузерам.
 
 Перед генерацией HTML-report workflow восстанавливает Allure `history` из последнего опубликованного отчета той же suite/job. Для этого используется ветка `gh-pages`: `smoke` берет историю только из прошлых `reports/smoke/...`, а gated regression — только из прошлых `reports/regression/...`.
 
