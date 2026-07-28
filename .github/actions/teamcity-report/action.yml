@@ -30,6 +30,14 @@ inputs:
     description: Generate and upload an Allure HTML report for this job.
     required: false
     default: "true"
+  coverage_artifact_name:
+    description: Optional artifact name for coverage.py HTML, JSON, and XML reports.
+    required: false
+    default: ""
+  coverage_source:
+    description: Python source scope written to coverage metadata.
+    required: false
+    default: src/main/api
 
 outputs:
   allure_pages_ready:
@@ -120,6 +128,54 @@ runs:
         name: ${{ inputs.results_artifact_name }}
         path: artifacts/test-results
         if-no-files-found: ignore
+        retention-days: 7
+
+    - name: Generate API code coverage reports
+      if: ${{ always() && inputs.coverage_artifact_name != '' }}
+      shell: bash
+      env:
+        COVERAGE_SOURCE: ${{ inputs.coverage_source }}
+      run: |
+        coverage_file="artifacts/coverage/.coverage"
+        if [ ! -f "$coverage_file" ]; then
+          echo "::warning title=API coverage::No coverage data file was produced."
+          exit 0
+        fi
+
+        python3 -m coverage report
+        python3 -m coverage json -o artifacts/coverage/coverage.json
+        python3 -m coverage xml -o artifacts/coverage/coverage.xml
+        python3 -m coverage html -d artifacts/coverage/html
+
+        jq -n \
+          --arg branch "$GITHUB_REF_NAME" \
+          --arg event "$GITHUB_EVENT_NAME" \
+          --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+          --arg report_id "${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}" \
+          --arg run_url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+          --arg sha "$GITHUB_SHA" \
+          --arg source "$COVERAGE_SOURCE" \
+          '{
+            branch: $branch,
+            event: $event,
+            generated_at: $generated_at,
+            report_id: $report_id,
+            run_url: $run_url,
+            sha: $sha,
+            source: $source
+          }' > artifacts/coverage/metadata.json
+
+    - name: Upload API code coverage
+      if: ${{ always() && inputs.coverage_artifact_name != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.coverage_artifact_name }}
+        path: |
+          artifacts/coverage/coverage.json
+          artifacts/coverage/coverage.xml
+          artifacts/coverage/html
+          artifacts/coverage/metadata.json
+        if-no-files-found: warn
         retention-days: 7
 
     - name: Upload Allure results

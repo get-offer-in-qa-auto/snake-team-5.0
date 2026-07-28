@@ -201,6 +201,15 @@ def test_main_writes_dashboard_and_machine_readable_metrics(
         generated_at="2026-07-28T10:00:00Z",
         tests=[make_test_case("api", "API", "passed")],
     )
+    write_json(
+        site_dir / "quality" / "coverage" / "metrics.json",
+        {
+            "latest": {
+                "line_rate": 68.4,
+                "branch_rate": 54.2,
+            }
+        },
+    )
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -223,6 +232,9 @@ def test_main_writes_dashboard_and_machine_readable_metrics(
         (site_dir / "quality" / "metrics.json").read_text(encoding="utf-8")
     )
     assert "TeamCity QA metrics" in html
+    assert "API framework coverage" in html
+    assert "68.4%" in html
+    assert 'href="coverage/"' in html
     assert 'style="--days: 7"' in html
     assert "../reports/regression/100-attempt-1/" in html
     assert metrics["window"]["start"] == "2026-07-22T00:00:00+00:00"

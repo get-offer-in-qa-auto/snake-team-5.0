@@ -24,6 +24,18 @@ inputs:
     description: "Playwright browser mode: none, chromium, firefox, webkit, or all."
     required: false
     default: all
+  collect_coverage:
+    description: Collect Python branch coverage for this pytest stage.
+    required: false
+    default: "false"
+  reset_coverage:
+    description: Erase existing coverage data before this pytest stage.
+    required: false
+    default: "false"
+  coverage_source:
+    description: Python package or directory measured by coverage.py.
+    required: false
+    default: src/main/api
 
 runs:
   using: composite
@@ -36,6 +48,9 @@ runs:
         JUNIT_FILENAME: ${{ inputs.junit_filename }}
         PRESERVE_ALLURE_RESULTS: ${{ inputs.preserve_allure_results }}
         PYTEST_BROWSER: ${{ inputs.browser }}
+        COLLECT_COVERAGE: ${{ inputs.collect_coverage }}
+        RESET_COVERAGE: ${{ inputs.reset_coverage }}
+        COVERAGE_SOURCE: ${{ inputs.coverage_source }}
         TEAMCITY_DB_CONTAINER: ${{ inputs.server_container }}
         TEAMCITY_CONFIG_CONTAINER: ${{ inputs.server_container }}
       run: |
@@ -71,8 +86,33 @@ runs:
         if [ "$PRESERVE_ALLURE_RESULTS" = "true" ]; then
           pytest_args+=(-o "addopts=--alluredir=artifacts/allure-results --tracing=retain-on-failure --video=retain-on-failure --screenshot=only-on-failure --output=artifacts/playwright")
         fi
+        coverage_args=()
+        case "$COLLECT_COVERAGE" in
+          true)
+            mkdir -p artifacts/coverage
+            if [ "$RESET_COVERAGE" = "true" ]; then
+              python3 -m coverage erase
+            elif [ "$RESET_COVERAGE" != "false" ]; then
+              echo "reset_coverage must be true or false; got: $RESET_COVERAGE" >&2
+              exit 1
+            fi
+            coverage_args+=(
+              "--cov=$COVERAGE_SOURCE"
+              --cov-branch
+              --cov-append
+              --cov-context=test
+              --cov-report=
+            )
+            ;;
+          false) ;;
+          *)
+            echo "collect_coverage must be true or false; got: $COLLECT_COVERAGE" >&2
+            exit 1
+            ;;
+        esac
         python3 -m pytest \
           "${pytest_args[@]}" \
+          "${coverage_args[@]}" \
           "${browser_args[@]}" \
           -m "$PYTEST_MARKER" \
           -n "$PYTEST_WORKERS" \
