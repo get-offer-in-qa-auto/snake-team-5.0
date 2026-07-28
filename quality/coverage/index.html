@@ -53,19 +53,28 @@ h2 { font-size: 19px; margin: 0; }
 }
 .card { padding: 16px; }
 .stat-value { display: block; font-size: 28px; margin: 3px 0; }
+.stat-context { display: grid; gap: 6px; }
+.measurement-time { color: var(--muted); font-size: 12px; }
+.delta {
+  display: inline-block; width: fit-content; padding: 2px 7px;
+  border-radius: 999px; font-size: 12px; white-space: nowrap;
+}
+.delta-up { color: #1a7f37; background: #dafbe1; }
+.delta-down { color: #cf222e; background: #ffebe9; }
+.delta-flat, .delta-unknown { color: var(--muted); background: var(--track); }
 .section { margin-top: 22px; }
 .section-head { align-items: baseline; margin-bottom: 10px; }
 .coverage-chart-wrap { padding: 14px; overflow-x: auto; }
 .coverage-chart-head { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); }
 .coverage-chart-head span { display: inline-flex; align-items: center; gap: 6px; }
+.coverage-chart-head .delta { font-style: normal; }
 .coverage-chart-head i { width: 18px; height: 3px; display: inline-block; }
 .legend-line { background: var(--series); }
 .legend-branch { background: var(--primary); }
 .coverage-chart { display: block; min-width: 620px; width: 100%; height: auto; }
 .chart-grid { stroke: var(--border); stroke-width: 1; }
-.chart-grid-mid { stroke-dasharray: 4 5; }
 .chart-axis { fill: var(--muted); font-size: 11px; }
-.chart-axis-end { text-anchor: end; }
+.chart-axis-y, .chart-axis-x { text-anchor: end; }
 .coverage-line {
   fill: none; stroke: currentColor; stroke-width: 3;
   stroke-linecap: round; stroke-linejoin: round;
@@ -99,6 +108,8 @@ tr:last-child td { border-bottom: 0; }
     --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
     --series: #3fb950; --track: #30363d;
   }
+  .delta-up { color: #3fb950; background: #12261a; }
+  .delta-down { color: #f85149; background: #32191c; }
 }
 </style>
   </head>
@@ -108,26 +119,32 @@ tr:last-child td { border-bottom: 0; }
         <div>
           <span class="muted">QA metrics / Coverage</span>
           <h1>API test framework coverage</h1>
-          <div class="meta"><span class="badge">src/main/api</span><span>Run 30359694450</span><span>68/merge</span><span>57e93fef</span></div>
+          <div class="meta"><span class="badge">src/main/api</span><span class="badge">Today at 13:11 UTC</span><span>Run 30361897861</span><span>ekonchina/current-coverage-trend</span><span>639f4bb9</span></div>
         </div>
         <div>
-          <div class="actions"><a class="button" href="../">Back to QA metrics</a><a class="button" href="../../coverage/30359694450-attempt-1/html/">Open standard HTML report</a></div>
+          <div class="actions"><a class="button" href="../">Back to QA metrics</a><a class="button" href="../../coverage/30361897861-attempt-1/html/">Open standard HTML report</a></div>
           <div class="period-links" aria-label="Saved coverage periods">
-            <a class="period-link" href="periods/7/">7 days</a><a class="period-link active" href="periods/14/">14 days</a>
+            <a class="period-link active" href="periods/7/">7 days</a><a class="period-link" href="periods/14/">14 days</a>
           </div>
         </div>
       </header>
 
       <section class="stats" aria-label="Coverage summary">
         <article class="card">
-          <span class="muted">Line coverage</span>
+          <span class="muted">Current line coverage</span>
           <strong class="stat-value">89.6%</strong>
-          <span>0.0 pp vs previous report</span>
+          <div class="stat-context">
+            <span class="delta delta-flat">→ No change vs previous report</span>
+            <span class="measurement-time">Today at 13:11 UTC</span>
+          </div>
         </article>
         <article class="card">
-          <span class="muted">Branch coverage</span>
+          <span class="muted">Current branch coverage</span>
           <strong class="stat-value">55.7%</strong>
-          <span>127 of 228 branches</span>
+          <div class="stat-context">
+            <span class="delta delta-flat">→ No change vs previous report</span>
+            <span>127 of 228 branches</span>
+          </div>
         </article>
         <article class="card">
           <span class="muted">Covered lines</span>
@@ -143,26 +160,27 @@ tr:last-child td { border-bottom: 0; }
 
       <section class="section">
         <div class="section-head">
-          <h2>14-day trend</h2>
-          <span class="section-note">Latest API regression report per UTC day</span>
+          <h2>7-day trend</h2>
+          <span class="section-note">Last measurement of each UTC day · no averaging</span>
         </div>
         <div class="coverage-chart-wrap">
           
     <div class="coverage-chart-head">
-      <span><i class="legend-line"></i>Line coverage</span>
-      <span><i class="legend-branch"></i>Branch coverage</span>
+      <span>
+        <i class="legend-line"></i>Line coverage
+        <span class="delta delta-unknown">Not enough history</span>
+      </span>
+      <span>
+        <i class="legend-branch"></i>Branch coverage
+        <span class="delta delta-unknown">Not enough history</span>
+      </span>
     </div>
-    <svg class="coverage-chart" viewBox="0 0 900 230" role="img"
-         aria-label="Line and branch coverage over 14 days">
-      <line class="chart-grid" x1="48.0" y1="20.0" x2="48.0" y2="196.0"/>
-      <line class="chart-grid" x1="48.0" y1="196.0" x2="882.0" y2="196.0"/>
-      <line class="chart-grid chart-grid-mid" x1="48.0" y1="108.0" x2="882.0" y2="108.0"/>
-      <text class="chart-axis" x="4" y="25.0">94.6%</text>
-      <text class="chart-axis" x="4" y="201.0">50.7%</text>
-      <circle class="series-line" cx="882.0" cy="40.0" r="3"><title>28 Jul: 89.6%</title></circle>
-      <circle class="series-branch" cx="882.0" cy="176.0" r="3"><title>28 Jul: 55.7%</title></circle>
-      <text class="chart-axis" x="48.0" y="222.0">15 Jul</text>
-      <text class="chart-axis chart-axis-end" x="882.0" y="222.0">28 Jul</text>
+    <svg class="coverage-chart" viewBox="0 0 900 250" role="img"
+         aria-label="Line and branch coverage over 7 days">
+      <line class="chart-grid" x1="54.0" y1="24.0" x2="882.0" y2="24.0"/><text class="chart-axis chart-axis-y" x="46.0" y="28.0">94.6%</text><line class="chart-grid" x1="54.0" y1="65.0" x2="882.0" y2="65.0"/><text class="chart-axis chart-axis-y" x="46.0" y="69.0">83.6%</text><line class="chart-grid" x1="54.0" y1="106.0" x2="882.0" y2="106.0"/><text class="chart-axis chart-axis-y" x="46.0" y="110.0">72.7%</text><line class="chart-grid" x1="54.0" y1="147.0" x2="882.0" y2="147.0"/><text class="chart-axis chart-axis-y" x="46.0" y="151.0">61.7%</text><line class="chart-grid" x1="54.0" y1="188.0" x2="882.0" y2="188.0"/><text class="chart-axis chart-axis-y" x="46.0" y="192.0">50.7%</text>
+      <a href="../../coverage/30361897861-attempt-1/html/"><circle class="series-line" cx="882.0" cy="42.7" r="4"><title>28 Jul: 89.6% · run #30361897861</title></circle></a>
+      <a href="../../coverage/30361897861-attempt-1/html/"><circle class="series-branch" cx="882.0" cy="169.3" r="4"><title>28 Jul: 55.7% · run #30361897861</title></circle></a>
+      <text class="chart-axis chart-axis-x" transform="translate(54.0 220.0) rotate(-22)">22 Jul</text><text class="chart-axis chart-axis-x" transform="translate(192.0 220.0) rotate(-22)">23 Jul</text><text class="chart-axis chart-axis-x" transform="translate(330.0 220.0) rotate(-22)">24 Jul</text><text class="chart-axis chart-axis-x" transform="translate(468.0 220.0) rotate(-22)">25 Jul</text><text class="chart-axis chart-axis-x" transform="translate(606.0 220.0) rotate(-22)">26 Jul</text><text class="chart-axis chart-axis-x" transform="translate(744.0 220.0) rotate(-22)">27 Jul</text><text class="chart-axis chart-axis-x" transform="translate(882.0 220.0) rotate(-22)">28 Jul</text>
     </svg>
     
         </div>
@@ -185,7 +203,8 @@ tr:last-child td { border-bottom: 0; }
                 <th>Data</th>
               </tr>
             </thead>
-            <tbody><tr><td><a href="../../coverage/30359694450-attempt-1/html/">28 Jul 2026 12:42 UTC</a></td><td>#30359694450 · attempt 1</td><td>68/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30359694450-attempt-1/coverage.json">JSON</a> · <a href="../../coverage/30359694450-attempt-1/coverage.xml">XML</a></td></tr>
+            <tbody><tr><td><a href="../../coverage/30361897861-attempt-1/html/">28 Jul 2026 13:11 UTC</a></td><td>#30361897861 · attempt 1</td><td>ekonchina/current-coverage-trend</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30361897861-attempt-1/coverage.json">JSON</a> · <a href="../../coverage/30361897861-attempt-1/coverage.xml">XML</a></td></tr>
+<tr><td><a href="../../coverage/30359694450-attempt-1/html/">28 Jul 2026 12:42 UTC</a></td><td>#30359694450 · attempt 1</td><td>68/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30359694450-attempt-1/coverage.json">JSON</a> · <a href="../../coverage/30359694450-attempt-1/coverage.xml">XML</a></td></tr>
 <tr><td><a href="../../coverage/30356644067-attempt-2/html/">28 Jul 2026 12:05 UTC</a></td><td>#30356644067 · attempt 2</td><td>67/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30356644067-attempt-2/coverage.json">JSON</a> · <a href="../../coverage/30356644067-attempt-2/coverage.xml">XML</a></td></tr>
 <tr><td><a href="../../coverage/30354410022-attempt-1/html/">28 Jul 2026 11:26 UTC</a></td><td>#30354410022 · attempt 1</td><td>66/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30354410022-attempt-1/coverage.json">JSON</a> · <a href="../../coverage/30354410022-attempt-1/coverage.xml">XML</a></td></tr>
 <tr><td><a href="../../coverage/30353623965-attempt-1/html/">28 Jul 2026 11:14 UTC</a></td><td>#30353623965 · attempt 1</td><td>65/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30353623965-attempt-1/coverage.json">JSON</a> · <a href="../../coverage/30353623965-attempt-1/coverage.xml">XML</a></td></tr>
@@ -275,7 +294,7 @@ tr:last-child td { border-bottom: 0; }
       </section>
 
       <footer class="footer">
-        Source: coverage.py JSON · 5 reports in this window
+        Source: coverage.py JSON · 6 reports in this window
       </footer>
     </main>
   </body>
