@@ -1,0 +1,396 @@
+{
+  "attention": [
+    {
+      "failed_runs": 3,
+      "flaky": true,
+      "full_name": "tests.ui.identity_access.test_access_tokens#test_admin_can_create_access_token_for_user",
+      "identity": "65fd35669a70b9cb59201e793c0baea0",
+      "last_seen": "2026-07-28T09:05:08+00:00",
+      "name": "test_admin_can_create_access_token_for_user[chromium]",
+      "p95_duration_ms": 32640.0,
+      "report_link": "../reports/regression/30344609760-attempt-1/#testresult/98eabeeaf666093a",
+      "retries": 0,
+      "runs": 9,
+      "scope": "UI",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 2,
+      "flaky": true,
+      "full_name": "tests.ui.identity_access.test_user_creation#test_admin_can_create_user",
+      "identity": "bd0f82bb72e8a01cdb0f51453e875003",
+      "last_seen": "2026-07-28T09:05:08+00:00",
+      "name": "test_admin_can_create_user[chromium]",
+      "p95_duration_ms": 40060.6,
+      "report_link": "../reports/regression/30344609760-attempt-1/#testresult/ea2c0e368e120ce8",
+      "retries": 0,
+      "runs": 9,
+      "scope": "UI",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 2,
+      "flaky": true,
+      "full_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user",
+      "identity": "ce2bf6c41e94f8e3d175228510aedf84",
+      "last_seen": "2026-07-28T09:05:08+00:00",
+      "name": "test_admin_can_delete_user[chromium]",
+      "p95_duration_ms": 31958.2,
+      "report_link": "../reports/regression/30344609760-attempt-1/#testresult/78c99fd2a0298cc2",
+      "retries": 0,
+      "runs": 9,
+      "scope": "UI",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 1,
+      "flaky": true,
+      "full_name": "tests.ui.identity_access.test_permissions#test_project_viewer_cannot_create_entities",
+      "identity": "b6a014a530b69014c30649a55f87765b",
+      "last_seen": "2026-07-28T09:05:08+00:00",
+      "name": "test_project_viewer_cannot_create_entities[webkit]",
+      "p95_duration_ms": 15435.6,
+      "report_link": "../reports/regression/30344609760-attempt-1/#testresult/3740efa74386ebf2",
+      "retries": 0,
+      "runs": 5,
+      "scope": "UI \u00b7 WebKit",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 1,
+      "flaky": true,
+      "full_name": "tests.api.build_execution.test_build_runtime_parameters#test_build_run_with_runtime_parameter",
+      "identity": "42db35554be3d04493f4dcc2f8e73d1a",
+      "last_seen": "2026-07-28T09:05:08+00:00",
+      "name": "Manual build run receives a runtime parameter",
+      "p95_duration_ms": 13584.4,
+      "report_link": "../reports/regression/30344609760-attempt-1/#testresult/908adce00d32f03e",
+      "retries": 0,
+      "runs": 37,
+      "scope": "API",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 1,
+      "flaky": true,
+      "full_name": "tests.ui.auth.test_login#test_admin_can_login",
+      "identity": "3a1c0fa994409a71272d24e80ede5f03",
+      "last_seen": "2026-07-28T09:05:08+00:00",
+      "name": "test_admin_can_login[chromium]",
+      "p95_duration_ms": 12413.4,
+      "report_link": "../reports/regression/30344609760-attempt-1/#testresult/ab18651cf1176a31",
+      "retries": 0,
+      "runs": 25,
+      "scope": "UI",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 1,
+      "flaky": true,
+      "full_name": "tests.api.build_execution.test_manual_build_run#test_successful_build_run",
+      "identity": "0213e39e02cdaf7abace75bccfaa5482",
+      "last_seen": "2026-07-28T09:05:08+00:00",
+      "name": "Manual build run finishes successfully",
+      "p95_duration_ms": 12367.8,
+      "report_link": "../reports/regression/30344609760-attempt-1/#testresult/ab7be0394e32f3aa",
+      "retries": 0,
+      "runs": 37,
+      "scope": "API",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 1,
+      "flaky": true,
+      "full_name": "tests.api.build_steps.test_build_step_configuration_persistence#test_updated_build_step_is_persisted_in_configuration",
+      "identity": "4f49c2243601ea754cc16fb9a3da0435",
+      "last_seen": "2026-07-28T09:05:08+00:00",
+      "name": "Updated build step is persisted in TeamCity configuration",
+      "p95_duration_ms": 118.6,
+      "report_link": "../reports/regression/30344609760-attempt-1/#testresult/65fc8a472f73c14a",
+      "retries": 0,
+      "runs": 37,
+      "scope": "API",
+      "signal": "Intermittent failure"
+    }
+  ],
+  "daily": [
+    {
+      "date": "2026-07-22",
+      "failed": 0,
+      "flaky": 0,
+      "label": "22 Jul",
+      "pass_rate": null,
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    {
+      "date": "2026-07-23",
+      "failed": 1,
+      "flaky": 0,
+      "label": "23 Jul",
+      "pass_rate": 99.88,
+      "passed": 865,
+      "skipped": 0,
+      "total": 866
+    },
+    {
+      "date": "2026-07-24",
+      "failed": 11,
+      "flaky": 0,
+      "label": "24 Jul",
+      "pass_rate": 98.86,
+      "passed": 957,
+      "skipped": 0,
+      "total": 968
+    },
+    {
+      "date": "2026-07-25",
+      "failed": 0,
+      "flaky": 0,
+      "label": "25 Jul",
+      "pass_rate": null,
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    {
+      "date": "2026-07-26",
+      "failed": 0,
+      "flaky": 0,
+      "label": "26 Jul",
+      "pass_rate": null,
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    {
+      "date": "2026-07-27",
+      "failed": 0,
+      "flaky": 0,
+      "label": "27 Jul",
+      "pass_rate": null,
+      "passed": 0,
+      "skipped": 0,
+      "total": 0
+    },
+    {
+      "date": "2026-07-28",
+      "failed": 0,
+      "flaky": 0,
+      "label": "28 Jul",
+      "pass_rate": 100.0,
+      "passed": 213,
+      "skipped": 0,
+      "total": 213
+    }
+  ],
+  "data_quality": {
+    "completed_runs": 41,
+    "published_reports": 40,
+    "runs_without_report": 1
+  },
+  "generated_at": "2026-07-28T10:20:18+00:00",
+  "pipeline": {
+    "completed": 41,
+    "p95_duration_seconds": 440.0,
+    "success_rate": 80.49,
+    "successful": 33,
+    "unsuccessful": 8
+  },
+  "recent_runs": [
+    {
+      "attempt": 1,
+      "branch": "ekonchina/qa-metrics-dashboard",
+      "conclusion": "success",
+      "created_at": "2026-07-28T08:58:45+00:00",
+      "duration_seconds": 406.0,
+      "event": "pull_request",
+      "id": 30344609760,
+      "number": 64,
+      "report_url": "../reports/regression/30344609760-attempt-1/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30344609760"
+    },
+    {
+      "attempt": 1,
+      "branch": "ekonchina/stabilize-ui-flakes",
+      "conclusion": "success",
+      "created_at": "2026-07-28T08:20:59+00:00",
+      "duration_seconds": 440.0,
+      "event": "pull_request",
+      "id": 30342026504,
+      "number": 63,
+      "report_url": "../reports/regression/30342026504-attempt-1/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30342026504"
+    },
+    {
+      "attempt": 1,
+      "branch": "ekonchina/dynamic-postgresql-port",
+      "conclusion": "success",
+      "created_at": "2026-07-28T06:05:20+00:00",
+      "duration_seconds": 350.0,
+      "event": "pull_request",
+      "id": 30333648380,
+      "number": 62,
+      "report_url": "../reports/regression/30333648380-attempt-1/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30333648380"
+    },
+    {
+      "attempt": 1,
+      "branch": "main",
+      "conclusion": "failure",
+      "created_at": "2026-07-24T14:32:16+00:00",
+      "duration_seconds": 328.0,
+      "event": "workflow_dispatch",
+      "id": 30101435888,
+      "number": 61,
+      "report_url": "../reports/regression/30101435888-attempt-1/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30101435888"
+    },
+    {
+      "attempt": 3,
+      "branch": "ekonchina/disable-ui-view-transitions",
+      "conclusion": "success",
+      "created_at": "2026-07-24T14:08:56+00:00",
+      "duration_seconds": 68.0,
+      "event": "pull_request",
+      "id": 30099789286,
+      "number": 60,
+      "report_url": "../reports/regression/30099789286-attempt-3/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30099789286"
+    },
+    {
+      "attempt": 1,
+      "branch": "ekonchina/disable-ui-view-transitions",
+      "conclusion": "success",
+      "created_at": "2026-07-24T13:32:57+00:00",
+      "duration_seconds": 397.0,
+      "event": "pull_request",
+      "id": 30097313275,
+      "number": 59,
+      "report_url": "../reports/regression/30097313275-attempt-1/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30097313275"
+    },
+    {
+      "attempt": 1,
+      "branch": "ui-tests",
+      "conclusion": "success",
+      "created_at": "2026-07-24T13:31:05+00:00",
+      "duration_seconds": 395.0,
+      "event": "pull_request",
+      "id": 30097186199,
+      "number": 58,
+      "report_url": "../reports/regression/30097186199-attempt-1/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30097186199"
+    },
+    {
+      "attempt": 1,
+      "branch": "ekonchina/disable-ui-view-transitions",
+      "conclusion": "success",
+      "created_at": "2026-07-24T13:25:14+00:00",
+      "duration_seconds": 401.0,
+      "event": "pull_request",
+      "id": 30096801098,
+      "number": 57,
+      "report_url": "../reports/regression/30096801098-attempt-1/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30096801098"
+    },
+    {
+      "attempt": 1,
+      "branch": "ui-tests",
+      "conclusion": "failure",
+      "created_at": "2026-07-24T13:18:29+00:00",
+      "duration_seconds": 385.0,
+      "event": "pull_request",
+      "id": 30096365221,
+      "number": 56,
+      "report_url": "../reports/regression/30096365221-attempt-1/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30096365221"
+    },
+    {
+      "attempt": 1,
+      "branch": "ekonchina/disable-ui-view-transitions",
+      "conclusion": "success",
+      "created_at": "2026-07-24T13:15:34+00:00",
+      "duration_seconds": 383.0,
+      "event": "pull_request",
+      "id": 30096179296,
+      "number": 55,
+      "report_url": "../reports/regression/30096179296-attempt-1/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30096179296"
+    }
+  ],
+  "suites": [
+    {
+      "failed": 3,
+      "flaky_tests": 0,
+      "name": "API",
+      "p95_duration_ms": 11225.0,
+      "pass_rate": 99.84,
+      "passed": 1865,
+      "skipped": 0,
+      "total": 1868,
+      "unique_tests": 50
+    },
+    {
+      "failed": 1,
+      "flaky_tests": 0,
+      "name": "UI \u00b7 Chromium",
+      "p95_duration_ms": 15543.2,
+      "pass_rate": 97.14,
+      "passed": 34,
+      "skipped": 0,
+      "total": 35,
+      "unique_tests": 7
+    },
+    {
+      "failed": 0,
+      "flaky_tests": 0,
+      "name": "UI \u00b7 Firefox",
+      "p95_duration_ms": 18918.0,
+      "pass_rate": 100.0,
+      "passed": 35,
+      "skipped": 0,
+      "total": 35,
+      "unique_tests": 7
+    },
+    {
+      "failed": 1,
+      "flaky_tests": 1,
+      "name": "UI \u00b7 WebKit",
+      "p95_duration_ms": 20693.3,
+      "pass_rate": 97.14,
+      "passed": 34,
+      "skipped": 0,
+      "total": 35,
+      "unique_tests": 7
+    },
+    {
+      "failed": 7,
+      "flaky_tests": 0,
+      "name": "UI",
+      "p95_duration_ms": 32252.1,
+      "pass_rate": 90.54,
+      "passed": 67,
+      "skipped": 0,
+      "total": 74,
+      "unique_tests": 16
+    }
+  ],
+  "tests": {
+    "failed": 12,
+    "flaky": 8,
+    "pass_rate": 99.41,
+    "passed": 2035,
+    "retries": 0,
+    "retry_rate": 0.0,
+    "skipped": 0,
+    "total": 2047,
+    "unique": 71
+  },
+  "window": {
+    "days": 7,
+    "end": "2026-07-28T10:20:18+00:00",
+    "start": "2026-07-22T00:00:00+00:00"
+  }
+}

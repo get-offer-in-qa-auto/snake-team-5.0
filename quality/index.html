@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TeamCity QA metrics</title>
+    <style>
+:root {
+  color-scheme: light;
+  --background: #f6f8fa;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --muted: #636c76;
+  --border: #d0d7de;
+  --primary: #0969da;
+  --healthy: #1a7f37;
+  --healthy-soft: #dafbe1;
+  --warning: #bf8700;
+  --warning-soft: #fff8c5;
+  --danger: #cf222e;
+  --danger-soft: #ffebe9;
+  --track: #eaeef2;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.page { width: min(1180px, 100%); margin: 0 auto; padding: 28px 20px 48px; }
+.topbar {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap; margin-bottom: 20px;
+}
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 0; }
+h3 { font-size: 15px; margin: 0; }
+p { margin: 0; }
+.muted, .section-note, .suite p, .trend-detail, .trend-label { color: var(--muted); }
+.period {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+}
+.period-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--healthy); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px;
+}
+.stat-label { color: var(--muted); }
+.stat-value { display: block; font-size: 30px; line-height: 1.2; margin: 4px 0; }
+.stat-context { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.badge {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  background: var(--track); color: var(--text); white-space: nowrap;
+}
+.section { margin-top: 22px; }
+.section-head {
+  display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+  flex-wrap: wrap; margin-bottom: 10px;
+}
+.trend {
+  height: 260px; display: grid;
+  grid-template-columns: repeat(var(--days), minmax(48px, 1fr));
+  gap: 12px; padding: 18px 14px 12px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px; overflow-x: auto;
+}
+.trend-day {
+  min-width: 48px; display: grid; grid-template-rows: auto 1fr auto auto;
+  gap: 5px; align-items: end; text-align: center;
+}
+.trend-rate { font-weight: 600; }
+.trend-track {
+  height: 165px; display: flex; align-items: flex-end; justify-content: center;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(to top, transparent 49.5%, var(--track) 50%, transparent 50.5%);
+}
+.trend-bar { display: block; width: min(50px, 72%); min-height: 5px; border-radius: 5px 5px 0 0; }
+.healthy { background: var(--healthy); }
+.warning { background: var(--warning); }
+.danger { background: var(--danger); }
+.empty { background: var(--track); }
+.trend-label { font-weight: 600; white-space: nowrap; }
+.trend-detail { font-size: 12px; white-space: nowrap; }
+.suites { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; }
+.suite { padding: 4px 16px 6px 0; }
+.suite + .suite { border-left: 1px solid var(--border); padding-left: 16px; }
+.suite-value { display: block; font-size: 22px; margin: 3px 0; }
+.progress { height: 7px; border-radius: 999px; overflow: hidden; background: var(--track); margin: 7px 0; }
+.progress span { display: block; height: 100%; border-radius: inherit; }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); font-size: 13px; font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+.number { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.status {
+  display: inline-block; padding: 2px 7px; border-radius: 999px; font-weight: 600;
+}
+.status-success { color: var(--healthy); background: var(--healthy-soft); }
+.status-failure, .status-timed_out, .status-action_required {
+  color: var(--danger); background: var(--danger-soft);
+}
+.status-cancelled, .status-skipped, .status-neutral, .status-unknown {
+  color: var(--warning); background: var(--warning-soft);
+}
+.empty-state { color: var(--muted); padding: 14px; }
+.footer {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  color: var(--muted); margin-top: 24px; font-size: 13px;
+}
+@media (max-width: 760px) {
+  .stats { grid-template-columns: 1fr; }
+  .suites { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .suite + .suite { border-left: 0; padding-left: 0; }
+}
+@media (max-width: 480px) {
+  .page { padding: 20px 12px 36px; }
+  .suites { grid-template-columns: 1fr; }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: #0d1117; --surface: #161b22; --text: #e6edf3;
+    --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
+    --healthy: #3fb950; --healthy-soft: #12261a;
+    --warning: #d29922; --warning-soft: #2d250d;
+    --danger: #f85149; --danger-soft: #32191c; --track: #30363d;
+  }
+}
+</style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <div>
+          <h1>TeamCity QA metrics</h1>
+          <p class="muted">Rolling quality health for TeamCity Regression</p>
+        </div>
+        <div class="period">
+          <span class="period-dot" aria-hidden="true"></span>
+          <strong>7 days</strong>
+          <span>22 Jul–28 Jul 2026</span>
+        </div>
+      </header>
+
+      <section class="stats" aria-label="Quality summary">
+        <article class="card">
+          <span class="stat-label">Pipeline stability</span>
+          <strong class="stat-value">80.5%</strong>
+          <div class="stat-context">
+            <span>33 of 41 successful</span>
+            <span class="badge">p95 7m 20s</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="stat-label">Test reliability</span>
+          <strong class="stat-value">99.4%</strong>
+          <div class="stat-context">
+            <span>2,047 final results</span>
+            <span class="badge">12 failed</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="stat-label">Flaky tests</span>
+          <strong class="stat-value">8</strong>
+          <div class="stat-context">
+            <span>0.0% retry rate</span>
+            <span class="badge">0 retries</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Daily quality trend</h2>
+          <span class="section-note">Final outcomes; passed retries are marked flaky</span>
+        </div>
+        <div class="trend" style="--days: 7">
+          <div class="trend-day"><span class="trend-rate">No data</span><div class="trend-track"><span class="trend-bar empty" style="height: 4.0%;" aria-label="22 Jul: No data, 0 final failures, 0 flaky, 0 results"></span></div><span class="trend-label">22 Jul</span><span class="trend-detail">F 0 · flaky 0</span></div>
+<div class="trend-day"><span class="trend-rate">99.9%</span><div class="trend-track"><span class="trend-bar healthy" style="height: 98.8%;" aria-label="23 Jul: 99.9%, 1 final failures, 0 flaky, 866 results"></span></div><span class="trend-label">23 Jul</span><span class="trend-detail">F 1 · flaky 0</span></div>
+<div class="trend-day"><span class="trend-rate">98.9%</span><div class="trend-track"><span class="trend-bar warning" style="height: 88.6%;" aria-label="24 Jul: 98.9%, 11 final failures, 0 flaky, 968 results"></span></div><span class="trend-label">24 Jul</span><span class="trend-detail">F 11 · flaky 0</span></div>
+<div class="trend-day"><span class="trend-rate">No data</span><div class="trend-track"><span class="trend-bar empty" style="height: 4.0%;" aria-label="25 Jul: No data, 0 final failures, 0 flaky, 0 results"></span></div><span class="trend-label">25 Jul</span><span class="trend-detail">F 0 · flaky 0</span></div>
+<div class="trend-day"><span class="trend-rate">No data</span><div class="trend-track"><span class="trend-bar empty" style="height: 4.0%;" aria-label="26 Jul: No data, 0 final failures, 0 flaky, 0 results"></span></div><span class="trend-label">26 Jul</span><span class="trend-detail">F 0 · flaky 0</span></div>
+<div class="trend-day"><span class="trend-rate">No data</span><div class="trend-track"><span class="trend-bar empty" style="height: 4.0%;" aria-label="27 Jul: No data, 0 final failures, 0 flaky, 0 results"></span></div><span class="trend-label">27 Jul</span><span class="trend-detail">F 0 · flaky 0</span></div>
+<div class="trend-day"><span class="trend-rate">100.0%</span><div class="trend-track"><span class="trend-bar healthy" style="height: 100.0%;" aria-label="28 Jul: 100.0%, 0 final failures, 0 flaky, 213 results"></span></div><span class="trend-label">28 Jul</span><span class="trend-detail">F 0 · flaky 0</span></div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Where instability is</h2>
+          <span class="section-note">Final pass rate · flaky tests · p95 test duration</span>
+        </div>
+        <div class="card suites">
+          <article class="suite"><h3>API</h3><strong class="suite-value">99.8%</strong><div class="progress"><span class="healthy" style="width: 99.8%"></span></div><p>0 flaky · p95 11s</p></article>
+<article class="suite"><h3>UI · Chromium</h3><strong class="suite-value">97.1%</strong><div class="progress"><span class="warning" style="width: 97.1%"></span></div><p>0 flaky · p95 16s</p></article>
+<article class="suite"><h3>UI · Firefox</h3><strong class="suite-value">100.0%</strong><div class="progress"><span class="healthy" style="width: 100.0%"></span></div><p>0 flaky · p95 19s</p></article>
+<article class="suite"><h3>UI · WebKit</h3><strong class="suite-value">97.1%</strong><div class="progress"><span class="warning" style="width: 97.1%"></span></div><p>1 flaky · p95 21s</p></article>
+<article class="suite"><h3>UI</h3><strong class="suite-value">90.5%</strong><div class="progress"><span class="warning" style="width: 90.5%"></span></div><p>0 flaky · p95 32s</p></article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Needs attention</h2>
+          <span class="section-note">Final failures and flakiness first, then slow tests</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Test</th>
+                <th>Signal</th>
+                <th class="number">Failed runs</th>
+                <th class="number">Retries</th>
+                <th>Scope</th>
+                <th class="number">p95</th>
+              </tr>
+            </thead>
+            <tbody><tr><td><a href="../reports/regression/30344609760-attempt-1/#testresult/98eabeeaf666093a">test_admin_can_create_access_token_for_user[chromium]</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">3 / 9</td><td class="number">0</td><td>UI</td><td class="number">33s</td></tr>
+<tr><td><a href="../reports/regression/30344609760-attempt-1/#testresult/ea2c0e368e120ce8">test_admin_can_create_user[chromium]</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">2 / 9</td><td class="number">0</td><td>UI</td><td class="number">40s</td></tr>
+<tr><td><a href="../reports/regression/30344609760-attempt-1/#testresult/78c99fd2a0298cc2">test_admin_can_delete_user[chromium]</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">2 / 9</td><td class="number">0</td><td>UI</td><td class="number">32s</td></tr>
+<tr><td><a href="../reports/regression/30344609760-attempt-1/#testresult/3740efa74386ebf2">test_project_viewer_cannot_create_entities[webkit]</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">1 / 5</td><td class="number">0</td><td>UI · WebKit</td><td class="number">15s</td></tr>
+<tr><td><a href="../reports/regression/30344609760-attempt-1/#testresult/908adce00d32f03e">Manual build run receives a runtime parameter</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">1 / 37</td><td class="number">0</td><td>API</td><td class="number">14s</td></tr>
+<tr><td><a href="../reports/regression/30344609760-attempt-1/#testresult/ab18651cf1176a31">test_admin_can_login[chromium]</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">1 / 25</td><td class="number">0</td><td>UI</td><td class="number">12s</td></tr>
+<tr><td><a href="../reports/regression/30344609760-attempt-1/#testresult/ab7be0394e32f3aa">Manual build run finishes successfully</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">1 / 37</td><td class="number">0</td><td>API</td><td class="number">12s</td></tr>
+<tr><td><a href="../reports/regression/30344609760-attempt-1/#testresult/65fc8a472f73c14a">Updated build step is persisted in TeamCity configuration</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">1 / 37</td><td class="number">0</td><td>API</td><td class="number">0s</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Recent regression runs</h2>
+          <span class="section-note">40 published reports · 1 runs without report</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Conclusion</th>
+                <th>Event</th>
+                <th>Branch</th>
+                <th class="number">Duration</th>
+                <th>Report</th>
+              </tr>
+            </thead>
+            <tbody><tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30344609760">#64</a></td><td><span class="status status-success">success</span></td><td>pull_request</td><td>ekonchina/qa-metrics-dashboard</td><td class="number">6m 46s</td><td><a href="../reports/regression/30344609760-attempt-1/">Allure</a></td></tr>
+<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30342026504">#63</a></td><td><span class="status status-success">success</span></td><td>pull_request</td><td>ekonchina/stabilize-ui-flakes</td><td class="number">7m 20s</td><td><a href="../reports/regression/30342026504-attempt-1/">Allure</a></td></tr>
+<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30333648380">#62</a></td><td><span class="status status-success">success</span></td><td>pull_request</td><td>ekonchina/dynamic-postgresql-port</td><td class="number">5m 50s</td><td><a href="../reports/regression/30333648380-attempt-1/">Allure</a></td></tr>
+<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30101435888">#61</a></td><td><span class="status status-failure">failure</span></td><td>workflow_dispatch</td><td>main</td><td class="number">5m 28s</td><td><a href="../reports/regression/30101435888-attempt-1/">Allure</a></td></tr>
+<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30099789286">#60</a></td><td><span class="status status-success">success</span></td><td>pull_request</td><td>ekonchina/disable-ui-view-transitions</td><td class="number">1m 08s</td><td><a href="../reports/regression/30099789286-attempt-3/">Allure</a></td></tr>
+<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30097313275">#59</a></td><td><span class="status status-success">success</span></td><td>pull_request</td><td>ekonchina/disable-ui-view-transitions</td><td class="number">6m 37s</td><td><a href="../reports/regression/30097313275-attempt-1/">Allure</a></td></tr>
+<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30097186199">#58</a></td><td><span class="status status-success">success</span></td><td>pull_request</td><td>ui-tests</td><td class="number">6m 35s</td><td><a href="../reports/regression/30097186199-attempt-1/">Allure</a></td></tr>
+<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30096801098">#57</a></td><td><span class="status status-success">success</span></td><td>pull_request</td><td>ekonchina/disable-ui-view-transitions</td><td class="number">6m 41s</td><td><a href="../reports/regression/30096801098-attempt-1/">Allure</a></td></tr>
+<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30096365221">#56</a></td><td><span class="status status-failure">failure</span></td><td>pull_request</td><td>ui-tests</td><td class="number">6m 25s</td><td><a href="../reports/regression/30096365221-attempt-1/">Allure</a></td></tr>
+<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30096179296">#55</a></td><td><span class="status status-success">success</span></td><td>pull_request</td><td>ekonchina/disable-ui-view-transitions</td><td class="number">6m 23s</td><td><a href="../reports/regression/30096179296-attempt-1/">Allure</a></td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>Updated 28 Jul 2026 10:20 UTC</span>
+        <span>Sources: GitHub Actions API and persistent Allure reports</span>
+      </footer>
+    </main>
+  </body>
+</html>
