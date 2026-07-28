@@ -1,0 +1,1 @@
+{"reportName":"TeamCity regression #68","testRuns":[],"statistic":{"failed":1,"broken":1,"skipped":0,"passed":69,"unknown":0,"total":71},"time":{"start":1785239803907,"stop":1785239897125,"duration":93218,"minDuration":16,"maxDuration":40116,"sumDuration":320517}}

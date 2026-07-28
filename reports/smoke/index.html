@@ -19,6 +19,17 @@
       .latest { font-size: 18px; }
       .quality { font-size: 18px; }
       .suite-links a { display: inline-block; margin-right: 12px; }
+      .history-filter {
+        display: flex; align-items: end; gap: 8px; flex-wrap: wrap;
+        margin: 20px 0 12px;
+      }
+      .history-filter label { display: grid; gap: 4px; color: #636c76; }
+      .history-filter input, .history-filter button {
+        min-height: 36px; padding: 6px 10px; border: 1px solid #d0d7de;
+        border-radius: 7px; background: #fff; color: #1f2937; font: inherit;
+      }
+      .history-filter button { cursor: pointer; }
+      .history-count { margin-left: auto; color: #636c76; }
     </style>
   </head>
   <body>
@@ -26,7 +37,17 @@
     <p class="quality"><a href="../../quality/">Open rolling QA metrics</a></p><p class="quality"><a href="../../quality/coverage/">Open API framework coverage</a></p>
     <p class="latest"><a href="../../reports/smoke/29509129836-attempt-1/">Open latest report</a></p>
     
-    <table>
+    <div class="history-filter">
+      <label>
+        Report history period
+        <input id="history-days" type="number" min="1" step="1"
+               placeholder="Any number of days">
+      </label>
+      <button id="apply-history" type="button">Apply</button>
+      <button id="show-all-history" type="button">Show all</button>
+      <span id="history-count" class="history-count"></span>
+    </div>
+    <table id="report-history">
       <thead>
         <tr>
           <th>Generated</th>
@@ -38,42 +59,84 @@
         </tr>
       </thead>
       <tbody>
-      <tr><td><a href="../../reports/smoke/29509129836-attempt-1/">2026-07-16T15:03:26+00:00</a></td><td>smoke</td><td>pull_request</td><td>36/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29509129836">run</a></td><td>2c62d46dd305</td></tr>
-      <tr><td><a href="../../reports/smoke/29507900724-attempt-1/">2026-07-16T14:46:53+00:00</a></td><td>smoke</td><td>pull_request</td><td>35/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29507900724">run</a></td><td>967fbf98eba5</td></tr>
-      <tr><td><a href="../../reports/smoke/29502646660-attempt-1/">2026-07-16T13:36:08+00:00</a></td><td>smoke</td><td>pull_request</td><td>34/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29502646660">run</a></td><td>9a4130af609e</td></tr>
-      <tr><td><a href="../../reports/smoke/29500312098-attempt-1/">2026-07-16T13:02:38+00:00</a></td><td>smoke</td><td>pull_request</td><td>33/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29500312098">run</a></td><td>6c928818d2cf</td></tr>
-      <tr><td><a href="../../reports/smoke/29499315250-attempt-1/">2026-07-16T12:47:38+00:00</a></td><td>smoke</td><td>pull_request</td><td>32/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29499315250">run</a></td><td>67303f4657c8</td></tr>
-      <tr><td><a href="../../reports/smoke/29497281634-attempt-1/">2026-07-16T12:16:26+00:00</a></td><td>smoke</td><td>pull_request</td><td>31/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29497281634">run</a></td><td>9c4637ba4af7</td></tr>
-      <tr><td><a href="../../reports/smoke/29494464001-attempt-1/">2026-07-16T11:30:20+00:00</a></td><td>smoke</td><td>pull_request</td><td>30/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29494464001">run</a></td><td>7e964b815b93</td></tr>
-      <tr><td><a href="../../reports/smoke/29493424499-attempt-1/">2026-07-16T11:13:34+00:00</a></td><td>smoke</td><td>pull_request</td><td>29/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29493424499">run</a></td><td>ce347894af32</td></tr>
-      <tr><td><a href="../../reports/smoke/29491398105-attempt-1/">2026-07-16T10:38:37+00:00</a></td><td>smoke</td><td>pull_request</td><td>28/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29491398105">run</a></td><td>a7cf1f743e41</td></tr>
-      <tr><td><a href="../../reports/smoke/29265666301-attempt-1/">2026-07-13T16:18:10+00:00</a></td><td>smoke</td><td>pull_request</td><td>24/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29265666301">run</a></td><td>a4394c738f82</td></tr>
-      <tr><td><a href="../../reports/smoke/29253991146-attempt-1/">2026-07-13T13:34:00+00:00</a></td><td>smoke</td><td>pull_request</td><td>24/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29253991146">run</a></td><td>1bda55d7f267</td></tr>
-      <tr><td><a href="../../reports/smoke/29253487210-attempt-1/">2026-07-13T13:24:33+00:00</a></td><td>smoke</td><td>pull_request</td><td>27/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29253487210">run</a></td><td>0e00e7068424</td></tr>
-      <tr><td><a href="../../reports/smoke/29247112622-attempt-1/">2026-07-13T11:43:57+00:00</a></td><td>smoke</td><td>pull_request</td><td>26/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29247112622">run</a></td><td>b9d91c497341</td></tr>
-      <tr><td><a href="../../reports/smoke/29246443342-attempt-1/">2026-07-13T11:32:37+00:00</a></td><td>smoke</td><td>pull_request</td><td>25/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29246443342">run</a></td><td>635732092244</td></tr>
-      <tr><td><a href="../../reports/smoke/29156216141-attempt-1/">2026-07-11T14:32:28+00:00</a></td><td>smoke</td><td>pull_request</td><td>24/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29156216141">run</a></td><td>2c583e4b522e</td></tr>
-      <tr><td><a href="../../reports/smoke/29099611257-attempt-1/">2026-07-10T14:26:23+00:00</a></td><td>smoke</td><td>pull_request</td><td>23/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29099611257">run</a></td><td>55d9e2d2b484</td></tr>
-      <tr><td><a href="../../reports/smoke/29099409600-attempt-1/">2026-07-10T14:23:15+00:00</a></td><td>smoke</td><td>pull_request</td><td>22/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29099409600">run</a></td><td>a15312d1d57f</td></tr>
-      <tr><td><a href="../../reports/smoke/29098685272-attempt-1/">2026-07-10T14:11:44+00:00</a></td><td>smoke</td><td>pull_request</td><td>20/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29098685272">run</a></td><td>0a309df72381</td></tr>
-      <tr><td><a href="../../reports/smoke/29098369918-attempt-1/">2026-07-10T14:06:22+00:00</a></td><td>smoke</td><td>pull_request</td><td>21/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29098369918">run</a></td><td>20aff4bbbcd9</td></tr>
-      <tr><td><a href="../../reports/smoke/29098320934-attempt-1/">2026-07-10T14:05:36+00:00</a></td><td>smoke</td><td>pull_request</td><td>20/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29098320934">run</a></td><td>346d08c932a8</td></tr>
-      <tr><td><a href="../../reports/smoke/29097678147-attempt-1/">2026-07-10T13:54:58+00:00</a></td><td>smoke</td><td>pull_request</td><td>19/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29097678147">run</a></td><td>ad2e18b539cd</td></tr>
-      <tr><td><a href="../../reports/smoke/29093846944-attempt-1/">2026-07-10T12:52:09+00:00</a></td><td>smoke</td><td>workflow_dispatch</td><td>main</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29093846944">run</a></td><td>7f03c728d21c</td></tr>
-      <tr><td><a href="../../reports/smoke/29093643963-attempt-1/">2026-07-10T12:48:43+00:00</a></td><td>smoke</td><td>pull_request</td><td>18/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29093643963">run</a></td><td>8e2eac32ecb6</td></tr>
-      <tr><td><a href="../../reports/smoke/29092939843-attempt-1/">2026-07-10T12:36:07+00:00</a></td><td>smoke</td><td>workflow_dispatch</td><td>main</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29092939843">run</a></td><td>ed453703ecb8</td></tr>
-      <tr><td><a href="../../reports/smoke/29092712636-attempt-1/">2026-07-10T12:31:46+00:00</a></td><td>smoke</td><td>pull_request</td><td>17/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29092712636">run</a></td><td>222b3e0bfbcc</td></tr>
-      <tr><td><a href="../../reports/smoke/29092401431-attempt-1/">2026-07-10T12:26:07+00:00</a></td><td>smoke</td><td>pull_request</td><td>16/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29092401431">run</a></td><td>319eaa7b1bcf</td></tr>
-      <tr><td><a href="../../reports/smoke/29088944910-attempt-1/">2026-07-10T11:19:45+00:00</a></td><td>smoke</td><td>pull_request</td><td>13/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29088944910">run</a></td><td>5ea387e96840</td></tr>
-      <tr><td><a href="../../reports/smoke/29087755343-attempt-1/">2026-07-10T10:57:11+00:00</a></td><td>smoke</td><td>pull_request</td><td>13/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29087755343">run</a></td><td>2b560013f2ad</td></tr>
-      <tr><td><a href="../../reports/smoke/29086369339-attempt-1/">2026-07-10T10:29:50+00:00</a></td><td>smoke</td><td>pull_request</td><td>15/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29086369339">run</a></td><td>abc20cc57b0e</td></tr>
-      <tr><td><a href="../../reports/smoke/29084127744-attempt-1/">2026-07-10T09:47:11+00:00</a></td><td>smoke</td><td>pull_request</td><td>14/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29084127744">run</a></td><td>bd67dcdddb17</td></tr>
-      <tr><td><a href="../../reports/smoke/29020581350-attempt-1/">2026-07-09T13:18:36+00:00</a></td><td>smoke</td><td>workflow_dispatch</td><td>main</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29020581350">run</a></td><td>41cde853a645</td></tr>
-      <tr><td><a href="../../reports/smoke/29017979559-attempt-1/">2026-07-09T12:24:57+00:00</a></td><td>smoke</td><td>pull_request</td><td>11/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29017979559">run</a></td><td>f0b48e3c623d</td></tr>
-      <tr><td><a href="../../reports/smoke/29017690298-attempt-1/">2026-07-09T12:19:34+00:00</a></td><td>smoke</td><td>pull_request</td><td>11/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29017690298">run</a></td><td>568537d92394</td></tr>
-      <tr><td><a href="../../reports/smoke/29016331109-attempt-1/">2026-07-09T11:55:27+00:00</a></td><td>smoke</td><td>push</td><td>main</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29016331109">run</a></td><td>64fc9a49f801</td></tr>
-      <tr><td><a href="../../reports/smoke/29016191983-attempt-1/">2026-07-09T11:52:54+00:00</a></td><td>smoke</td><td>pull_request</td><td>10/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29016191983">run</a></td><td>a4e51d5ee11b</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-16T15:03:26+00:00"><td><a href="../../reports/smoke/29509129836-attempt-1/">2026-07-16T15:03:26+00:00</a></td><td>smoke</td><td>pull_request</td><td>36/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29509129836">run</a></td><td>2c62d46dd305</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-16T14:46:53+00:00"><td><a href="../../reports/smoke/29507900724-attempt-1/">2026-07-16T14:46:53+00:00</a></td><td>smoke</td><td>pull_request</td><td>35/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29507900724">run</a></td><td>967fbf98eba5</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-16T13:36:08+00:00"><td><a href="../../reports/smoke/29502646660-attempt-1/">2026-07-16T13:36:08+00:00</a></td><td>smoke</td><td>pull_request</td><td>34/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29502646660">run</a></td><td>9a4130af609e</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-16T13:02:38+00:00"><td><a href="../../reports/smoke/29500312098-attempt-1/">2026-07-16T13:02:38+00:00</a></td><td>smoke</td><td>pull_request</td><td>33/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29500312098">run</a></td><td>6c928818d2cf</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-16T12:47:38+00:00"><td><a href="../../reports/smoke/29499315250-attempt-1/">2026-07-16T12:47:38+00:00</a></td><td>smoke</td><td>pull_request</td><td>32/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29499315250">run</a></td><td>67303f4657c8</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-16T12:16:26+00:00"><td><a href="../../reports/smoke/29497281634-attempt-1/">2026-07-16T12:16:26+00:00</a></td><td>smoke</td><td>pull_request</td><td>31/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29497281634">run</a></td><td>9c4637ba4af7</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-16T11:30:20+00:00"><td><a href="../../reports/smoke/29494464001-attempt-1/">2026-07-16T11:30:20+00:00</a></td><td>smoke</td><td>pull_request</td><td>30/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29494464001">run</a></td><td>7e964b815b93</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-16T11:13:34+00:00"><td><a href="../../reports/smoke/29493424499-attempt-1/">2026-07-16T11:13:34+00:00</a></td><td>smoke</td><td>pull_request</td><td>29/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29493424499">run</a></td><td>ce347894af32</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-16T10:38:37+00:00"><td><a href="../../reports/smoke/29491398105-attempt-1/">2026-07-16T10:38:37+00:00</a></td><td>smoke</td><td>pull_request</td><td>28/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29491398105">run</a></td><td>a7cf1f743e41</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-13T16:18:10+00:00"><td><a href="../../reports/smoke/29265666301-attempt-1/">2026-07-13T16:18:10+00:00</a></td><td>smoke</td><td>pull_request</td><td>24/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29265666301">run</a></td><td>a4394c738f82</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-13T13:34:00+00:00"><td><a href="../../reports/smoke/29253991146-attempt-1/">2026-07-13T13:34:00+00:00</a></td><td>smoke</td><td>pull_request</td><td>24/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29253991146">run</a></td><td>1bda55d7f267</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-13T13:24:33+00:00"><td><a href="../../reports/smoke/29253487210-attempt-1/">2026-07-13T13:24:33+00:00</a></td><td>smoke</td><td>pull_request</td><td>27/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29253487210">run</a></td><td>0e00e7068424</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-13T11:43:57+00:00"><td><a href="../../reports/smoke/29247112622-attempt-1/">2026-07-13T11:43:57+00:00</a></td><td>smoke</td><td>pull_request</td><td>26/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29247112622">run</a></td><td>b9d91c497341</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-13T11:32:37+00:00"><td><a href="../../reports/smoke/29246443342-attempt-1/">2026-07-13T11:32:37+00:00</a></td><td>smoke</td><td>pull_request</td><td>25/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29246443342">run</a></td><td>635732092244</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-11T14:32:28+00:00"><td><a href="../../reports/smoke/29156216141-attempt-1/">2026-07-11T14:32:28+00:00</a></td><td>smoke</td><td>pull_request</td><td>24/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29156216141">run</a></td><td>2c583e4b522e</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T14:26:23+00:00"><td><a href="../../reports/smoke/29099611257-attempt-1/">2026-07-10T14:26:23+00:00</a></td><td>smoke</td><td>pull_request</td><td>23/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29099611257">run</a></td><td>55d9e2d2b484</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T14:23:15+00:00"><td><a href="../../reports/smoke/29099409600-attempt-1/">2026-07-10T14:23:15+00:00</a></td><td>smoke</td><td>pull_request</td><td>22/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29099409600">run</a></td><td>a15312d1d57f</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T14:11:44+00:00"><td><a href="../../reports/smoke/29098685272-attempt-1/">2026-07-10T14:11:44+00:00</a></td><td>smoke</td><td>pull_request</td><td>20/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29098685272">run</a></td><td>0a309df72381</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T14:06:22+00:00"><td><a href="../../reports/smoke/29098369918-attempt-1/">2026-07-10T14:06:22+00:00</a></td><td>smoke</td><td>pull_request</td><td>21/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29098369918">run</a></td><td>20aff4bbbcd9</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T14:05:36+00:00"><td><a href="../../reports/smoke/29098320934-attempt-1/">2026-07-10T14:05:36+00:00</a></td><td>smoke</td><td>pull_request</td><td>20/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29098320934">run</a></td><td>346d08c932a8</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T13:54:58+00:00"><td><a href="../../reports/smoke/29097678147-attempt-1/">2026-07-10T13:54:58+00:00</a></td><td>smoke</td><td>pull_request</td><td>19/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29097678147">run</a></td><td>ad2e18b539cd</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T12:52:09+00:00"><td><a href="../../reports/smoke/29093846944-attempt-1/">2026-07-10T12:52:09+00:00</a></td><td>smoke</td><td>workflow_dispatch</td><td>main</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29093846944">run</a></td><td>7f03c728d21c</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T12:48:43+00:00"><td><a href="../../reports/smoke/29093643963-attempt-1/">2026-07-10T12:48:43+00:00</a></td><td>smoke</td><td>pull_request</td><td>18/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29093643963">run</a></td><td>8e2eac32ecb6</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T12:36:07+00:00"><td><a href="../../reports/smoke/29092939843-attempt-1/">2026-07-10T12:36:07+00:00</a></td><td>smoke</td><td>workflow_dispatch</td><td>main</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29092939843">run</a></td><td>ed453703ecb8</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T12:31:46+00:00"><td><a href="../../reports/smoke/29092712636-attempt-1/">2026-07-10T12:31:46+00:00</a></td><td>smoke</td><td>pull_request</td><td>17/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29092712636">run</a></td><td>222b3e0bfbcc</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T12:26:07+00:00"><td><a href="../../reports/smoke/29092401431-attempt-1/">2026-07-10T12:26:07+00:00</a></td><td>smoke</td><td>pull_request</td><td>16/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29092401431">run</a></td><td>319eaa7b1bcf</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T11:19:45+00:00"><td><a href="../../reports/smoke/29088944910-attempt-1/">2026-07-10T11:19:45+00:00</a></td><td>smoke</td><td>pull_request</td><td>13/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29088944910">run</a></td><td>5ea387e96840</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T10:57:11+00:00"><td><a href="../../reports/smoke/29087755343-attempt-1/">2026-07-10T10:57:11+00:00</a></td><td>smoke</td><td>pull_request</td><td>13/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29087755343">run</a></td><td>2b560013f2ad</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T10:29:50+00:00"><td><a href="../../reports/smoke/29086369339-attempt-1/">2026-07-10T10:29:50+00:00</a></td><td>smoke</td><td>pull_request</td><td>15/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29086369339">run</a></td><td>abc20cc57b0e</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-10T09:47:11+00:00"><td><a href="../../reports/smoke/29084127744-attempt-1/">2026-07-10T09:47:11+00:00</a></td><td>smoke</td><td>pull_request</td><td>14/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29084127744">run</a></td><td>bd67dcdddb17</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-09T13:18:36+00:00"><td><a href="../../reports/smoke/29020581350-attempt-1/">2026-07-09T13:18:36+00:00</a></td><td>smoke</td><td>workflow_dispatch</td><td>main</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29020581350">run</a></td><td>41cde853a645</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-09T12:24:57+00:00"><td><a href="../../reports/smoke/29017979559-attempt-1/">2026-07-09T12:24:57+00:00</a></td><td>smoke</td><td>pull_request</td><td>11/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29017979559">run</a></td><td>f0b48e3c623d</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-09T12:19:34+00:00"><td><a href="../../reports/smoke/29017690298-attempt-1/">2026-07-09T12:19:34+00:00</a></td><td>smoke</td><td>pull_request</td><td>11/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29017690298">run</a></td><td>568537d92394</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-09T11:55:27+00:00"><td><a href="../../reports/smoke/29016331109-attempt-1/">2026-07-09T11:55:27+00:00</a></td><td>smoke</td><td>push</td><td>main</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29016331109">run</a></td><td>64fc9a49f801</td></tr>
+      <tr class="report-row" data-generated-at="2026-07-09T11:52:54+00:00"><td><a href="../../reports/smoke/29016191983-attempt-1/">2026-07-09T11:52:54+00:00</a></td><td>smoke</td><td>pull_request</td><td>10/merge</td><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29016191983">run</a></td><td>a4e51d5ee11b</td></tr>
       </tbody>
     </table>
+    <script>
+      (() => {
+        const input = document.querySelector("#history-days");
+        const rows = [...document.querySelectorAll(".report-row")];
+        const counter = document.querySelector("#history-count");
+        const render = (days) => {
+          const now = new Date();
+          const todayUtc = Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth(),
+            now.getUTCDate(),
+          );
+          const cutoff = days ? todayUtc - (days - 1) * 86400000 : null;
+          let visible = 0;
+          rows.forEach((row) => {
+            const generatedAt = Date.parse(row.dataset.generatedAt || "");
+            const show = cutoff === null || (
+              Number.isFinite(generatedAt) && generatedAt >= cutoff
+            );
+            row.hidden = !show;
+            if (show) visible += 1;
+          });
+          counter.textContent = `${visible} of ${rows.length} reports`;
+        };
+        document.querySelector("#apply-history").addEventListener("click", () => {
+          const days = Number(input.value);
+          if (!Number.isInteger(days) || days < 1) {
+            input.setCustomValidity("Enter a positive number of days");
+            input.reportValidity();
+            return;
+          }
+          input.setCustomValidity("");
+          render(days);
+        });
+        document.querySelector("#show-all-history").addEventListener("click", () => {
+          input.value = "";
+          input.setCustomValidity("");
+          render(null);
+        });
+        render(null);
+      })();
+    </script>
   </body>
 </html>
