@@ -6,14 +6,10 @@ on:
   workflow_dispatch:
     inputs:
       days:
-        description: Rolling metrics window
+        description: Positive number of UTC calendar days in the rolling window
         required: true
         default: "7"
-        type: choice
-        options:
-          - "7"
-          - "14"
-          - "30"
+        type: string
 
 concurrency:
   group: github-pages
@@ -38,6 +34,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate metrics period
+        shell: bash
+        run: |
+          if [[ ! "$METRICS_DAYS" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Metrics period must be a positive integer; got: $METRICS_DAYS" >&2
+            exit 1
+          fi
 
       - name: Read completed regression runs
         env:
@@ -76,13 +80,33 @@ jobs:
         id: dashboard
         shell: bash
         run: |
+          coverage_snapshot="quality/coverage/periods/${METRICS_DAYS}"
+          quality_snapshot="quality/periods/${METRICS_DAYS}"
+
           python3 scripts/build_coverage_dashboard.py \
             --site-dir pages-site \
-            --days "${METRICS_DAYS}"
+            --days "${METRICS_DAYS}" \
+            --destination "$coverage_snapshot" \
+            --quality-url "../../../periods/${METRICS_DAYS}/"
+          python3 scripts/build_coverage_dashboard.py \
+            --site-dir pages-site \
+            --days "${METRICS_DAYS}" \
+            --destination quality/coverage \
+            --quality-url "../"
           python3 scripts/build_quality_dashboard.py \
             --site-dir pages-site \
             --runs-json workflow-runs.json \
-            --days "${METRICS_DAYS}"
+            --days "${METRICS_DAYS}" \
+            --destination "$quality_snapshot" \
+            --coverage-metrics "$coverage_snapshot/metrics.json" \
+            --coverage-url "../../coverage/periods/${METRICS_DAYS}/"
+          python3 scripts/build_quality_dashboard.py \
+            --site-dir pages-site \
+            --runs-json workflow-runs.json \
+            --days "${METRICS_DAYS}" \
+            --destination quality \
+            --coverage-metrics quality/coverage/metrics.json \
+            --coverage-url "coverage/"
           python3 .github/scripts/refresh_allure_indexes.py --site-dir pages-site
           touch pages-site/.nojekyll
 
@@ -117,7 +141,9 @@ jobs:
           {
             echo "## QA metrics dashboard"
             echo
-            echo "[Open ${METRICS_DAYS}-day QA metrics dashboard](${{ steps.deployment.outputs.page_url }}quality/)"
+            echo "[Open current QA metrics dashboard](${{ steps.deployment.outputs.page_url }}quality/)"
+            echo
+            echo "[Open saved ${METRICS_DAYS}-day snapshot](${{ steps.deployment.outputs.page_url }}quality/periods/${METRICS_DAYS}/)"
             echo
             echo "Completed regression runs: ${{ steps.dashboard.outputs.completed_runs }}"
             echo

@@ -90,6 +90,10 @@ runs:
           echo "::warning title=API coverage::Coverage artifact is unavailable; publishing Allure only."
           exit 0
         fi
+        if [[ ! "${{ inputs.coverage_days }}" =~ ^[1-9][0-9]*$ ]]; then
+          echo "Coverage period must be a positive integer; got: ${{ inputs.coverage_days }}" >&2
+          exit 1
+        fi
 
         python3 .github/scripts/update_coverage_pages.py \
           --site-dir pages-site \
@@ -101,9 +105,17 @@ runs:
           --sha "${GITHUB_SHA}" \
           --run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
+        coverage_snapshot="quality/coverage/periods/${{ inputs.coverage_days }}"
         python3 scripts/build_coverage_dashboard.py \
           --site-dir pages-site \
-          --days "${{ inputs.coverage_days }}"
+          --days "${{ inputs.coverage_days }}" \
+          --destination "$coverage_snapshot" \
+          --quality-url "../../../"
+        python3 scripts/build_coverage_dashboard.py \
+          --site-dir pages-site \
+          --days "${{ inputs.coverage_days }}" \
+          --destination quality/coverage \
+          --quality-url "../"
         python3 .github/scripts/refresh_allure_indexes.py --site-dir pages-site
 
     - name: Commit Pages history
