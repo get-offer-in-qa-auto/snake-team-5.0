@@ -1073,7 +1073,7 @@
     "published_reports": 67,
     "runs_without_report": 4
   },
-  "generated_at": "2026-07-28T12:44:23+00:00",
+  "generated_at": "2026-07-28T12:44:22+00:00",
   "pipeline": {
     "completed": 64,
     "p95_duration_seconds": 409.7,
@@ -2361,7 +2361,7 @@
   },
   "window": {
     "days": 14,
-    "end": "2026-07-28T12:44:23+00:00",
+    "end": "2026-07-28T12:44:22+00:00",
     "start": "2026-07-15T00:00:00+00:00"
   }
 }
