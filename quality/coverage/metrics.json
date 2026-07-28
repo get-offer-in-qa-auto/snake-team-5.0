@@ -1,0 +1,561 @@
+{
+  "delta": {
+    "branch_rate": null,
+    "line_rate": null
+  },
+  "generated_at": "2026-07-28T11:00:28+00:00",
+  "latest": {
+    "attempt": 1,
+    "branch": "65/merge",
+    "branch_rate": 55.7,
+    "covered_branches": 127,
+    "covered_lines": 1594,
+    "excluded_lines": 22,
+    "generated_at": "2026-07-28T11:00:28+00:00",
+    "html_url": "../../coverage/30352655198-attempt-1/html/",
+    "json_url": "../../coverage/30352655198-attempt-1/coverage.json",
+    "line_rate": 89.6,
+    "missing_branches": 101,
+    "missing_lines": 185,
+    "num_branches": 228,
+    "num_statements": 1779,
+    "report_id": "30352655198-attempt-1",
+    "run_id": 30352655198,
+    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30352655198",
+    "sha": "1982128bbf12001e86d8169463d0f7156b8d7033",
+    "source": "src/main/api",
+    "xml_url": "../../coverage/30352655198-attempt-1/coverage.xml"
+  },
+  "modules": [
+    {
+      "branch_rate": 11.11,
+      "covered_lines": 21,
+      "line_rate": 40.38,
+      "missing": "12\u201314, 16\u201319, 21, 23\u201325, 37\u201339, 41\u201343, \u2026",
+      "num_statements": 52,
+      "path": "src/main/api/fixtures/object_fixtures.py"
+    },
+    {
+      "branch_rate": 0.0,
+      "covered_lines": 24,
+      "line_rate": 61.54,
+      "missing": "36\u201337, 45\u201346, 51\u201355, 57, 62, 67, \u2026",
+      "num_statements": 39,
+      "path": "src/main/api/fixtures/user_fixtures.py"
+    },
+    {
+      "branch_rate": 0.0,
+      "covered_lines": 10,
+      "line_rate": 62.5,
+      "missing": "11\u201312, 16\u201317, 20, 24",
+      "num_statements": 16,
+      "path": "src/main/api/classes/session_storage.py"
+    },
+    {
+      "branch_rate": 50.0,
+      "covered_lines": 40,
+      "line_rate": 71.43,
+      "missing": "50\u201351, 66, 71, 74\u201376, 78\u201380, 86\u201387, \u2026",
+      "num_statements": 56,
+      "path": "src/main/api/database/executor.py"
+    },
+    {
+      "branch_rate": 60.0,
+      "covered_lines": 38,
+      "line_rate": 74.51,
+      "missing": "38\u201339, 45\u201346, 55, 58, 64, 68, \u2026",
+      "num_statements": 51,
+      "path": "src/main/api/utils/cleanup_helper.py"
+    },
+    {
+      "branch_rate": 50.0,
+      "covered_lines": 32,
+      "line_rate": 76.19,
+      "missing": "44\u201346, 48\u201349, 69\u201371, 73\u201374",
+      "num_statements": 42,
+      "path": "src/main/api/requests/steps/configuration_steps.py"
+    },
+    {
+      "branch_rate": 31.25,
+      "covered_lines": 42,
+      "line_rate": 79.25,
+      "missing": "80, 85, 88\u201390, 98, 109\u2013110, 113\u2013115",
+      "num_statements": 53,
+      "path": "src/main/api/fixtures/created_objects_registry.py"
+    },
+    {
+      "branch_rate": 45.83,
+      "covered_lines": 86,
+      "line_rate": 82.69,
+      "missing": "82, 84, 99, 117, 130\u2013133, 135, \u2026",
+      "num_statements": 104,
+      "path": "src/main/api/database/client.py"
+    },
+    {
+      "branch_rate": 67.86,
+      "covered_lines": 41,
+      "line_rate": 83.67,
+      "missing": "41, 43, 51, 53, 55, 57, \u2026",
+      "num_statements": 49,
+      "path": "src/main/api/generators/random_model_generator.py"
+    },
+    {
+      "branch_rate": 71.43,
+      "covered_lines": 37,
+      "line_rate": 86.05,
+      "missing": "29, 43, 75, 81\u201382, 89",
+      "num_statements": 43,
+      "path": "src/main/api/configuration/client.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 66,
+      "line_rate": 86.84,
+      "missing": "40, 59, 72\u201373, 76\u201379, 81, 85",
+      "num_statements": 76,
+      "path": "src/main/api/specs/response_specs.py"
+    },
+    {
+      "branch_rate": 50.0,
+      "covered_lines": 14,
+      "line_rate": 87.5,
+      "missing": "24, 29",
+      "num_statements": 16,
+      "path": "src/main/api/models/comparison/model_assertions.py"
+    },
+    {
+      "branch_rate": 75.0,
+      "covered_lines": 71,
+      "line_rate": 88.75,
+      "missing": "75\u201376, 78, 111, 120\u2013121, 127\u2013128, 131",
+      "num_statements": 80,
+      "path": "src/main/api/requests/steps/build_run_steps.py"
+    },
+    {
+      "branch_rate": 75.0,
+      "covered_lines": 46,
+      "line_rate": 90.2,
+      "missing": "67, 71, 89\u201390, 93",
+      "num_statements": 51,
+      "path": "src/main/api/configs/timeouts.py"
+    },
+    {
+      "branch_rate": 61.11,
+      "covered_lines": 75,
+      "line_rate": 90.36,
+      "missing": "69, 74, 124\u2013128, 130",
+      "num_statements": 83,
+      "path": "src/main/api/specs/request_specs.py"
+    },
+    {
+      "branch_rate": 70.0,
+      "covered_lines": 38,
+      "line_rate": 90.48,
+      "missing": "20, 26, 42, 51",
+      "num_statements": 42,
+      "path": "src/main/api/models/comparison/model_comparison_configuration.py"
+    },
+    {
+      "branch_rate": 62.5,
+      "covered_lines": 29,
+      "line_rate": 90.62,
+      "missing": "34, 50, 52",
+      "num_statements": 32,
+      "path": "src/main/api/models/comparison/model_comparator.py"
+    },
+    {
+      "branch_rate": 66.67,
+      "covered_lines": 25,
+      "line_rate": 92.59,
+      "missing": "29, 49",
+      "num_statements": 27,
+      "path": "src/main/api/database/db_request.py"
+    },
+    {
+      "branch_rate": 87.5,
+      "covered_lines": 21,
+      "line_rate": 95.45,
+      "missing": "15",
+      "num_statements": 22,
+      "path": "src/main/api/configs/config.py"
+    },
+    {
+      "branch_rate": 50.0,
+      "covered_lines": 21,
+      "line_rate": 95.45,
+      "missing": "29",
+      "num_statements": 22,
+      "path": "src/main/api/fixtures/build_step_fixtures.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 22,
+      "line_rate": 95.65,
+      "missing": "37",
+      "num_statements": 23,
+      "path": "src/main/api/fixtures/role_fixtures.py"
+    },
+    {
+      "branch_rate": 100.0,
+      "covered_lines": 192,
+      "line_rate": 97.46,
+      "missing": "122, 128, 170, 175, 269",
+      "num_statements": 197,
+      "path": "src/main/api/requests/steps/admin_steps.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 13,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 13,
+      "path": "src/main/api/classes/api_manager.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 2,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 2,
+      "path": "src/main/api/configuration/__init__.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 2,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 2,
+      "path": "src/main/api/constants/__init__.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 7,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 7,
+      "path": "src/main/api/constants/teamcity.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 4,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 4,
+      "path": "src/main/api/database/__init__.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 23,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 23,
+      "path": "src/main/api/database/dao.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 5,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 5,
+      "path": "src/main/api/fixtures/api_fixtures.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 20,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 20,
+      "path": "src/main/api/fixtures/build_configuration_fixtures.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 24,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 24,
+      "path": "src/main/api/fixtures/build_run_fixtures.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 19,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 19,
+      "path": "src/main/api/fixtures/project_fixtures.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 16,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 16,
+      "path": "src/main/api/fixtures/token_fixtures.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 33,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 33,
+      "path": "src/main/api/generators/build_run_data.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 1,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 1,
+      "path": "src/main/api/generators/build_step_data.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 4,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 4,
+      "path": "src/main/api/generators/generating_rule.py"
+    },
+    {
+      "branch_rate": 100.0,
+      "covered_lines": 2,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 2,
+      "path": "src/main/api/models/base_model.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 8,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 8,
+      "path": "src/main/api/models/build_configuration_response.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 16,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 16,
+      "path": "src/main/api/models/build_run.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 11,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 11,
+      "path": "src/main/api/models/build_step_response.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 24,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 24,
+      "path": "src/main/api/models/comparison/entity_assertions.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 6,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 6,
+      "path": "src/main/api/models/create_build_configuration_request.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 12,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 12,
+      "path": "src/main/api/models/create_build_step_request.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 11,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 11,
+      "path": "src/main/api/models/create_project_request.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 7,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 7,
+      "path": "src/main/api/models/create_user_request.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 8,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 8,
+      "path": "src/main/api/models/create_user_response.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 10,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 10,
+      "path": "src/main/api/models/project_response.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 9,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 9,
+      "path": "src/main/api/models/role.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 10,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 10,
+      "path": "src/main/api/models/role_assignment.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 14,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 14,
+      "path": "src/main/api/models/start_build_request.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 14,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 14,
+      "path": "src/main/api/models/user_token.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 44,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 44,
+      "path": "src/main/api/requests/skeleton/endpoint.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 9,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 9,
+      "path": "src/main/api/requests/skeleton/http_request.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 4,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 4,
+      "path": "src/main/api/requests/skeleton/interfaces/crud_end_interface.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 31,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 31,
+      "path": "src/main/api/requests/skeleton/requesters/crud_requester.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 22,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 22,
+      "path": "src/main/api/requests/skeleton/requesters/validated_crud_requester.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 13,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 13,
+      "path": "src/main/api/requests/steps/base_steps.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 83,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 83,
+      "path": "src/main/api/requests/steps/database_steps.py"
+    },
+    {
+      "branch_rate": null,
+      "covered_lines": 62,
+      "line_rate": 100.0,
+      "missing": "\u2014",
+      "num_statements": 62,
+      "path": "src/main/api/requests/steps/user_steps.py"
+    }
+  ],
+  "previous": null,
+  "reports": 1,
+  "trend": [
+    {
+      "branch_rate": null,
+      "date": "2026-07-22",
+      "label": "22 Jul",
+      "line_rate": null,
+      "report_id": null
+    },
+    {
+      "branch_rate": null,
+      "date": "2026-07-23",
+      "label": "23 Jul",
+      "line_rate": null,
+      "report_id": null
+    },
+    {
+      "branch_rate": null,
+      "date": "2026-07-24",
+      "label": "24 Jul",
+      "line_rate": null,
+      "report_id": null
+    },
+    {
+      "branch_rate": null,
+      "date": "2026-07-25",
+      "label": "25 Jul",
+      "line_rate": null,
+      "report_id": null
+    },
+    {
+      "branch_rate": null,
+      "date": "2026-07-26",
+      "label": "26 Jul",
+      "line_rate": null,
+      "report_id": null
+    },
+    {
+      "branch_rate": null,
+      "date": "2026-07-27",
+      "label": "27 Jul",
+      "line_rate": null,
+      "report_id": null
+    },
+    {
+      "branch_rate": 55.7,
+      "date": "2026-07-28",
+      "label": "28 Jul",
+      "line_rate": 89.6,
+      "report_id": "30352655198-attempt-1"
+    }
+  ],
+  "window": {
+    "days": 7,
+    "end": "2026-07-28T11:00:28+00:00",
+    "start": "2026-07-22T00:00:00+00:00"
+  }
+}
