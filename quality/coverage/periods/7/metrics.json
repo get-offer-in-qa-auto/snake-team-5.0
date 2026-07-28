@@ -3,29 +3,29 @@
     "branch_rate": 0.0,
     "line_rate": 0.0
   },
-  "generated_at": "2026-07-28T13:11:55+00:00",
+  "generated_at": "2026-07-28T13:27:52+00:00",
   "history": [
     {
-      "attempt": 1,
+      "attempt": 2,
       "branch": "ekonchina/current-coverage-trend",
       "branch_rate": 55.7,
       "covered_branches": 127,
       "covered_lines": 1594,
       "excluded_lines": 22,
-      "generated_at": "2026-07-28T13:11:55+00:00",
-      "html_url": "coverage/30361897861-attempt-1/html/",
-      "json_url": "coverage/30361897861-attempt-1/coverage.json",
+      "generated_at": "2026-07-28T13:27:52+00:00",
+      "html_url": "coverage/30361897861-attempt-2/html/",
+      "json_url": "coverage/30361897861-attempt-2/coverage.json",
       "line_rate": 89.6,
       "missing_branches": 101,
       "missing_lines": 185,
       "num_branches": 228,
       "num_statements": 1779,
-      "report_id": "30361897861-attempt-1",
+      "report_id": "30361897861-attempt-2",
       "run_id": 30361897861,
       "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861",
       "sha": "639f4bb924eba4c4ace60e929f5a9a35b0ae9c66",
       "source": "src/main/api",
-      "xml_url": "coverage/30361897861-attempt-1/coverage.xml"
+      "xml_url": "coverage/30361897861-attempt-2/coverage.xml"
     },
     {
       "attempt": 1,
@@ -139,30 +139,30 @@
     }
   ],
   "latest": {
-    "attempt": 1,
+    "attempt": 2,
     "branch": "ekonchina/current-coverage-trend",
     "branch_rate": 55.7,
     "covered_branches": 127,
     "covered_lines": 1594,
     "excluded_lines": 22,
-    "generated_at": "2026-07-28T13:11:55+00:00",
-    "html_url": "coverage/30361897861-attempt-1/html/",
-    "json_url": "coverage/30361897861-attempt-1/coverage.json",
+    "generated_at": "2026-07-28T13:27:52+00:00",
+    "html_url": "coverage/30361897861-attempt-2/html/",
+    "json_url": "coverage/30361897861-attempt-2/coverage.json",
     "line_rate": 89.6,
     "missing_branches": 101,
     "missing_lines": 185,
     "num_branches": 228,
     "num_statements": 1779,
-    "report_id": "30361897861-attempt-1",
+    "report_id": "30361897861-attempt-2",
     "run_id": 30361897861,
     "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861",
     "sha": "639f4bb924eba4c4ace60e929f5a9a35b0ae9c66",
     "source": "src/main/api",
-    "xml_url": "coverage/30361897861-attempt-1/coverage.xml"
+    "xml_url": "coverage/30361897861-attempt-2/coverage.xml"
   },
   "latest_context": {
     "is_today": true,
-    "label": "Today at 13:11 UTC"
+    "label": "Today at 13:27 UTC"
   },
   "modules": [
     {
@@ -729,17 +729,17 @@
     {
       "branch_rate": 55.7,
       "date": "2026-07-28",
-      "generated_at": "2026-07-28T13:11:55+00:00",
-      "html_url": "coverage/30361897861-attempt-1/html/",
+      "generated_at": "2026-07-28T13:27:52+00:00",
+      "html_url": "coverage/30361897861-attempt-2/html/",
       "label": "28 Jul",
       "line_rate": 89.6,
-      "report_id": "30361897861-attempt-1",
+      "report_id": "30361897861-attempt-2",
       "run_id": 30361897861
     }
   ],
   "window": {
     "days": 7,
-    "end": "2026-07-28T13:11:55+00:00",
+    "end": "2026-07-28T13:27:52+00:00",
     "start": "2026-07-22T00:00:00+00:00"
   }
 }
