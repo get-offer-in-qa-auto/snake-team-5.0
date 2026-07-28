@@ -1,6 +1,7 @@
 from urllib.parse import urlsplit, urlunsplit
 
 from src.main.api.configs.config import Config
+from src.main.api.configs.timeouts import TimeoutConfig
 
 
 def teamcity_ui_base_url() -> str:
@@ -18,3 +19,8 @@ def teamcity_ui_base_url() -> str:
     if not parts.scheme or not parts.netloc:
         raise ValueError(f"TeamCity UI base URL is invalid: {configured_url!r}")
     return urlunsplit((parts.scheme, parts.netloc, "", "", "")).rstrip("/")
+
+
+def teamcity_ui_expect_timeout_ms() -> float:
+    """Return the configured timeout for UI assertions in milliseconds."""
+    return TimeoutConfig.ui_expect_ms()

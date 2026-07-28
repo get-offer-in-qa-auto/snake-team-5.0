@@ -4,6 +4,7 @@ import os
 import requests
 
 from src.main.api.configs.config import Config
+from src.main.api.configs.timeouts import TimeoutConfig
 
 
 class RequestSpecs:
@@ -91,14 +92,13 @@ class RequestSpecs:
         if cached_token:
             return cached_token
 
-        timeout = int(Config.get("TEAMCITY_REQUEST_TIMEOUT", "20"))
         response = requests.get(
             f"{RequestSpecs._server_url()}/authenticationTest.html?csrf",
             headers={
                 "Authorization": auth_header,
                 "Accept": "text/plain",
             },
-            timeout=timeout,
+            timeout=TimeoutConfig.http_request(),
         )
         assert response.status_code == 200, (
             f"Failed to get TeamCity CSRF token. "

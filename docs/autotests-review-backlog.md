@@ -167,7 +167,7 @@ Pipeline поднимает тяжёлый TeamCity Agent, но не прове�
 PR/commit: —  
 Проверка: —
 
-### [ ] TC-AUTO-006 — Добавить timeout для всех HTTP-запросов
+### [x] TC-AUTO-006 — Добавить timeout для всех HTTP-запросов
 
 CRUD-запросы через `requests` выполняются без timeout и могут зависнуть до
 общего timeout GitHub Actions job.
@@ -184,9 +184,10 @@ CRUD-запросы через `requests` выполняются без timeout 
 - в API-клиенте нет HTTP-запросов без явно заданного timeout;
 - зависший endpoint приводит к ограниченной и диагностируемой ошибке.
 
-Исправлено: —  
-PR/commit: —  
-Проверка: —
+Исправлено: общий валидируемый connect/read timeout передаётся во все
+CRUD-запросы и прямые HTTP-вызовы.
+PR/commit: текущая ветка
+Проверка: unit-тесты конфигурации и CRUD transport, regression API/UI.
 
 ### [ ] TC-AUTO-007 — Сделать cleanup надёжным
 

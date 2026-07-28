@@ -4,6 +4,7 @@ import requests
 from playwright.sync_api import BrowserContext
 
 from src.main.api.configs.config import Config
+from src.main.api.configs.timeouts import TimeoutConfig
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.api.specs.request_specs import RequestSpecs
 from src.main.ui.configuration import teamcity_ui_base_url
@@ -16,7 +17,7 @@ class UiAuthClient:
 
     def __init__(self, base_url: str | None = None) -> None:
         self.base_url = (base_url or teamcity_ui_base_url()).rstrip("/")
-        self.timeout = int(Config.get("TEAMCITY_REQUEST_TIMEOUT", "20"))
+        self.request_timeout = TimeoutConfig.http_request()
 
     def authenticate(
         self, context: BrowserContext, user_request: CreateUserRequest
@@ -26,7 +27,7 @@ class UiAuthClient:
             headers=RequestSpecs.auth_as_user(
                 user_request.username, user_request.password
             ),
-            timeout=self.timeout,
+            timeout=self.request_timeout,
         )
         assert response.status_code == 200, (
             "Failed to create a TeamCity UI session for "

@@ -35,6 +35,7 @@ class CrudRequester(HttpRequest, CrudEndpointInterface):
             headers=self.request_spec,
             json=body,
             allow_redirects=allow_redirects,
+            timeout=self.request_timeout,
         )
         self.response_spec(response)
         return response
@@ -43,6 +44,7 @@ class CrudRequester(HttpRequest, CrudEndpointInterface):
         response = requests.get(
             url=f"{self.base_url}{self.endpoint.value.url}{('/' + str(id)) if id is not None else ''}",
             headers=self.request_spec,
+            timeout=self.request_timeout,
         )
         self.response_spec(response)
         return response
@@ -55,6 +57,7 @@ class CrudRequester(HttpRequest, CrudEndpointInterface):
             url=f"{self.base_url}{self.endpoint.value.url}{('/' + path) if path is not None else ''}",
             headers=self.request_spec,
             json=body,
+            timeout=self.request_timeout,
         )
         self.response_spec(response)
         return response
@@ -63,6 +66,7 @@ class CrudRequester(HttpRequest, CrudEndpointInterface):
         response = requests.delete(
             url=f"{self.base_url}{self.endpoint.value.url}{('/' + str(id)) if id is not None else ''}",
             headers=self.request_spec,
+            timeout=self.request_timeout,
         )
         self.response_spec(response)
         return response

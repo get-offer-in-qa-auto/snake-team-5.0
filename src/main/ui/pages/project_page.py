@@ -10,6 +10,11 @@ from src.main.ui.pages.base_page import BasePage
 
 
 class ProjectPage(BasePage):
+    HEADING_LOCATOR = "main h1"
+    CREATE_ENTITY_BUTTON_LOCATOR = (
+        'main [data-hint-container-id="project-create-entity"]'
+    )
+
     def __init__(self, page, project: ProjectResponse) -> None:
         super().__init__(page)
         self.project = project
@@ -20,13 +25,11 @@ class ProjectPage(BasePage):
 
     @property
     def heading(self) -> Locator:
-        return self.page.locator("main h1")
+        return self.page.locator(self.HEADING_LOCATOR)
 
     @property
     def create_entity_button(self) -> Locator:
-        return self.page.locator(
-            'main [data-hint-container-id="project-create-entity"]'
-        )
+        return self.page.locator(self.CREATE_ENTITY_BUTTON_LOCATOR)
 
     @allure.step("Verify project page is opened")
     def should_be_opened(self) -> ProjectPage:

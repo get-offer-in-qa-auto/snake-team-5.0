@@ -3,7 +3,7 @@ import time
 import allure
 import requests
 
-from src.main.api.configs.config import Config
+from src.main.api.configs.timeouts import TimeoutConfig
 from src.main.api.models.build_run import BuildRunResponse, BuildState, BuildStatus
 from src.main.api.models.start_build_request import (
     BuildCancelRequest,
@@ -22,8 +22,10 @@ from src.main.api.specs.response_specs import ResponseSpecs
 
 
 class BuildRunSteps:
-    timeout_seconds = 90
-    poll_interval_seconds = 1
+    def __init__(self) -> None:
+        self.timeout_seconds = TimeoutConfig.build_wait_seconds()
+        self.poll_interval_seconds = TimeoutConfig.build_poll_interval_seconds()
+        self.request_timeout = TimeoutConfig.http_request()
 
     @allure.step("Queue build configuration {build_configuration_id}")
     def start(
@@ -86,7 +88,6 @@ class BuildRunSteps:
         deadline = time.monotonic() + self.timeout_seconds
         last_agents: list[dict] = []
         last_error: Exception | None = None
-        request_timeout = int(Config.get("TEAMCITY_REQUEST_TIMEOUT", "20"))
         idle_activity: dict[int, str | None] = {}
 
         while time.monotonic() < deadline:
@@ -100,7 +101,7 @@ class BuildRunSteps:
                         )
                     },
                     headers=RequestSpecs.admin_auth_spec(csrf=False),
-                    timeout=request_timeout,
+                    timeout=self.request_timeout,
                 )
                 response.raise_for_status()
                 last_agents = response.json().get("agent", [])
@@ -149,7 +150,7 @@ class BuildRunSteps:
             f"{RequestSpecs._server_url()}/downloadBuildLog.html",
             params={"buildId": str(build_id), "plain": "true"},
             headers=RequestSpecs.admin_auth_spec(csrf=False),
-            timeout=20,
+            timeout=self.request_timeout,
         )
         response.raise_for_status()
         return response.text

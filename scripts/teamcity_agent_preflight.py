@@ -10,6 +10,7 @@ import requests
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.main.api.configs.timeouts import TimeoutConfig
 from src.main.api.specs.request_specs import RequestSpecs
 
 
@@ -27,7 +28,14 @@ def main() -> int:
         choices=(1, 2, 3),
         help="Number of TeamCity agents to prepare.",
     )
-    parser.add_argument("--timeout", type=int, default=120)
+    parser.add_argument(
+        "--timeout", type=float, default=TimeoutConfig.agent_wait_seconds()
+    )
+    parser.add_argument(
+        "--interval",
+        type=float,
+        default=TimeoutConfig.agent_poll_interval_seconds(),
+    )
     args = parser.parse_args()
     expected_count = args.count
 
@@ -36,6 +44,7 @@ def main() -> int:
     headers = RequestSpecs.admin_auth_spec(csrf=False)
     headers["Accept"] = "application/json"
     last_agents: list[dict[str, Any]] = []
+    request_timeout = TimeoutConfig.http_request()
 
     while time.monotonic() < deadline:
         response = requests.get(
@@ -45,7 +54,7 @@ def main() -> int:
                 "fields": "agent(id,name,authorized,connected,enabled)",
             },
             headers=headers,
-            timeout=20,
+            timeout=request_timeout,
         )
         response.raise_for_status()
         last_agents = response.json().get("agent", [])
@@ -68,7 +77,7 @@ def main() -> int:
                     "Accept": "text/plain",
                     "Content-Type": "text/plain",
                 },
-                timeout=20,
+                timeout=request_timeout,
             )
             authorize.raise_for_status()
 
@@ -88,7 +97,7 @@ def main() -> int:
                 f"{', '.join(ready_names)}."
             )
             return 0
-        time.sleep(1)
+        time.sleep(args.interval)
 
     print(
         f"{expected_count} TeamCity agents did not become ready. "

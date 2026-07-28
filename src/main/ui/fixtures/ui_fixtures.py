@@ -2,11 +2,12 @@ from collections.abc import Iterator
 from typing import Any
 
 import pytest
-from playwright.sync_api import BrowserContext, Page
+from playwright.sync_api import BrowserContext, Page, expect
 
 from src.main.api.classes.session_storage import SessionStorage
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.ui.auth.session_client import UiAuthClient
+from src.main.ui.configuration import teamcity_ui_expect_timeout_ms
 
 _DISABLE_VIEW_TRANSITIONS_SCRIPT = """
 window.addEventListener(
@@ -19,6 +20,12 @@ window.addEventListener(
     { once: true },
 );
 """
+
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_ui_expect_timeout() -> None:
+    """Apply one expectation timeout to every Playwright assertion."""
+    expect.set_options(timeout=teamcity_ui_expect_timeout_ms())
 
 
 @pytest.fixture(autouse=True)
