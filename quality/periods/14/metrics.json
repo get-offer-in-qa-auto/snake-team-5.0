@@ -1,16 +1,16 @@
 {
   "attention": [
     {
-      "failed_runs": 3,
+      "failed_runs": 4,
       "flaky": true,
       "full_name": "tests.ui.identity_access.test_access_tokens#test_admin_can_create_access_token_for_user",
       "identity": "65fd35669a70b9cb59201e793c0baea0",
-      "last_seen": "2026-07-28T12:42:28+00:00",
+      "last_seen": "2026-07-28T13:11:54+00:00",
       "name": "test_admin_can_create_access_token_for_user[chromium]",
-      "p95_duration_ms": 32626.2,
-      "report_link": "reports/regression/30359694450-attempt-1/#testresult/601fcaaeb1a76c44",
+      "p95_duration_ms": 32623.5,
+      "report_link": "reports/regression/30361897861-attempt-1/#testresult/fe8d29961e15cec8",
       "retries": 0,
-      "runs": 14,
+      "runs": 15,
       "scope": "UI",
       "signal": "Intermittent failure"
     },
@@ -19,12 +19,12 @@
       "flaky": true,
       "full_name": "tests.ui.identity_access.test_user_creation#test_admin_can_create_user",
       "identity": "bd0f82bb72e8a01cdb0f51453e875003",
-      "last_seen": "2026-07-28T12:42:28+00:00",
+      "last_seen": "2026-07-28T13:11:54+00:00",
       "name": "test_admin_can_create_user[chromium]",
-      "p95_duration_ms": 39297.8,
-      "report_link": "reports/regression/30359694450-attempt-1/#testresult/be079a330b5de6bd",
+      "p95_duration_ms": 39145.3,
+      "report_link": "reports/regression/30361897861-attempt-1/#testresult/c9d516991c9c0fcf",
       "retries": 0,
-      "runs": 14,
+      "runs": 15,
       "scope": "UI",
       "signal": "Intermittent failure"
     },
@@ -33,12 +33,12 @@
       "flaky": true,
       "full_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user",
       "identity": "ce2bf6c41e94f8e3d175228510aedf84",
-      "last_seen": "2026-07-28T12:42:28+00:00",
+      "last_seen": "2026-07-28T13:11:54+00:00",
       "name": "test_admin_can_delete_user[chromium]",
-      "p95_duration_ms": 31894.0,
-      "report_link": "reports/regression/30359694450-attempt-1/#testresult/ec0600e63df35dbf",
+      "p95_duration_ms": 31881.1,
+      "report_link": "reports/regression/30361897861-attempt-1/#testresult/5df9366575ff21df",
       "retries": 0,
-      "runs": 14,
+      "runs": 15,
       "scope": "UI",
       "signal": "Intermittent failure"
     },
@@ -131,12 +131,12 @@
       "flaky": true,
       "full_name": "tests.ui.identity_access.test_permissions#test_project_viewer_cannot_create_entities",
       "identity": "b6a014a530b69014c30649a55f87765b",
-      "last_seen": "2026-07-28T12:42:28+00:00",
+      "last_seen": "2026-07-28T13:11:54+00:00",
       "name": "test_project_viewer_cannot_create_entities[webkit]",
-      "p95_duration_ms": 15244.7,
-      "report_link": "reports/regression/30359694450-attempt-1/#testresult/fb4db97419afcf8e",
+      "p95_duration_ms": 15195.0,
+      "report_link": "reports/regression/30361897861-attempt-1/#testresult/913f02da7020ab29",
       "retries": 0,
-      "runs": 10,
+      "runs": 11,
       "scope": "UI \u00b7 WebKit",
       "signal": "Intermittent failure"
     }
@@ -146,8 +146,30 @@
       "branch_rate": 0.0,
       "line_rate": 0.0
     },
-    "generated_at": "2026-07-28T12:44:21+00:00",
+    "generated_at": "2026-07-28T13:27:13+00:00",
     "history": [
+      {
+        "attempt": 1,
+        "branch": "ekonchina/current-coverage-trend",
+        "branch_rate": 55.7,
+        "covered_branches": 127,
+        "covered_lines": 1594,
+        "excluded_lines": 22,
+        "generated_at": "2026-07-28T13:11:55+00:00",
+        "html_url": "coverage/30361897861-attempt-1/html/",
+        "json_url": "coverage/30361897861-attempt-1/coverage.json",
+        "line_rate": 89.6,
+        "missing_branches": 101,
+        "missing_lines": 185,
+        "num_branches": 228,
+        "num_statements": 1779,
+        "report_id": "30361897861-attempt-1",
+        "run_id": 30361897861,
+        "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861",
+        "sha": "639f4bb924eba4c4ace60e929f5a9a35b0ae9c66",
+        "source": "src/main/api",
+        "xml_url": "coverage/30361897861-attempt-1/coverage.xml"
+      },
       {
         "attempt": 1,
         "branch": "68/merge",
@@ -261,25 +283,29 @@
     ],
     "latest": {
       "attempt": 1,
-      "branch": "68/merge",
+      "branch": "ekonchina/current-coverage-trend",
       "branch_rate": 55.7,
       "covered_branches": 127,
       "covered_lines": 1594,
       "excluded_lines": 22,
-      "generated_at": "2026-07-28T12:42:28+00:00",
-      "html_url": "coverage/30359694450-attempt-1/html/",
-      "json_url": "coverage/30359694450-attempt-1/coverage.json",
+      "generated_at": "2026-07-28T13:11:55+00:00",
+      "html_url": "coverage/30361897861-attempt-1/html/",
+      "json_url": "coverage/30361897861-attempt-1/coverage.json",
       "line_rate": 89.6,
       "missing_branches": 101,
       "missing_lines": 185,
       "num_branches": 228,
       "num_statements": 1779,
-      "report_id": "30359694450-attempt-1",
-      "run_id": 30359694450,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450",
-      "sha": "57e93fef8cbae1cad2e5873f5a6725712fd2c317",
+      "report_id": "30361897861-attempt-1",
+      "run_id": 30361897861,
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861",
+      "sha": "639f4bb924eba4c4ace60e929f5a9a35b0ae9c66",
       "source": "src/main/api",
-      "xml_url": "coverage/30359694450-attempt-1/coverage.xml"
+      "xml_url": "coverage/30361897861-attempt-1/coverage.xml"
+    },
+    "latest_context": {
+      "is_today": true,
+      "label": "Today at 13:11 UTC"
     },
     "modules": [
       {
@@ -755,132 +781,178 @@
         "path": "src/main/api/requests/steps/user_steps.py"
       }
     ],
+    "period_delta": {
+      "branch_rate": null,
+      "line_rate": null
+    },
     "previous": {
-      "attempt": 2,
-      "branch": "67/merge",
+      "attempt": 1,
+      "branch": "68/merge",
       "branch_rate": 55.7,
       "covered_branches": 127,
       "covered_lines": 1594,
       "excluded_lines": 22,
-      "generated_at": "2026-07-28T12:05:30+00:00",
-      "html_url": "coverage/30356644067-attempt-2/html/",
-      "json_url": "coverage/30356644067-attempt-2/coverage.json",
+      "generated_at": "2026-07-28T12:42:28+00:00",
+      "html_url": "coverage/30359694450-attempt-1/html/",
+      "json_url": "coverage/30359694450-attempt-1/coverage.json",
       "line_rate": 89.6,
       "missing_branches": 101,
       "missing_lines": 185,
       "num_branches": 228,
       "num_statements": 1779,
-      "report_id": "30356644067-attempt-2",
-      "run_id": 30356644067,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30356644067",
-      "sha": "0755448974682190577ef2fddde896e72ac412ac",
+      "report_id": "30359694450-attempt-1",
+      "run_id": 30359694450,
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450",
+      "sha": "57e93fef8cbae1cad2e5873f5a6725712fd2c317",
       "source": "src/main/api",
-      "xml_url": "coverage/30356644067-attempt-2/coverage.xml"
+      "xml_url": "coverage/30359694450-attempt-1/coverage.xml"
     },
-    "reports": 5,
+    "reports": 6,
     "trend": [
       {
         "branch_rate": null,
         "date": "2026-07-15",
+        "generated_at": null,
+        "html_url": null,
         "label": "15 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-16",
+        "generated_at": null,
+        "html_url": null,
         "label": "16 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-17",
+        "generated_at": null,
+        "html_url": null,
         "label": "17 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-18",
+        "generated_at": null,
+        "html_url": null,
         "label": "18 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-19",
+        "generated_at": null,
+        "html_url": null,
         "label": "19 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-20",
+        "generated_at": null,
+        "html_url": null,
         "label": "20 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-21",
+        "generated_at": null,
+        "html_url": null,
         "label": "21 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-22",
+        "generated_at": null,
+        "html_url": null,
         "label": "22 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-23",
+        "generated_at": null,
+        "html_url": null,
         "label": "23 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-24",
+        "generated_at": null,
+        "html_url": null,
         "label": "24 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-25",
+        "generated_at": null,
+        "html_url": null,
         "label": "25 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-26",
+        "generated_at": null,
+        "html_url": null,
         "label": "26 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-27",
+        "generated_at": null,
+        "html_url": null,
         "label": "27 Jul",
         "line_rate": null,
-        "report_id": null
+        "report_id": null,
+        "run_id": null
       },
       {
         "branch_rate": 55.7,
         "date": "2026-07-28",
+        "generated_at": "2026-07-28T13:11:55+00:00",
+        "html_url": "coverage/30361897861-attempt-1/html/",
         "label": "28 Jul",
         "line_rate": 89.6,
-        "report_id": "30359694450-attempt-1"
+        "report_id": "30361897861-attempt-1",
+        "run_id": 30361897861
       }
     ],
     "window": {
       "days": 14,
-      "end": "2026-07-28T12:44:21+00:00",
+      "end": "2026-07-28T13:27:13+00:00",
       "start": "2026-07-15T00:00:00+00:00"
     }
   },
@@ -1056,24 +1128,24 @@
     },
     {
       "date": "2026-07-28",
-      "failed": 0,
+      "failed": 1,
       "flaky": 0,
       "label": "28 Jul",
-      "pass_rate": 100.0,
-      "passed": 568,
+      "pass_rate": 99.84,
+      "passed": 638,
       "pipeline_p95_duration_seconds": 428.1,
       "pipeline_runs": 8,
       "pipeline_success_rate": 87.5,
       "skipped": 0,
-      "total": 568
+      "total": 639
     }
   ],
   "data_quality": {
     "completed_runs": 64,
-    "published_reports": 67,
+    "published_reports": 68,
     "runs_without_report": 4
   },
-  "generated_at": "2026-07-28T12:44:22+00:00",
+  "generated_at": "2026-07-28T13:27:13+00:00",
   "pipeline": {
     "completed": 64,
     "p95_duration_seconds": 409.7,
@@ -2253,43 +2325,43 @@
       "flaky_tests": 0,
       "name": "API",
       "p95_duration_ms": 11249.0,
-      "pass_rate": 99.86,
-      "passed": 2215,
+      "pass_rate": 99.87,
+      "passed": 2265,
       "skipped": 0,
-      "total": 2218,
+      "total": 2268,
       "unique_tests": 50
     },
     {
-      "failed": 1,
-      "flaky_tests": 0,
+      "failed": 2,
+      "flaky_tests": 1,
       "name": "UI \u00b7 Chromium",
-      "p95_duration_ms": 15201.0,
-      "pass_rate": 98.57,
-      "passed": 69,
+      "p95_duration_ms": 15235.8,
+      "pass_rate": 97.4,
+      "passed": 75,
       "skipped": 0,
-      "total": 70,
+      "total": 77,
       "unique_tests": 7
     },
     {
       "failed": 0,
       "flaky_tests": 0,
       "name": "UI \u00b7 Firefox",
-      "p95_duration_ms": 18951.7,
+      "p95_duration_ms": 19092.4,
       "pass_rate": 100.0,
-      "passed": 70,
+      "passed": 77,
       "skipped": 0,
-      "total": 70,
+      "total": 77,
       "unique_tests": 7
     },
     {
       "failed": 1,
       "flaky_tests": 1,
       "name": "UI \u00b7 WebKit",
-      "p95_duration_ms": 20535.2,
-      "pass_rate": 98.57,
-      "passed": 69,
+      "p95_duration_ms": 20502.4,
+      "pass_rate": 98.7,
+      "passed": 76,
       "skipped": 0,
-      "total": 70,
+      "total": 77,
       "unique_tests": 7
     },
     {
@@ -2349,19 +2421,19 @@
     }
   ],
   "tests": {
-    "failed": 28,
+    "failed": 29,
     "flaky": 18,
-    "pass_rate": 99.19,
-    "passed": 3410,
+    "pass_rate": 99.17,
+    "passed": 3480,
     "retries": 0,
     "retry_rate": 0.0,
     "skipped": 0,
-    "total": 3438,
+    "total": 3509,
     "unique": 125
   },
   "window": {
     "days": 14,
-    "end": "2026-07-28T12:44:22+00:00",
+    "end": "2026-07-28T13:27:13+00:00",
     "start": "2026-07-15T00:00:00+00:00"
   }
 }
