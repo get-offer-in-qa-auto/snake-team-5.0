@@ -105,6 +105,7 @@ def render_index(
     link_prefix: str = "",
     suite_link_prefix: str | None = None,
     quality_dashboard: bool = False,
+    coverage_dashboard: bool = False,
 ) -> str:
     latest = reports[0] if reports else None
     latest_link = ""
@@ -124,6 +125,12 @@ def render_index(
         quality_link = (
             '<p class="quality"><a href="'
             f'{quality_path}">Open rolling QA metrics</a></p>'
+        )
+    if coverage_dashboard:
+        coverage_path = html.escape(link_prefix + "quality/coverage/")
+        quality_link += (
+            '<p class="quality"><a href="'
+            f'{coverage_path}">Open API framework coverage</a></p>'
         )
 
     rows = render_report_rows(reports, link_prefix=link_prefix)
@@ -194,12 +201,14 @@ def render_redirect(target_url: str, title: str) -> str:
 
 def write_indexes(site_dir: Path, reports: list[dict[str, str]]) -> None:
     quality_dashboard = (site_dir / "quality" / "index.html").is_file()
+    coverage_dashboard = (site_dir / "quality" / "coverage" / "index.html").is_file()
     (site_dir / "index.html").write_text(
         render_index(
             reports,
             "TeamCity Allure Reports",
             suite_link_prefix="reports/",
             quality_dashboard=quality_dashboard,
+            coverage_dashboard=coverage_dashboard,
         ),
         encoding="utf-8",
     )
@@ -212,6 +221,7 @@ def write_indexes(site_dir: Path, reports: list[dict[str, str]]) -> None:
             link_prefix="../",
             suite_link_prefix="",
             quality_dashboard=quality_dashboard,
+            coverage_dashboard=coverage_dashboard,
         ),
         encoding="utf-8",
     )
@@ -234,6 +244,7 @@ def write_indexes(site_dir: Path, reports: list[dict[str, str]]) -> None:
                 f"TeamCity {suite} Allure Reports",
                 link_prefix="../../",
                 quality_dashboard=quality_dashboard,
+                coverage_dashboard=coverage_dashboard,
             ),
             encoding="utf-8",
         )

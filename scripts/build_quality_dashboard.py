@@ -444,6 +444,7 @@ def build_metrics(
     *,
     now: datetime,
     days: int,
+    coverage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     counts = status_counts(reports)
     test_total = sum(counts.values())
@@ -524,6 +525,7 @@ def build_metrics(
         "suites": aggregate_suites(reports),
         "attention": aggregate_tests(reports),
         "recent_runs": recent_runs,
+        "coverage": coverage,
     }
 
 
@@ -672,7 +674,7 @@ p { margin: 0; }
   background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
 }
 .period-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--healthy); }
-.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
   padding: 16px;
@@ -744,6 +746,9 @@ tr:last-child td { border-bottom: 0; }
   .suites { grid-template-columns: 1fr 1fr; gap: 14px; }
   .suite + .suite { border-left: 0; padding-left: 0; }
 }
+@media (min-width: 761px) and (max-width: 980px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+}
 @media (max-width: 480px) {
   .page { padding: 20px 12px 36px; }
   .suites { grid-template-columns: 1fr; }
@@ -765,6 +770,7 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
     pipeline = metrics["pipeline"]
     tests = metrics["tests"]
     quality = metrics["data_quality"]
+    coverage = metrics.get("coverage")
     generated_at = parse_datetime(metrics["generated_at"])
     window_start = parse_datetime(metrics["window"]["start"])
     window_end = parse_datetime(metrics["window"]["end"])
@@ -813,6 +819,14 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
           <div class="stat-context">
             <span>{format_percent(tests["retry_rate"])} retry rate</span>
             <span class="badge">{tests["retries"]} retries</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="stat-label">API framework coverage</span>
+          <strong class="stat-value">{format_percent(coverage["latest"]["line_rate"]) if coverage and coverage.get("latest") else "—"}</strong>
+          <div class="stat-context">
+            <span>{format_percent(coverage["latest"]["branch_rate"]) + " branches" if coverage and coverage.get("latest") else "No reports yet"}</span>
+            <a class="badge" href="coverage/">Open coverage</a>
           </div>
         </article>
       </section>
@@ -932,7 +946,14 @@ def main() -> None:
         window_end=now,
         latest_attempts=latest_attempts,
     )
-    metrics = build_metrics(runs, reports, now=now, days=args.days)
+    coverage = load_json(args.site_dir / "quality" / "coverage" / "metrics.json")
+    metrics = build_metrics(
+        runs,
+        reports,
+        now=now,
+        days=args.days,
+        coverage=coverage,
+    )
 
     destination = args.site_dir / "quality"
     destination.mkdir(parents=True, exist_ok=True)

@@ -262,6 +262,58 @@ OpenAPI/Swagger inventory, поэтому процент покрытия был
 Machine-readable snapshot тех же показателей публикуется в
 `quality/metrics.json`.
 
+### API test framework coverage
+
+API smoke gate и оставшаяся API regression собирают стандартный branch coverage
+через `pytest-cov` и `coverage.py`. Измеряется только Python-код:
+
+```text
+src/main/api
+```
+
+Это покрытие тестового фреймворка, а не внутреннего Java-кода TeamCity. UI jobs
+в этот показатель не входят. Smoke и regression выполняются последовательно в
+одной job и дописывают данные в общий coverage-файл через `--cov-append`.
+
+Cleanup action формирует штатные отчёты:
+
+```text
+artifacts/coverage/coverage.json
+artifacts/coverage/coverage.xml
+artifacts/coverage/html/index.html
+```
+
+Они загружаются как artifact `teamcity-regression-api-coverage` на 7 дней.
+Одновременно HTML, JSON и XML каждого запуска сохраняются в постоянной Pages
+history:
+
+```text
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/coverage/<run_id>-attempt-<attempt>/
+```
+
+Агрегированная страница доступна по адресу:
+
+```text
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/quality/coverage/
+```
+
+На ней отображаются line coverage, branch coverage, изменение относительно
+предыдущего отчёта, семидневный тренд и модули с минимальным покрытием. Ссылка
+на стандартный построчный HTML-report остается доступна для детального анализа.
+Окно по умолчанию — 7 UTC-дней; для scheduled workflow его можно изменить
+repository variable `QA_METRICS_DAYS`, не меняя YAML.
+Pages artifact получает имя с `github.run_attempt`, поэтому rerun одного
+workflow не создаёт несколько конфликтующих artifacts с именем `github-pages`.
+
+Line coverage вычисляется как `covered_lines / num_statements`, branch coverage
+— как `covered_branches / num_branches`. Повторные попытки одного workflow run
+дедуплицируются по максимальному `run_attempt`, а в дневном тренде используется
+последний опубликованный report каждого UTC-дня.
+
+Coverage gate намеренно не задан: сначала собирается baseline на реальной API
+regression. После стабилизации метрики можно либо запретить снижение относительно
+baseline, либо добавить обоснованный `fail_under`.
+
 Для первого запуска нужно один раз включить Pages в настройках репозитория:
 
 ```text

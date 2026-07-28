@@ -8,11 +8,26 @@ inputs:
   suite_name:
     description: Test suite name used in the published report path.
     required: true
+  coverage_artifact_name:
+    description: Optional coverage.py artifact published beside the Allure report.
+    required: false
+    default: ""
+  coverage_days:
+    description: Rolling coverage dashboard window in UTC calendar days.
+    required: false
+    default: "7"
+  pages_artifact_name:
+    description: GitHub Pages artifact name shared with the deploy-pages step.
+    required: false
+    default: github-pages
 
 outputs:
   report_path:
     description: Path of the published report under the GitHub Pages site.
     value: ${{ steps.update-pages.outputs.report_path }}
+  coverage_report_path:
+    description: Path of the published coverage.py report, when available.
+    value: ${{ steps.update-coverage.outputs.coverage_report_path }}
 
 runs:
   using: composite
@@ -22,6 +37,14 @@ runs:
       with:
         name: ${{ inputs.report_artifact_name }}
         path: downloaded-allure-report
+
+    - name: Download API code coverage artifact
+      if: ${{ inputs.coverage_artifact_name != '' }}
+      continue-on-error: true
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.coverage_artifact_name }}
+        path: downloaded-coverage-report
 
     - name: Prepare Pages history branch
       shell: bash
@@ -59,6 +82,30 @@ runs:
           --sha "${GITHUB_SHA}" \
           --run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
+    - name: Add API code coverage to Pages history
+      id: update-coverage
+      shell: bash
+      run: |
+        if [ ! -f downloaded-coverage-report/coverage.json ]; then
+          echo "::warning title=API coverage::Coverage artifact is unavailable; publishing Allure only."
+          exit 0
+        fi
+
+        python3 .github/scripts/update_coverage_pages.py \
+          --site-dir pages-site \
+          --coverage-dir downloaded-coverage-report \
+          --report-id "${GITHUB_RUN_ID}-attempt-${GITHUB_RUN_ATTEMPT}" \
+          --workflow "${GITHUB_WORKFLOW}" \
+          --event "${GITHUB_EVENT_NAME}" \
+          --branch "${GITHUB_REF_NAME}" \
+          --sha "${GITHUB_SHA}" \
+          --run-url "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+        python3 scripts/build_coverage_dashboard.py \
+          --site-dir pages-site \
+          --days "${{ inputs.coverage_days }}"
+        python3 .github/scripts/refresh_allure_indexes.py --site-dir pages-site
+
     - name: Commit Pages history
       shell: bash
       run: |
@@ -74,5 +121,6 @@ runs:
     - name: Upload GitHub Pages artifact
       uses: actions/upload-pages-artifact@v5
       with:
+        name: ${{ inputs.pages_artifact_name }}
         path: pages-site
         retention-days: 7

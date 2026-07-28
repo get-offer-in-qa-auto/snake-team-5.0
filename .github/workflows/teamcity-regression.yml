@@ -70,6 +70,8 @@ jobs:
           pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
           junit_filename: smoke-teamcity-api-regression.xml
           browser: none
+          collect_coverage: "true"
+          reset_coverage: "true"
 
       - name: Run remaining TeamCity API regression tests
         uses: ./.github/actions/teamcity-test
@@ -79,6 +81,7 @@ jobs:
           junit_filename: teamcity-api-regression.xml
           preserve_allure_results: "true"
           browser: none
+          collect_coverage: "true"
 
       - name: Collect API results and stop TeamCity
         if: always()
@@ -89,6 +92,7 @@ jobs:
           results_artifact_name: teamcity-regression-api-test-results
           page_artifact_name: teamcity-regression-api-login-page
           generate_allure_report: "false"
+          coverage_artifact_name: teamcity-regression-api-coverage
 
   teamcity-ui:
     name: TeamCity UI · ${{ matrix.title }}
@@ -198,6 +202,9 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}${{ steps.pages.outputs.report_path }}/
+    env:
+      METRICS_DAYS: ${{ vars.QA_METRICS_DAYS || '7' }}
+      PAGES_ARTIFACT_NAME: github-pages-${{ github.run_attempt }}
     steps:
       # Скачиваем код, чтобы runner видел local action для обновления Pages history.
       - name: Checkout
@@ -210,11 +217,16 @@ jobs:
         with:
           report_artifact_name: teamcity-regression-allure-report
           suite_name: regression
+          coverage_artifact_name: teamcity-regression-api-coverage
+          coverage_days: ${{ env.METRICS_DAYS }}
+          pages_artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
 
       # Публикуем накопленный Pages site с историей отчетов.
       - name: Deploy Allure report to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
 
       # Добавляем кликабельную ссылку на конкретный отчет в summary текущего workflow run.
       - name: Add Allure report page to summary
@@ -224,3 +236,9 @@ jobs:
           echo "[Open this Allure report](${{ steps.deployment.outputs.page_url }}${{ steps.pages.outputs.report_path }}/)" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "[Open all reports index](${{ steps.deployment.outputs.page_url }})" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${{ steps.pages.outputs.coverage_report_path }}" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "[Open API framework coverage dashboard](${{ steps.deployment.outputs.page_url }}quality/coverage/)" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "[Open this run's standard coverage.py report](${{ steps.deployment.outputs.page_url }}${{ steps.pages.outputs.coverage_report_path }}/html/)" >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -12,3 +12,14 @@ python_version = "3.12"
 files = ["src/main"]
 explicit_package_bases = true
 exclude = ["artifacts", "teamcity-local"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/main/api"]
+relative_files = true
+data_file = "artifacts/coverage/.coverage"
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_empty = true

@@ -22,6 +22,11 @@ def test_indexes_link_to_quality_dashboard_when_it_exists(tmp_path: Path) -> Non
     update_allure_pages = load_update_module()
     (tmp_path / "quality").mkdir()
     (tmp_path / "quality" / "index.html").write_text("dashboard", encoding="utf-8")
+    (tmp_path / "quality" / "coverage").mkdir()
+    (tmp_path / "quality" / "coverage" / "index.html").write_text(
+        "coverage",
+        encoding="utf-8",
+    )
 
     update_allure_pages.write_indexes(tmp_path, [])
 
@@ -31,8 +36,11 @@ def test_indexes_link_to_quality_dashboard_when_it_exists(tmp_path: Path) -> Non
         encoding="utf-8"
     )
     assert 'href="quality/"' in root_index
+    assert 'href="quality/coverage/"' in root_index
     assert 'href="../quality/"' in reports_index
+    assert 'href="../quality/coverage/"' in reports_index
     assert 'href="../../quality/"' in suite_index
+    assert 'href="../../quality/coverage/"' in suite_index
 
 
 def test_indexes_omit_quality_link_before_dashboard_exists(tmp_path: Path) -> None:
