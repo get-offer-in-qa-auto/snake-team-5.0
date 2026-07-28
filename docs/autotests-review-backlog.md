@@ -177,7 +177,7 @@ CRUD-запросы через `requests` выполняются без timeout 
 - определить общий connect/read timeout в конфигурации;
 - передавать timeout во все `get/post/put/delete`;
 - добавить понятную диагностику timeout;
-- покрыть timeout unit-тестами.
+- проверить timeout в API regression.
 
 Критерий готовности:
 
@@ -187,7 +187,7 @@ CRUD-запросы через `requests` выполняются без timeout 
 Исправлено: общий валидируемый connect/read timeout передаётся во все
 CRUD-запросы и прямые HTTP-вызовы.
 PR/commit: текущая ветка
-Проверка: unit-тесты конфигурации и CRUD transport, regression API/UI.
+Проверка: static checks и regression API/UI.
 
 ### [ ] TC-AUTO-007 — Сделать cleanup надёжным
 
@@ -255,30 +255,15 @@ API. Значение с `/login.html` приводит к некорректн�
 PR/commit: —  
 Проверка: —
 
-### [ ] TC-AUTO-010 — Добавить unit-тесты тестового фреймворка
+### [x] TC-AUTO-010 — Убрать отдельный unit-suite
 
-Сейчас CI проверяет фреймворк почти исключительно через дорогой Docker e2e.
+Отдельные unit-тесты тестового фреймворка не используются. Каталог
+`tests/unit` удалён; код проверяется static checks и API/UI regression.
+`pytest-cov` остаётся частью API regression для формирования code coverage.
 
-Что покрыть:
-
-- readiness classification и bootstrap transitions;
-- request/response specs и timeout;
-- cleanup lifecycle;
-- random model generator;
-- model comparator и config loader;
-- database snapshots/adapters с mock/fake transport;
-- Allure Pages history scripts;
-- Telegram notification parser.
-
-Критерий готовности:
-
-- отдельный быстрый unit job запускается до Docker;
-- ключевые ошибочные ветви покрыты тестами;
-- unit job выполняется за разумное время без TeamCity стенда.
-
-Исправлено: —  
-PR/commit: —  
-Проверка: —
+Исправлено: unit-suite удалён.
+PR/commit: текущая ветка.
+Проверка: Ruff, mypy и сбор коллекции API/UI тестов.
 
 ## P2 — средний приоритет
 
