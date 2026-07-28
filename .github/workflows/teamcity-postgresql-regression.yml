@@ -36,12 +36,9 @@ jobs:
         shell: bash
         run: |
           password="$(openssl rand -hex 24)"
-          dsn="postgresql://teamcity:${password}@localhost:55432/teamcity"
           echo "::add-mask::$password"
-          echo "::add-mask::$dsn"
           echo "TEAMCITY_POSTGRES_PASSWORD=$password" >> "$GITHUB_ENV"
           echo "TEAMCITY_DB_ADAPTER=postgresql" >> "$GITHUB_ENV"
-          echo "TEAMCITY_DB_DSN=$dsn" >> "$GITHUB_ENV"
 
       - name: Start and prepare TeamCity with PostgreSQL
         uses: ./.github/actions/teamcity-setup
@@ -50,7 +47,27 @@ jobs:
           server_container: teamcity-server-postgresql-ci
           agent_count: ${{ env.TEAMCITY_PARALLELISM }}
           database_mode: external
-          database_preflight: "true"
+
+      - name: Configure and verify PostgreSQL access
+        shell: bash
+        run: |
+          endpoint="$(
+            docker compose \
+              -f ci/teamcity/postgresql/compose.yaml \
+              port teamcity-postgres 5432
+          )"
+          port="${endpoint##*:}"
+          if [[ ! "$port" =~ ^[0-9]+$ ]]; then
+            echo "Could not determine the PostgreSQL host port from: $endpoint" >&2
+            exit 1
+          fi
+
+          dsn="postgresql://teamcity:${TEAMCITY_POSTGRES_PASSWORD}@127.0.0.1:${port}/teamcity"
+          echo "::add-mask::$dsn"
+          echo "TEAMCITY_DB_DSN=$dsn" >> "$GITHUB_ENV"
+          TEAMCITY_DB_DSN="$dsn" \
+            TEAMCITY_DB_CONTAINER=teamcity-server-postgresql-ci \
+            python3 -m scripts.teamcity_database_preflight
 
       - name: Run TeamCity PostgreSQL smoke gate
         uses: ./.github/actions/teamcity-test
