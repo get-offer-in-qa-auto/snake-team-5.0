@@ -10,7 +10,9 @@ services:
       POSTGRES_PASSWORD: ${TEAMCITY_POSTGRES_PASSWORD:?TEAMCITY_POSTGRES_PASSWORD is required}
       POSTGRES_INITDB_ARGS: --encoding=UTF8
     ports:
-      - "${TEAMCITY_POSTGRES_HOST_PORT:-55432}:5432"
+      - target: 5432
+        host_ip: 127.0.0.1
+        protocol: tcp
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U teamcity -d teamcity"]
       interval: 2s
