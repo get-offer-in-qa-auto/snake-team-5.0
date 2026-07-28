@@ -3,8 +3,30 @@
     "branch_rate": 0.0,
     "line_rate": 0.0
   },
-  "generated_at": "2026-07-28T12:15:41+00:00",
+  "generated_at": "2026-07-28T12:42:28+00:00",
   "history": [
+    {
+      "attempt": 1,
+      "branch": "68/merge",
+      "branch_rate": 55.7,
+      "covered_branches": 127,
+      "covered_lines": 1594,
+      "excluded_lines": 22,
+      "generated_at": "2026-07-28T12:42:28+00:00",
+      "html_url": "coverage/30359694450-attempt-1/html/",
+      "json_url": "coverage/30359694450-attempt-1/coverage.json",
+      "line_rate": 89.6,
+      "missing_branches": 101,
+      "missing_lines": 185,
+      "num_branches": 228,
+      "num_statements": 1779,
+      "report_id": "30359694450-attempt-1",
+      "run_id": 30359694450,
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450",
+      "sha": "57e93fef8cbae1cad2e5873f5a6725712fd2c317",
+      "source": "src/main/api",
+      "xml_url": "coverage/30359694450-attempt-1/coverage.xml"
+    },
     {
       "attempt": 2,
       "branch": "67/merge",
@@ -95,26 +117,26 @@
     }
   ],
   "latest": {
-    "attempt": 2,
-    "branch": "67/merge",
+    "attempt": 1,
+    "branch": "68/merge",
     "branch_rate": 55.7,
     "covered_branches": 127,
     "covered_lines": 1594,
     "excluded_lines": 22,
-    "generated_at": "2026-07-28T12:05:30+00:00",
-    "html_url": "coverage/30356644067-attempt-2/html/",
-    "json_url": "coverage/30356644067-attempt-2/coverage.json",
+    "generated_at": "2026-07-28T12:42:28+00:00",
+    "html_url": "coverage/30359694450-attempt-1/html/",
+    "json_url": "coverage/30359694450-attempt-1/coverage.json",
     "line_rate": 89.6,
     "missing_branches": 101,
     "missing_lines": 185,
     "num_branches": 228,
     "num_statements": 1779,
-    "report_id": "30356644067-attempt-2",
-    "run_id": 30356644067,
-    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30356644067",
-    "sha": "0755448974682190577ef2fddde896e72ac412ac",
+    "report_id": "30359694450-attempt-1",
+    "run_id": 30359694450,
+    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450",
+    "sha": "57e93fef8cbae1cad2e5873f5a6725712fd2c317",
     "source": "src/main/api",
-    "xml_url": "coverage/30356644067-attempt-2/coverage.xml"
+    "xml_url": "coverage/30359694450-attempt-1/coverage.xml"
   },
   "modules": [
     {
@@ -591,28 +613,28 @@
     }
   ],
   "previous": {
-    "attempt": 1,
-    "branch": "66/merge",
+    "attempt": 2,
+    "branch": "67/merge",
     "branch_rate": 55.7,
     "covered_branches": 127,
     "covered_lines": 1594,
     "excluded_lines": 22,
-    "generated_at": "2026-07-28T11:26:42+00:00",
-    "html_url": "coverage/30354410022-attempt-1/html/",
-    "json_url": "coverage/30354410022-attempt-1/coverage.json",
+    "generated_at": "2026-07-28T12:05:30+00:00",
+    "html_url": "coverage/30356644067-attempt-2/html/",
+    "json_url": "coverage/30356644067-attempt-2/coverage.json",
     "line_rate": 89.6,
     "missing_branches": 101,
     "missing_lines": 185,
     "num_branches": 228,
     "num_statements": 1779,
-    "report_id": "30354410022-attempt-1",
-    "run_id": 30354410022,
-    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30354410022",
-    "sha": "e89fc67b58aba3e3c85669fa00874aa025879087",
+    "report_id": "30356644067-attempt-2",
+    "run_id": 30356644067,
+    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30356644067",
+    "sha": "0755448974682190577ef2fddde896e72ac412ac",
     "source": "src/main/api",
-    "xml_url": "coverage/30354410022-attempt-1/coverage.xml"
+    "xml_url": "coverage/30356644067-attempt-2/coverage.xml"
   },
-  "reports": 4,
+  "reports": 5,
   "trend": [
     {
       "branch_rate": null,
@@ -661,12 +683,12 @@
       "date": "2026-07-28",
       "label": "28 Jul",
       "line_rate": 89.6,
-      "report_id": "30356644067-attempt-2"
+      "report_id": "30359694450-attempt-1"
     }
   ],
   "window": {
     "days": 7,
-    "end": "2026-07-28T12:15:41+00:00",
+    "end": "2026-07-28T12:42:28+00:00",
     "start": "2026-07-22T00:00:00+00:00"
   }
 }
