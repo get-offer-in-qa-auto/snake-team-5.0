@@ -258,9 +258,15 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/quality/
 - **Retry rate** — retries / (финальные результаты + retries);
 - **p95 duration** — 95-й перцентиль длительности workflow или теста.
 
-В блоке `Metric history` эти показатели показаны по календарным UTC-дням:
-test pass rate, pipeline success rate, p95 длительности workflow и число flaky
-результатов. Дни без данных остаются разрывами и не подменяются нулями.
+В блоке `Metric history` каждая точка соответствует отдельному завершенному
+workflow run: test pass rate, результат pipeline, длительность workflow и число
+flaky-результатов. Точка ведет на исходный GitHub Actions run. Если для запуска
+нет Allure report, тестовые графики оставляют разрыв и не подменяют данные
+нулями.
+
+На графиках показаны целевые линии и статус последней точки. Пороговые значения
+не зашиты в генератор или HTML и задаются в
+`resources/qa_metrics_targets.json`.
 
 Отдельно показываются API, Chromium, Firefox и WebKit, проблемные/нестабильные
 тесты и последние workflow runs. Если запуск завершился без опубликованного

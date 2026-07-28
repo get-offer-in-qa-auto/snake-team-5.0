@@ -1,0 +1,18 @@
+{
+  "test_pass_rate": {
+    "direction": "minimum",
+    "value": 99.0
+  },
+  "pipeline_success_rate": {
+    "direction": "minimum",
+    "value": 95.0
+  },
+  "workflow_duration_seconds": {
+    "direction": "maximum",
+    "value": 480.0
+  },
+  "flaky_results": {
+    "direction": "maximum",
+    "value": 0.0
+  }
+}
