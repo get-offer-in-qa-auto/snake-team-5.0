@@ -219,6 +219,49 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/regression/
 
 После деплоя ссылка на конкретный отчет также появляется в GitHub Actions workflow summary и в environment `github-pages`.
 
+## QA metrics dashboard
+
+Workflow `.github/workflows/qa-metrics-dashboard.yml` ежедневно в `03:30 UTC`
+(`06:30 МСК`) собирает rolling-метрики TeamCity Regression и публикует их рядом
+с Allure history:
+
+```text
+https://get-offer-in-qa-auto.github.io/snake-team-5.0/quality/
+```
+
+По умолчанию окно включает текущий и шесть предыдущих календарных дней UTC.
+Ручной запуск поддерживает окна 7, 14 и 30 дней. Dashboard пересобирается из
+двух независимых источников:
+
+- GitHub Actions API — все завершенные workflow runs, включая runs без
+  опубликованного Allure report;
+- постоянная история `reports/regression/...` в ветке `gh-pages` — финальные
+  результаты тестов, retries, browser scope и длительности.
+
+Повторные попытки одного workflow run не суммируются: для pipeline и Allure
+используется только максимальный `run_attempt`. Поэтому rerun не раздувает
+число запусков и тестовых результатов.
+
+Основные показатели:
+
+- **Pipeline stability** — успешные завершенные regression runs / все
+  завершенные regression runs;
+- **Test reliability** — финальные passed results / все финальные test results;
+- **Flaky tests** — уникальные тесты с retry/flaky-признаком Allure либо со
+  смешанными passed и failed/broken результатами внутри окна;
+- **Retry rate** — retries / (финальные результаты + retries);
+- **p95 duration** — 95-й перцентиль длительности workflow или теста.
+
+Отдельно показываются API, Chromium, Firefox и WebKit, проблемные/нестабильные
+тесты и последние workflow runs. Если запуск завершился без опубликованного
+Allure report, он влияет на pipeline stability и явно отмечается как
+`No report`, но не подмешивается в тестовую статистику.
+
+API coverage в dashboard не вычисляется: в репозитории пока нет эталонного
+OpenAPI/Swagger inventory, поэтому процент покрытия был бы недостоверным.
+Machine-readable snapshot тех же показателей публикуется в
+`quality/metrics.json`.
+
 Для первого запуска нужно один раз включить Pages в настройках репозитория:
 
 ```text

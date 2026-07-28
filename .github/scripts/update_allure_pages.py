@@ -104,6 +104,7 @@ def render_index(
     title: str,
     link_prefix: str = "",
     suite_link_prefix: str | None = None,
+    quality_dashboard: bool = False,
 ) -> str:
     latest = reports[0] if reports else None
     latest_link = ""
@@ -116,6 +117,14 @@ def render_index(
     suite_links = ""
     if suite_link_prefix is not None:
         suite_links = render_suite_links(reports, suite_link_prefix)
+
+    quality_link = ""
+    if quality_dashboard:
+        quality_path = html.escape(link_prefix + "quality/")
+        quality_link = (
+            '<p class="quality"><a href="'
+            f'{quality_path}">Open rolling QA metrics</a></p>'
+        )
 
     rows = render_report_rows(reports, link_prefix=link_prefix)
     return f"""<!doctype html>
@@ -137,11 +146,13 @@ def render_index(
       th, td {{ border-bottom: 1px solid #d0d7de; padding: 10px 8px; text-align: left; }}
       th {{ background: #f6f8fa; font-weight: 600; }}
       .latest {{ font-size: 18px; }}
+      .quality {{ font-size: 18px; }}
       .suite-links a {{ display: inline-block; margin-right: 12px; }}
     </style>
   </head>
   <body>
     <h1>{html.escape(title)}</h1>
+    {quality_link}
     {latest_link}
     {suite_links}
     <table>
@@ -182,11 +193,13 @@ def render_redirect(target_url: str, title: str) -> str:
 
 
 def write_indexes(site_dir: Path, reports: list[dict[str, str]]) -> None:
+    quality_dashboard = (site_dir / "quality" / "index.html").is_file()
     (site_dir / "index.html").write_text(
         render_index(
             reports,
             "TeamCity Allure Reports",
             suite_link_prefix="reports/",
+            quality_dashboard=quality_dashboard,
         ),
         encoding="utf-8",
     )
@@ -198,6 +211,7 @@ def write_indexes(site_dir: Path, reports: list[dict[str, str]]) -> None:
             "TeamCity Allure Reports",
             link_prefix="../",
             suite_link_prefix="",
+            quality_dashboard=quality_dashboard,
         ),
         encoding="utf-8",
     )
@@ -219,6 +233,7 @@ def write_indexes(site_dir: Path, reports: list[dict[str, str]]) -> None:
                 suite_reports,
                 f"TeamCity {suite} Allure Reports",
                 link_prefix="../../",
+                quality_dashboard=quality_dashboard,
             ),
             encoding="utf-8",
         )

@@ -1,0 +1,118 @@
+name: QA Metrics Dashboard
+
+on:
+  schedule:
+    - cron: "30 3 * * *"
+  workflow_dispatch:
+    inputs:
+      days:
+        description: Rolling metrics window
+        required: true
+        default: "7"
+        type: choice
+        options:
+          - "7"
+          - "14"
+          - "30"
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  publish-dashboard:
+    name: Publish rolling QA metrics
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}quality/
+    env:
+      METRICS_DAYS: ${{ inputs.days || '7' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read completed regression runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          since="$(date -u -d "$((METRICS_DAYS - 1)) days ago" +%Y-%m-%dT00:00:00Z)"
+          gh api --paginate --method GET \
+            "/repos/${GITHUB_REPOSITORY}/actions/workflows/teamcity-regression.yml/runs" \
+            -f status=completed \
+            -f created=">=${since}" \
+            -f per_page=100 \
+            --jq '.workflow_runs[]' |
+            jq --slurp '.' > workflow-runs.json
+
+      - name: Prepare persistent Pages site
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          mkdir pages-site
+          git init pages-site
+          cd pages-site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            git fetch --depth=1 origin gh-pages
+            git checkout -B gh-pages FETCH_HEAD
+          else
+            git checkout --orphan gh-pages
+          fi
+
+      - name: Build QA metrics dashboard
+        id: dashboard
+        shell: bash
+        run: |
+          python3 scripts/build_quality_dashboard.py \
+            --site-dir pages-site \
+            --runs-json workflow-runs.json \
+            --days "${METRICS_DAYS}"
+          python3 .github/scripts/refresh_allure_indexes.py --site-dir pages-site
+          touch pages-site/.nojekyll
+
+      - name: Commit dashboard to Pages history
+        shell: bash
+        run: |
+          cd pages-site
+          git add quality index.html reports/index.html reports/*/index.html .nojekyll
+          if git diff --cached --quiet; then
+            echo "No dashboard changes to commit."
+          else
+            git commit -m "Update ${METRICS_DAYS}-day QA metrics dashboard"
+            git push origin HEAD:gh-pages
+          fi
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: pages-site
+          retention-days: 7
+
+      - name: Deploy QA metrics dashboard
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Add dashboard to workflow summary
+        shell: bash
+        run: |
+          {
+            echo "## QA metrics dashboard"
+            echo
+            echo "[Open ${METRICS_DAYS}-day QA metrics dashboard](${{ steps.deployment.outputs.page_url }}quality/)"
+            echo
+            echo "Completed regression runs: ${{ steps.dashboard.outputs.completed_runs }}"
+            echo
+            echo "Published Allure reports: ${{ steps.dashboard.outputs.published_reports }}"
+          } >> "$GITHUB_STEP_SUMMARY"
