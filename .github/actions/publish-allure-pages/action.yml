@@ -16,6 +16,10 @@ inputs:
     description: Rolling coverage dashboard window in UTC calendar days.
     required: false
     default: "7"
+  pages_artifact_name:
+    description: GitHub Pages artifact name shared with the deploy-pages step.
+    required: false
+    default: github-pages
 
 outputs:
   report_path:
@@ -117,5 +121,6 @@ runs:
     - name: Upload GitHub Pages artifact
       uses: actions/upload-pages-artifact@v5
       with:
+        name: ${{ inputs.pages_artifact_name }}
         path: pages-site
         retention-days: 7

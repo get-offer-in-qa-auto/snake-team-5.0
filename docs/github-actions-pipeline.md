@@ -302,6 +302,8 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/quality/coverage/
 на стандартный построчный HTML-report остается доступна для детального анализа.
 Окно по умолчанию — 7 UTC-дней; для scheduled workflow его можно изменить
 repository variable `QA_METRICS_DAYS`, не меняя YAML.
+Pages artifact получает имя с `github.run_attempt`, поэтому rerun одного
+workflow не создаёт несколько конфликтующих artifacts с именем `github-pages`.
 
 Line coverage вычисляется как `covered_lines / num_statements`, branch coverage
 — как `covered_branches / num_branches`. Повторные попытки одного workflow run

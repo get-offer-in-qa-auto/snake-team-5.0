@@ -204,6 +204,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}${{ steps.pages.outputs.report_path }}/
     env:
       METRICS_DAYS: ${{ vars.QA_METRICS_DAYS || '7' }}
+      PAGES_ARTIFACT_NAME: github-pages-${{ github.run_attempt }}
     steps:
       # Скачиваем код, чтобы runner видел local action для обновления Pages history.
       - name: Checkout
@@ -218,11 +219,14 @@ jobs:
           suite_name: regression
           coverage_artifact_name: teamcity-regression-api-coverage
           coverage_days: ${{ env.METRICS_DAYS }}
+          pages_artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
 
       # Публикуем накопленный Pages site с историей отчетов.
       - name: Deploy Allure report to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
 
       # Добавляем кликабельную ссылку на конкретный отчет в summary текущего workflow run.
       - name: Add Allure report page to summary

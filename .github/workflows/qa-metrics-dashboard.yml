@@ -34,6 +34,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}quality/
     env:
       METRICS_DAYS: ${{ inputs.days || vars.QA_METRICS_DAYS || '7' }}
+      PAGES_ARTIFACT_NAME: github-pages-${{ github.run_attempt }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -100,12 +101,15 @@ jobs:
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
+          name: ${{ env.PAGES_ARTIFACT_NAME }}
           path: pages-site
           retention-days: 7
 
       - name: Deploy QA metrics dashboard
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
 
       - name: Add dashboard to workflow summary
         shell: bash
