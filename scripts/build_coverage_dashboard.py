@@ -221,23 +221,48 @@ def daily_trend(
                 "line_rate": summary["line_rate"] if summary else None,
                 "branch_rate": summary["branch_rate"] if summary else None,
                 "report_id": summary["report_id"] if summary else None,
+                "run_id": summary["run_id"] if summary else None,
+                "generated_at": summary["generated_at"] if summary else None,
+                "html_url": summary["html_url"] if summary else None,
             }
         )
     return trend
 
 
+def rate_delta(
+    current: dict[str, Any] | None,
+    previous: dict[str, Any] | None,
+    field: str,
+) -> float | None:
+    if current is None or previous is None:
+        return None
+    current_value = current.get(field)
+    previous_value = previous.get(field)
+    if current_value is None or previous_value is None:
+        return None
+    return round(float(current_value) - float(previous_value), 2)
+
+
+def trend_delta(trend: list[dict[str, Any]], field: str) -> float | None:
+    measured = [day for day in trend if day.get(field) is not None]
+    if len(measured) < 2:
+        return None
+    return rate_delta(measured[-1], measured[0], field)
+
+
 def build_metrics(
     reports: list[CoverageReport], *, now: datetime, days: int
 ) -> dict[str, Any]:
+    window_start_at = window_start(now, days)
+    window_reports = [
+        report for report in reports if window_start_at <= report.generated_at <= now
+    ]
     latest = coverage_summary(reports[-1]) if reports else None
     previous = coverage_summary(reports[-2]) if len(reports) > 1 else None
-    line_delta = None
-    branch_delta = None
-    if latest and previous:
-        if latest["line_rate"] is not None and previous["line_rate"] is not None:
-            line_delta = round(latest["line_rate"] - previous["line_rate"], 2)
-        if latest["branch_rate"] is not None and previous["branch_rate"] is not None:
-            branch_delta = round(latest["branch_rate"] - previous["branch_rate"], 2)
+    trend = daily_trend(window_reports, now=now, days=days)
+    latest_generated_at = (
+        parse_datetime(latest["generated_at"]) if latest is not None else None
+    )
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "window": {
@@ -245,19 +270,41 @@ def build_metrics(
             "start": window_start(now, days).isoformat(timespec="seconds"),
             "end": now.isoformat(timespec="seconds"),
         },
-        "reports": len(reports),
+        "reports": len(window_reports),
         "latest": latest,
         "previous": previous,
-        "delta": {
-            "line_rate": line_delta,
-            "branch_rate": branch_delta,
+        "latest_context": {
+            "is_today": (
+                latest_generated_at.date() == now.date()
+                if latest_generated_at is not None
+                else False
+            ),
+            "label": (
+                f"Today at {latest_generated_at.strftime('%H:%M UTC')}"
+                if latest_generated_at is not None
+                and latest_generated_at.date() == now.date()
+                else (
+                    "Last available "
+                    + latest_generated_at.strftime("%d %b %Y %H:%M UTC")
+                    if latest_generated_at is not None
+                    else "No coverage measurement available"
+                )
+            ),
         },
-        "trend": daily_trend(reports, now=now, days=days),
+        "delta": {
+            "line_rate": rate_delta(latest, previous, "line_rate"),
+            "branch_rate": rate_delta(latest, previous, "branch_rate"),
+        },
+        "period_delta": {
+            "line_rate": trend_delta(trend, "line_rate"),
+            "branch_rate": trend_delta(trend, "branch_rate"),
+        },
+        "trend": trend,
         "modules": module_summaries(reports[-1]) if reports else [],
         "history": [
             coverage_summary(report)
             for report in sorted(
-                reports,
+                window_reports,
                 key=lambda item: item.generated_at,
                 reverse=True,
             )
@@ -265,14 +312,43 @@ def build_metrics(
     }
 
 
-def format_delta(value: float | None) -> str:
+def format_delta(
+    value: float | None,
+    *,
+    reference: str,
+    unavailable: str,
+) -> str:
     if value is None:
-        return "No previous report"
-    sign = "+" if value > 0 else ""
-    return f"{sign}{value:.1f} pp vs previous report"
+        return unavailable
+    if value > 0:
+        return f"↑ +{value:.1f} pp vs {reference}"
+    if value < 0:
+        return f"↓ {value:.1f} pp vs {reference}"
+    return f"→ No change vs {reference}"
 
 
-def render_coverage_trend(metrics: dict[str, Any]) -> str:
+def render_delta(
+    value: float | None,
+    *,
+    reference: str,
+    unavailable: str,
+) -> str:
+    if value is None:
+        state = "unknown"
+    elif value > 0:
+        state = "up"
+    elif value < 0:
+        state = "down"
+    else:
+        state = "flat"
+    return (
+        f'<span class="delta delta-{state}">'
+        f"{html.escape(format_delta(value, reference=reference, unavailable=unavailable))}"
+        "</span>"
+    )
+
+
+def render_coverage_trend(metrics: dict[str, Any], *, root_prefix: str) -> str:
     trend = metrics["trend"]
     all_values = [
         float(value)
@@ -290,11 +366,11 @@ def render_coverage_trend(metrics: dict[str, Any]) -> str:
         upper += 1.0
 
     width = 900.0
-    height = 230.0
-    left = 48.0
+    height = 250.0
+    left = 54.0
     right = 18.0
-    top = 20.0
-    bottom = 34.0
+    top = 24.0
+    bottom = 62.0
     plot_width = width - left - right
     plot_height = height - top - bottom
 
@@ -316,12 +392,20 @@ def render_coverage_trend(metrics: dict[str, Any]) -> str:
                 x += index * plot_width / (len(values) - 1)
             y = top + (upper - value) * plot_height / (upper - lower)
             current.append(f"{x:.1f},{y:.1f}")
-            if len(values) <= 60 or index in (0, len(values) - 1):
-                label = f"{trend[index]['label']}: {value:.1f}%"
-                circles.append(
-                    f'<circle class="{css_class}" cx="{x:.1f}" cy="{y:.1f}" r="3">'
-                    f"<title>{html.escape(label)}</title></circle>"
+            label = (
+                f"{trend[index]['label']}: {value:.1f}% · run #{trend[index]['run_id']}"
+            )
+            circle = (
+                f'<circle class="{css_class}" cx="{x:.1f}" cy="{y:.1f}" r="4">'
+                f"<title>{html.escape(label)}</title></circle>"
+            )
+            report_url = trend[index].get("html_url")
+            if report_url:
+                circle = (
+                    f'<a href="{html.escape(root_prefix + str(report_url))}">'
+                    f"{circle}</a>"
                 )
+            circles.append(circle)
         if current:
             segments.append(current)
         lines = "".join(
@@ -331,22 +415,64 @@ def render_coverage_trend(metrics: dict[str, Any]) -> str:
         )
         return lines + "".join(circles)
 
+    grid_lines: list[str] = []
+    for grid_index in range(5):
+        ratio = grid_index / 4
+        y = top + plot_height * ratio
+        grid_value = upper - (upper - lower) * ratio
+        grid_lines.append(
+            f'<line class="chart-grid" x1="{left}" y1="{y:.1f}" '
+            f'x2="{width - right}" y2="{y:.1f}"/>'
+            f'<text class="chart-axis chart-axis-y" x="{left - 8}" '
+            f'y="{y + 4:.1f}">{grid_value:.1f}%</text>'
+        )
+
+    label_count = min(7, len(trend))
+    if label_count <= 1:
+        label_indices = {0}
+    else:
+        label_indices = {
+            round(index * (len(trend) - 1) / (label_count - 1))
+            for index in range(label_count)
+        }
+    x_labels: list[str] = []
+    for index in sorted(label_indices):
+        x = left
+        if len(trend) > 1:
+            x += index * plot_width / (len(trend) - 1)
+        x_labels.append(
+            f'<text class="chart-axis chart-axis-x" '
+            f'transform="translate({x:.1f} {height - 30:.1f}) rotate(-22)">'
+            f"{html.escape(str(trend[index]['label']))}</text>"
+        )
+
+    line_period_delta = render_delta(
+        metrics["period_delta"]["line_rate"],
+        reference="first measured day",
+        unavailable="Not enough history",
+    )
+    branch_period_delta = render_delta(
+        metrics["period_delta"]["branch_rate"],
+        reference="first measured day",
+        unavailable="Not enough history",
+    )
     return f"""
     <div class="coverage-chart-head">
-      <span><i class="legend-line"></i>Line coverage</span>
-      <span><i class="legend-branch"></i>Branch coverage</span>
+      <span>
+        <i class="legend-line"></i>Line coverage
+        {line_period_delta}
+      </span>
+      <span>
+        <i class="legend-branch"></i>Branch coverage
+        {branch_period_delta}
+      </span>
     </div>
     <svg class="coverage-chart" viewBox="0 0 {width:.0f} {height:.0f}" role="img"
          aria-label="Line and branch coverage over {metrics["window"]["days"]} days">
-      <line class="chart-grid" x1="{left}" y1="{top}" x2="{left}" y2="{height - bottom}"/>
-      <line class="chart-grid" x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}"/>
-      <line class="chart-grid chart-grid-mid" x1="{left}" y1="{top + plot_height / 2:.1f}" x2="{width - right}" y2="{top + plot_height / 2:.1f}"/>
-      <text class="chart-axis" x="4" y="{top + 5:.1f}">{upper:.1f}%</text>
-      <text class="chart-axis" x="4" y="{height - bottom + 5:.1f}">{lower:.1f}%</text>
+      {"".join(grid_lines)}
       {render_series("line_rate", "series-line")}
       {render_series("branch_rate", "series-branch")}
-      <text class="chart-axis" x="{left}" y="{height - 8}">{html.escape(trend[0]["label"])}</text>
-      <text class="chart-axis chart-axis-end" x="{width - right}" y="{height - 8}">{html.escape(trend[-1]["label"])}</text>
+      {"".join(x_labels)}
     </svg>
     """
 
@@ -449,19 +575,28 @@ h2 { font-size: 19px; margin: 0; }
 }
 .card { padding: 16px; }
 .stat-value { display: block; font-size: 28px; margin: 3px 0; }
+.stat-context { display: grid; gap: 6px; }
+.measurement-time { color: var(--muted); font-size: 12px; }
+.delta {
+  display: inline-block; width: fit-content; padding: 2px 7px;
+  border-radius: 999px; font-size: 12px; white-space: nowrap;
+}
+.delta-up { color: #1a7f37; background: #dafbe1; }
+.delta-down { color: #cf222e; background: #ffebe9; }
+.delta-flat, .delta-unknown { color: var(--muted); background: var(--track); }
 .section { margin-top: 22px; }
 .section-head { align-items: baseline; margin-bottom: 10px; }
 .coverage-chart-wrap { padding: 14px; overflow-x: auto; }
 .coverage-chart-head { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); }
 .coverage-chart-head span { display: inline-flex; align-items: center; gap: 6px; }
+.coverage-chart-head .delta { font-style: normal; }
 .coverage-chart-head i { width: 18px; height: 3px; display: inline-block; }
 .legend-line { background: var(--series); }
 .legend-branch { background: var(--primary); }
 .coverage-chart { display: block; min-width: 620px; width: 100%; height: auto; }
 .chart-grid { stroke: var(--border); stroke-width: 1; }
-.chart-grid-mid { stroke-dasharray: 4 5; }
 .chart-axis { fill: var(--muted); font-size: 11px; }
-.chart-axis-end { text-anchor: end; }
+.chart-axis-y, .chart-axis-x { text-anchor: end; }
 .coverage-line {
   fill: none; stroke: currentColor; stroke-width: 3;
   stroke-linecap: round; stroke-linejoin: round;
@@ -495,6 +630,8 @@ tr:last-child td { border-bottom: 0; }
     --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
     --series: #3fb950; --track: #30363d;
   }
+  .delta-up { color: #3fb950; background: #12261a; }
+  .delta-down { color: #f85149; background: #32191c; }
 }
 """
 
@@ -529,8 +666,21 @@ def render_dashboard(
             '<strong class="stat-value">—</strong></article>'
         )
     else:
+        latest_context = metrics["latest_context"]
+        measurement_time = html.escape(latest_context["label"])
+        line_report_delta = render_delta(
+            metrics["delta"]["line_rate"],
+            reference="previous report",
+            unavailable="No previous report",
+        )
+        branch_report_delta = render_delta(
+            metrics["delta"]["branch_rate"],
+            reference="previous report",
+            unavailable="No previous report",
+        )
         header_meta = (
             f'<span class="badge">{html.escape(latest["source"])}</span>'
+            f'<span class="badge">{measurement_time}</span>'
             f"<span>Run {latest['run_id']}</span>"
             f"<span>{html.escape(latest['branch'])}</span>"
             f"<span>{html.escape(latest['sha'][:8])}</span>"
@@ -542,14 +692,20 @@ def render_dashboard(
         )
         stats = f"""
         <article class="card">
-          <span class="muted">Line coverage</span>
+          <span class="muted">Current line coverage</span>
           <strong class="stat-value">{format_percent(latest["line_rate"])}</strong>
-          <span>{html.escape(format_delta(metrics["delta"]["line_rate"]))}</span>
+          <div class="stat-context">
+            {line_report_delta}
+            <span class="measurement-time">{measurement_time}</span>
+          </div>
         </article>
         <article class="card">
-          <span class="muted">Branch coverage</span>
+          <span class="muted">Current branch coverage</span>
           <strong class="stat-value">{format_percent(latest["branch_rate"])}</strong>
-          <span>{latest["covered_branches"]} of {latest["num_branches"]} branches</span>
+          <div class="stat-context">
+            {branch_report_delta}
+            <span>{latest["covered_branches"]} of {latest["num_branches"]} branches</span>
+          </div>
         </article>
         <article class="card">
           <span class="muted">Covered lines</span>
@@ -592,10 +748,10 @@ def render_dashboard(
       <section class="section">
         <div class="section-head">
           <h2>{metrics["window"]["days"]}-day trend</h2>
-          <span class="section-note">Latest API regression report per UTC day</span>
+          <span class="section-note">Last measurement of each UTC day · no averaging</span>
         </div>
         <div class="coverage-chart-wrap">
-          {render_coverage_trend(metrics)}
+          {render_coverage_trend(metrics, root_prefix=root_prefix)}
         </div>
       </section>
 
@@ -714,7 +870,7 @@ def main() -> None:
     now = parse_datetime(args.now) if args.now else datetime.now(UTC)
     reports = load_coverage_reports(
         args.site_dir,
-        window_start_at=window_start(now, args.days),
+        window_start_at=datetime(1970, 1, 1, tzinfo=UTC),
         window_end=now,
     )
     metrics = build_metrics(reports, now=now, days=args.days)
@@ -741,7 +897,10 @@ def main() -> None:
         encoding="utf-8",
     )
     append_github_output(metrics)
-    print(f"Built coverage dashboard from {len(reports)} reports.")
+    print(
+        "Built coverage dashboard from "
+        f"{metrics['reports']} reports in the selected window."
+    )
 
 
 if __name__ == "__main__":
