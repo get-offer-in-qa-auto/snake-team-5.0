@@ -10,6 +10,7 @@ import math
 import os
 import re
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -293,6 +294,55 @@ def aggregate_daily(
     return result
 
 
+def aggregate_pipeline_daily(
+    runs: list[WorkflowRun], *, window_end: datetime, days: int
+) -> dict[str, dict[str, Any]]:
+    runs_by_day: dict[date, list[WorkflowRun]] = defaultdict(list)
+    for run in runs:
+        runs_by_day[run.created_at.date()].append(run)
+
+    result: dict[str, dict[str, Any]] = {}
+    first_day = window_end.date() - timedelta(days=days - 1)
+    for offset in range(days):
+        current_day = first_day + timedelta(days=offset)
+        daily_runs = runs_by_day[current_day]
+        successful = sum(run.conclusion == "success" for run in daily_runs)
+        result[current_day.isoformat()] = {
+            "pipeline_runs": len(daily_runs),
+            "pipeline_success_rate": percentage(successful, len(daily_runs)),
+            "pipeline_p95_duration_seconds": (
+                round(
+                    percentile(
+                        [run.duration_seconds for run in daily_runs],
+                        0.95,
+                    ),
+                    1,
+                )
+                if daily_runs
+                else None
+            ),
+        }
+    return result
+
+
+def merge_daily_metrics(
+    runs: list[WorkflowRun],
+    reports: list[PublishedReport],
+    *,
+    window_end: datetime,
+    days: int,
+) -> list[dict[str, Any]]:
+    test_daily = aggregate_daily(reports, window_end=window_end, days=days)
+    pipeline_daily = aggregate_pipeline_daily(
+        runs,
+        window_end=window_end,
+        days=days,
+    )
+    for day in test_daily:
+        day.update(pipeline_daily[day["date"]])
+    return test_daily
+
+
 def aggregate_suites(reports: list[PublishedReport]) -> list[dict[str, Any]]:
     suites: dict[str, dict[str, Any]] = defaultdict(
         lambda: {
@@ -394,7 +444,7 @@ def aggregate_tests(reports: list[PublishedReport]) -> list[dict[str, Any]]:
             signal = "Slow"
 
         latest_uid = aggregate["latest_uid"]
-        report_link = f"../{aggregate['latest_report_path']}/"
+        report_link = f"{aggregate['latest_report_path']}/"
         if latest_uid:
             report_link += f"#testresult/{latest_uid}"
         result.append(
@@ -485,7 +535,7 @@ def build_metrics(
                 "created_at": run.created_at.isoformat(timespec="seconds"),
                 "duration_seconds": round(run.duration_seconds, 1),
                 "run_url": run.url,
-                "report_url": f"../{report.path}/" if report else None,
+                "report_url": f"{report.path}/" if report else None,
             }
         )
 
@@ -521,7 +571,12 @@ def build_metrics(
             "retries": retry_count,
             "retry_rate": percentage(retry_count, test_total + retry_count),
         },
-        "daily": aggregate_daily(reports, window_end=now, days=days),
+        "daily": merge_daily_metrics(
+            runs,
+            reports,
+            window_end=now,
+            days=days,
+        ),
         "suites": aggregate_suites(reports),
         "attention": aggregate_tests(reports),
         "recent_runs": recent_runs,
@@ -541,31 +596,139 @@ def format_duration(seconds: float) -> str:
     return f"{remaining_seconds}s"
 
 
-def render_trend(metrics: dict[str, Any]) -> str:
-    columns: list[str] = []
-    for day in metrics["daily"]:
-        rate = day["pass_rate"]
-        height = 4.0 if rate is None else max(4.0, min(100.0, (rate - 90) * 10))
-        state = "empty"
-        if rate is not None:
-            state = "healthy" if rate >= 99 else "warning" if rate >= 97 else "danger"
-        label = "No data" if rate is None else format_percent(rate)
-        accessible = (
-            f"{day['label']}: {label}, {day['failed']} final failures, "
-            f"{day['flaky']} flaky, {day['total']} results"
+def render_line_chart(
+    metrics: dict[str, Any],
+    *,
+    field: str,
+    title: str,
+    formatter: Callable[[float], str],
+    css_class: str,
+    percentage_scale: bool = False,
+) -> str:
+    days = metrics["daily"]
+    values = [float(day[field]) if day.get(field) is not None else None for day in days]
+    available = [value for value in values if value is not None]
+    if not available:
+        return (
+            '<article class="chart-card">'
+            f"<h3>{html.escape(title)}</h3>"
+            '<p class="empty-state">No data in this period.</p>'
+            "</article>"
         )
-        columns.append(
-            '<div class="trend-day">'
-            f'<span class="trend-rate">{html.escape(label)}</span>'
-            '<div class="trend-track">'
-            f'<span class="trend-bar {state}" style="height: {height:.1f}%;" '
-            f'aria-label="{html.escape(accessible)}"></span>'
-            "</div>"
-            f'<span class="trend-label">{html.escape(day["label"])}</span>'
-            f'<span class="trend-detail">F {day["failed"]} · flaky {day["flaky"]}</span>'
-            "</div>"
+
+    if percentage_scale:
+        lower = max(0.0, min(available) - 5.0)
+        upper = min(100.0, max(available) + 5.0)
+    else:
+        lower = 0.0
+        upper = max(available) * 1.1
+    if math.isclose(lower, upper):
+        lower = max(0.0, lower - 1.0)
+        upper = upper + 1.0
+
+    width = 720.0
+    height = 190.0
+    left = 42.0
+    right = 16.0
+    top = 18.0
+    bottom = 32.0
+    plot_width = width - left - right
+    plot_height = height - top - bottom
+
+    def point(index: int, value: float) -> tuple[float, float]:
+        x = left
+        if len(values) > 1:
+            x += index * plot_width / (len(values) - 1)
+        y = top + (upper - value) * plot_height / (upper - lower)
+        return x, y
+
+    segments: list[list[str]] = []
+    current: list[str] = []
+    circles: list[str] = []
+    for index, value in enumerate(values):
+        if value is None:
+            if current:
+                segments.append(current)
+                current = []
+            continue
+        x, y = point(index, value)
+        current.append(f"{x:.1f},{y:.1f}")
+        if len(values) <= 60 or index in (0, len(values) - 1):
+            label = f"{days[index]['label']}: {formatter(value)}"
+            circles.append(
+                f'<circle class="{css_class}" cx="{x:.1f}" cy="{y:.1f}" r="3">'
+                f"<title>{html.escape(label)}</title></circle>"
+            )
+    if current:
+        segments.append(current)
+
+    lines = "".join(
+        f'<polyline class="chart-line {css_class}" points="{" ".join(segment)}"/>'
+        for segment in segments
+        if len(segment) > 1
+    )
+    latest_index = max(index for index, value in enumerate(values) if value is not None)
+    latest_value = values[latest_index]
+    assert latest_value is not None
+    start_label = days[0]["label"] if days else ""
+    end_label = days[-1]["label"] if days else ""
+    return f"""
+    <article class="chart-card">
+      <div class="chart-head">
+        <h3>{html.escape(title)}</h3>
+        <strong>{html.escape(formatter(latest_value))}</strong>
+      </div>
+      <svg class="line-chart" viewBox="0 0 {width:.0f} {height:.0f}" role="img"
+           aria-label="{html.escape(title)} over {metrics["window"]["days"]} days">
+        <line class="chart-grid" x1="{left}" y1="{top}" x2="{left}" y2="{height - bottom}"/>
+        <line class="chart-grid" x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}"/>
+        <line class="chart-grid chart-grid-mid" x1="{left}" y1="{top + plot_height / 2:.1f}" x2="{width - right}" y2="{top + plot_height / 2:.1f}"/>
+        <text class="chart-axis" x="4" y="{top + 5:.1f}">{html.escape(formatter(upper))}</text>
+        <text class="chart-axis" x="4" y="{height - bottom + 5:.1f}">{html.escape(formatter(lower))}</text>
+        {lines}
+        {"".join(circles)}
+        <text class="chart-axis" x="{left}" y="{height - 8}">{html.escape(start_label)}</text>
+        <text class="chart-axis chart-axis-end" x="{width - right}" y="{height - 8}">{html.escape(end_label)}</text>
+      </svg>
+    </article>
+    """
+
+
+def render_metric_charts(metrics: dict[str, Any]) -> str:
+    return "\n".join(
+        (
+            render_line_chart(
+                metrics,
+                field="pass_rate",
+                title="Test pass rate",
+                formatter=lambda value: f"{value:.1f}%",
+                css_class="chart-green",
+                percentage_scale=True,
+            ),
+            render_line_chart(
+                metrics,
+                field="pipeline_success_rate",
+                title="Pipeline success rate",
+                formatter=lambda value: f"{value:.1f}%",
+                css_class="chart-blue",
+                percentage_scale=True,
+            ),
+            render_line_chart(
+                metrics,
+                field="pipeline_p95_duration_seconds",
+                title="Workflow p95 duration",
+                formatter=lambda value: format_duration(value),
+                css_class="chart-purple",
+            ),
+            render_line_chart(
+                metrics,
+                field="flaky",
+                title="Flaky test results",
+                formatter=lambda value: str(round(value)),
+                css_class="chart-orange",
+            ),
         )
-    return "\n".join(columns)
+    )
 
 
 def render_suite_cards(metrics: dict[str, Any]) -> str:
@@ -590,12 +753,12 @@ def render_suite_cards(metrics: dict[str, Any]) -> str:
     return '<p class="empty-state">No published test results in this window.</p>'
 
 
-def render_attention_rows(metrics: dict[str, Any]) -> str:
+def render_attention_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
     rows: list[str] = []
     for test in metrics["attention"]:
         rows.append(
             "<tr>"
-            f'<td><a href="{html.escape(test["report_link"])}">'
+            f'<td><a href="{html.escape(root_prefix + test["report_link"])}">'
             f"{html.escape(test['name'])}</a></td>"
             f'<td><span class="badge">{html.escape(test["signal"])}</span></td>'
             f'<td class="number">{test["failed_runs"]} / {test["runs"]}</td>'
@@ -609,11 +772,11 @@ def render_attention_rows(metrics: dict[str, Any]) -> str:
     return '<tr><td colspan="6" class="empty-state">No test data available.</td></tr>'
 
 
-def render_run_rows(metrics: dict[str, Any]) -> str:
+def render_run_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
     rows: list[str] = []
     for run in metrics["recent_runs"]:
         report_link = (
-            f'<a href="{html.escape(run["report_url"])}">Allure</a>'
+            f'<a href="{html.escape(root_prefix + run["report_url"])}">Allure</a>'
             if run["report_url"]
             else '<span class="muted">No report</span>'
         )
@@ -668,12 +831,19 @@ h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; }
 h2 { font-size: 19px; margin: 0; }
 h3 { font-size: 15px; margin: 0; }
 p { margin: 0; }
-.muted, .section-note, .suite p, .trend-detail, .trend-label { color: var(--muted); }
+.muted, .section-note, .suite p { color: var(--muted); }
+.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .period {
   display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px;
   background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
 }
 .period-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--healthy); }
+.period-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.period-link {
+  display: inline-block; padding: 5px 9px; border: 1px solid var(--border);
+  border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.period-link.active { border-color: var(--primary); color: var(--primary); font-weight: 600; }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
@@ -691,23 +861,32 @@ p { margin: 0; }
   display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
   flex-wrap: wrap; margin-bottom: 10px;
 }
-.trend {
-  height: 260px; display: grid;
-  grid-template-columns: repeat(var(--days), minmax(48px, 1fr));
-  gap: 12px; padding: 18px 14px 12px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 12px; overflow-x: auto;
+.chart-grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.chart-card {
+  min-width: 0; padding: 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
 }
-.trend-day {
-  min-width: 48px; display: grid; grid-template-rows: auto 1fr auto auto;
-  gap: 5px; align-items: end; text-align: center;
+.chart-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; margin-bottom: 4px;
 }
-.trend-rate { font-weight: 600; }
-.trend-track {
-  height: 165px; display: flex; align-items: flex-end; justify-content: center;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(to top, transparent 49.5%, var(--track) 50%, transparent 50.5%);
+.chart-head strong { font-size: 18px; }
+.line-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-grid-mid { stroke-dasharray: 4 5; }
+.chart-axis { fill: var(--muted); font-size: 11px; }
+.chart-axis-end { text-anchor: end; }
+.chart-line {
+  fill: none; stroke: currentColor; stroke-width: 3;
+  stroke-linecap: round; stroke-linejoin: round;
 }
-.trend-bar { display: block; width: min(50px, 72%); min-height: 5px; border-radius: 5px 5px 0 0; }
+circle.chart-green, circle.chart-blue, circle.chart-purple, circle.chart-orange {
+  fill: var(--surface); stroke: currentColor; stroke-width: 2;
+}
+.chart-green { color: var(--healthy); }
+.chart-blue { color: var(--primary); }
+.chart-purple { color: #8250df; }
+.chart-orange { color: #bc4c00; }
 .healthy { background: var(--healthy); }
 .warning { background: var(--warning); }
 .danger { background: var(--danger); }
@@ -745,6 +924,7 @@ tr:last-child td { border-bottom: 0; }
   .stats { grid-template-columns: 1fr; }
   .suites { grid-template-columns: 1fr 1fr; gap: 14px; }
   .suite + .suite { border-left: 0; padding-left: 0; }
+  .chart-grid-layout { grid-template-columns: 1fr; }
 }
 @media (min-width: 761px) and (max-width: 980px) {
   .stats { grid-template-columns: 1fr 1fr; }
@@ -766,7 +946,27 @@ tr:last-child td { border-bottom: 0; }
 """
 
 
-def render_dashboard(metrics: dict[str, Any]) -> str:
+def render_period_links(
+    periods: list[tuple[int, str]],
+    *,
+    current_days: int,
+) -> str:
+    return "".join(
+        (
+            f'<a class="period-link{" active" if days == current_days else ""}" '
+            f'href="{html.escape(link)}">{days} days</a>'
+        )
+        for days, link in periods
+    )
+
+
+def render_dashboard(
+    metrics: dict[str, Any],
+    *,
+    root_prefix: str,
+    coverage_url: str,
+    periods: list[tuple[int, str]],
+) -> str:
     pipeline = metrics["pipeline"]
     tests = metrics["tests"]
     quality = metrics["data_quality"]
@@ -789,10 +989,16 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
           <h1>TeamCity QA metrics</h1>
           <p class="muted">Rolling quality health for TeamCity Regression</p>
         </div>
-        <div class="period">
-          <span class="period-dot" aria-hidden="true"></span>
-          <strong>{metrics["window"]["days"]} days</strong>
-          <span>{window_start.strftime("%d %b")}–{window_end.strftime("%d %b %Y")}</span>
+        <div class="top-actions">
+          <div class="period-links" aria-label="Saved metric periods">
+            {render_period_links(periods, current_days=metrics["window"]["days"])}
+          </div>
+          <a class="period-link" href="{html.escape(root_prefix + "reports/")}">All reports</a>
+          <div class="period">
+            <span class="period-dot" aria-hidden="true"></span>
+            <strong>{metrics["window"]["days"]} days</strong>
+            <span>{window_start.strftime("%d %b")}–{window_end.strftime("%d %b %Y")}</span>
+          </div>
         </div>
       </header>
 
@@ -826,18 +1032,18 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
           <strong class="stat-value">{format_percent(coverage["latest"]["line_rate"]) if coverage and coverage.get("latest") else "—"}</strong>
           <div class="stat-context">
             <span>{format_percent(coverage["latest"]["branch_rate"]) + " branches" if coverage and coverage.get("latest") else "No reports yet"}</span>
-            <a class="badge" href="coverage/">Open coverage</a>
+            <a class="badge" href="{html.escape(coverage_url)}">Open coverage</a>
           </div>
         </article>
       </section>
 
       <section class="section">
         <div class="section-head">
-          <h2>Daily quality trend</h2>
-          <span class="section-note">Final outcomes; passed retries are marked flaky</span>
+          <h2>Metric history</h2>
+          <span class="section-note">Daily values for the selected period</span>
         </div>
-        <div class="trend" style="--days: {metrics["window"]["days"]}">
-          {render_trend(metrics)}
+        <div class="chart-grid-layout">
+          {render_metric_charts(metrics)}
         </div>
       </section>
 
@@ -868,7 +1074,7 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
                 <th class="number">p95</th>
               </tr>
             </thead>
-            <tbody>{render_attention_rows(metrics)}</tbody>
+            <tbody>{render_attention_rows(metrics, root_prefix=root_prefix)}</tbody>
           </table>
         </div>
       </section>
@@ -890,7 +1096,7 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
                 <th>Report</th>
               </tr>
             </thead>
-            <tbody>{render_run_rows(metrics)}</tbody>
+            <tbody>{render_run_rows(metrics, root_prefix=root_prefix)}</tbody>
           </table>
         </div>
       </section>
@@ -917,20 +1123,54 @@ def append_github_output(metrics: dict[str, Any]) -> None:
         )
 
 
+def resolve_site_path(site_dir: Path, value: str) -> tuple[Path, Path]:
+    relative = Path(value)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError("site paths must be relative and cannot contain '..'")
+    return site_dir / relative, relative
+
+
+def saved_period_links(
+    site_dir: Path,
+    destination_relative: Path,
+    current_days: int,
+) -> list[tuple[int, str]]:
+    saved_days = {current_days}
+    for metrics_path in (site_dir / "quality" / "periods").glob("*/metrics.json"):
+        try:
+            saved_days.add(int(metrics_path.parent.name))
+        except ValueError:
+            continue
+    in_period_snapshot = destination_relative.parts[:2] == ("quality", "periods")
+    return [
+        (
+            days,
+            f"../{days}/" if in_period_snapshot else f"periods/{days}/",
+        )
+        for days in sorted(saved_days)
+    ]
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--site-dir", required=True, type=Path)
     parser.add_argument("--runs-json", required=True, type=Path)
     parser.add_argument("--suite", default="regression")
     parser.add_argument("--days", type=int, default=7)
+    parser.add_argument("--destination", default="quality")
+    parser.add_argument(
+        "--coverage-metrics",
+        default="quality/coverage/metrics.json",
+    )
+    parser.add_argument("--coverage-url", default="coverage/")
     parser.add_argument("--now", help="ISO-8601 UTC timestamp used as window end")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    if args.days < 1 or args.days > 90:
-        raise ValueError("--days must be between 1 and 90")
+    if args.days < 1:
+        raise ValueError("--days must be a positive integer")
     now = parse_datetime(args.now) if args.now else datetime.now(UTC)
     window_start_at = window_start(now, args.days)
     runs = load_workflow_runs(
@@ -946,7 +1186,8 @@ def main() -> None:
         window_end=now,
         latest_attempts=latest_attempts,
     )
-    coverage = load_json(args.site_dir / "quality" / "coverage" / "metrics.json")
+    coverage_path, _ = resolve_site_path(args.site_dir, args.coverage_metrics)
+    coverage = load_json(coverage_path)
     metrics = build_metrics(
         runs,
         reports,
@@ -955,14 +1196,26 @@ def main() -> None:
         coverage=coverage,
     )
 
-    destination = args.site_dir / "quality"
+    destination, destination_relative = resolve_site_path(
+        args.site_dir,
+        args.destination,
+    )
     destination.mkdir(parents=True, exist_ok=True)
     destination.joinpath("metrics.json").write_text(
         json.dumps(metrics, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     destination.joinpath("index.html").write_text(
-        render_dashboard(metrics),
+        render_dashboard(
+            metrics,
+            root_prefix="../" * len(destination_relative.parts),
+            coverage_url=args.coverage_url,
+            periods=saved_period_links(
+                args.site_dir,
+                destination_relative,
+                args.days,
+            ),
+        ),
         encoding="utf-8",
     )
     append_github_output(metrics)

@@ -73,7 +73,7 @@ def render_report_rows(reports: list[dict[str, str]], link_prefix: str = "") -> 
         run_url = html.escape(report.get("run_url", "#"))
         short_sha = html.escape(report.get("sha", "")[:12])
         rows.append(
-            "      <tr>"
+            f'      <tr class="report-row" data-generated-at="{generated_at}">'
             f'<td><a href="{path}">{generated_at}</a></td>'
             f"<td>{suite}</td>"
             f"<td>{event}</td>"
@@ -155,6 +155,17 @@ def render_index(
       .latest {{ font-size: 18px; }}
       .quality {{ font-size: 18px; }}
       .suite-links a {{ display: inline-block; margin-right: 12px; }}
+      .history-filter {{
+        display: flex; align-items: end; gap: 8px; flex-wrap: wrap;
+        margin: 20px 0 12px;
+      }}
+      .history-filter label {{ display: grid; gap: 4px; color: #636c76; }}
+      .history-filter input, .history-filter button {{
+        min-height: 36px; padding: 6px 10px; border: 1px solid #d0d7de;
+        border-radius: 7px; background: #fff; color: #1f2937; font: inherit;
+      }}
+      .history-filter button {{ cursor: pointer; }}
+      .history-count {{ margin-left: auto; color: #636c76; }}
     </style>
   </head>
   <body>
@@ -162,7 +173,17 @@ def render_index(
     {quality_link}
     {latest_link}
     {suite_links}
-    <table>
+    <div class="history-filter">
+      <label>
+        Report history period
+        <input id="history-days" type="number" min="1" step="1"
+               placeholder="Any number of days">
+      </label>
+      <button id="apply-history" type="button">Apply</button>
+      <button id="show-all-history" type="button">Show all</button>
+      <span id="history-count" class="history-count"></span>
+    </div>
+    <table id="report-history">
       <thead>
         <tr>
           <th>Generated</th>
@@ -177,6 +198,48 @@ def render_index(
 {rows}
       </tbody>
     </table>
+    <script>
+      (() => {{
+        const input = document.querySelector("#history-days");
+        const rows = [...document.querySelectorAll(".report-row")];
+        const counter = document.querySelector("#history-count");
+        const render = (days) => {{
+          const now = new Date();
+          const todayUtc = Date.UTC(
+            now.getUTCFullYear(),
+            now.getUTCMonth(),
+            now.getUTCDate(),
+          );
+          const cutoff = days ? todayUtc - (days - 1) * 86400000 : null;
+          let visible = 0;
+          rows.forEach((row) => {{
+            const generatedAt = Date.parse(row.dataset.generatedAt || "");
+            const show = cutoff === null || (
+              Number.isFinite(generatedAt) && generatedAt >= cutoff
+            );
+            row.hidden = !show;
+            if (show) visible += 1;
+          }});
+          counter.textContent = `${{visible}} of ${{rows.length}} reports`;
+        }};
+        document.querySelector("#apply-history").addEventListener("click", () => {{
+          const days = Number(input.value);
+          if (!Number.isInteger(days) || days < 1) {{
+            input.setCustomValidity("Enter a positive number of days");
+            input.reportValidity();
+            return;
+          }}
+          input.setCustomValidity("");
+          render(days);
+        }});
+        document.querySelector("#show-all-history").addEventListener("click", () => {{
+          input.value = "";
+          input.setCustomValidity("");
+          render(null);
+        }});
+        render(null);
+      }})();
+    </script>
   </body>
 </html>
 """

@@ -128,9 +128,9 @@ def coverage_summary(report: CoverageReport) -> dict[str, Any]:
         "branch": report.branch,
         "sha": report.sha,
         "source": report.source,
-        "html_url": f"../../{report.path}/html/",
-        "json_url": f"../../{report.path}/coverage.json",
-        "xml_url": f"../../{report.path}/coverage.xml",
+        "html_url": f"{report.path}/html/",
+        "json_url": f"{report.path}/coverage.json",
+        "xml_url": f"{report.path}/coverage.xml",
         "line_rate": percentage(covered_lines, num_statements),
         "branch_rate": percentage(covered_branches, num_branches),
         "covered_lines": covered_lines,
@@ -254,6 +254,14 @@ def build_metrics(
         },
         "trend": daily_trend(reports, now=now, days=days),
         "modules": module_summaries(reports[-1]) if reports else [],
+        "history": [
+            coverage_summary(report)
+            for report in sorted(
+                reports,
+                key=lambda item: item.generated_at,
+                reverse=True,
+            )
+        ],
     }
 
 
@@ -264,22 +272,108 @@ def format_delta(value: float | None) -> str:
     return f"{sign}{value:.1f} pp vs previous report"
 
 
-def render_trend(metrics: dict[str, Any]) -> str:
-    columns: list[str] = []
-    for day in metrics["trend"]:
-        rate = day["line_rate"]
-        label = format_percent(rate)
-        height = 3 if rate is None else max(3, min(100, rate))
-        columns.append(
-            '<div class="trend-day">'
-            f"<strong>{html.escape(label)}</strong>"
-            '<div class="trend-track">'
-            f'<span style="height:{height:.1f}%"></span>'
-            "</div>"
-            f'<span class="muted">{html.escape(day["label"])}</span>'
-            "</div>"
+def render_coverage_trend(metrics: dict[str, Any]) -> str:
+    trend = metrics["trend"]
+    all_values = [
+        float(value)
+        for day in trend
+        for value in (day.get("line_rate"), day.get("branch_rate"))
+        if value is not None
+    ]
+    if not all_values:
+        return '<p class="empty-state">No coverage data in this period.</p>'
+
+    lower = max(0.0, min(all_values) - 5.0)
+    upper = min(100.0, max(all_values) + 5.0)
+    if math.isclose(lower, upper):
+        lower = max(0.0, lower - 1.0)
+        upper += 1.0
+
+    width = 900.0
+    height = 230.0
+    left = 48.0
+    right = 18.0
+    top = 20.0
+    bottom = 34.0
+    plot_width = width - left - right
+    plot_height = height - top - bottom
+
+    def render_series(field: str, css_class: str) -> str:
+        values = [
+            float(day[field]) if day.get(field) is not None else None for day in trend
+        ]
+        segments: list[list[str]] = []
+        current: list[str] = []
+        circles: list[str] = []
+        for index, value in enumerate(values):
+            if value is None:
+                if current:
+                    segments.append(current)
+                    current = []
+                continue
+            x = left
+            if len(values) > 1:
+                x += index * plot_width / (len(values) - 1)
+            y = top + (upper - value) * plot_height / (upper - lower)
+            current.append(f"{x:.1f},{y:.1f}")
+            if len(values) <= 60 or index in (0, len(values) - 1):
+                label = f"{trend[index]['label']}: {value:.1f}%"
+                circles.append(
+                    f'<circle class="{css_class}" cx="{x:.1f}" cy="{y:.1f}" r="3">'
+                    f"<title>{html.escape(label)}</title></circle>"
+                )
+        if current:
+            segments.append(current)
+        lines = "".join(
+            f'<polyline class="coverage-line {css_class}" points="{" ".join(segment)}"/>'
+            for segment in segments
+            if len(segment) > 1
         )
-    return "\n".join(columns)
+        return lines + "".join(circles)
+
+    return f"""
+    <div class="coverage-chart-head">
+      <span><i class="legend-line"></i>Line coverage</span>
+      <span><i class="legend-branch"></i>Branch coverage</span>
+    </div>
+    <svg class="coverage-chart" viewBox="0 0 {width:.0f} {height:.0f}" role="img"
+         aria-label="Line and branch coverage over {metrics["window"]["days"]} days">
+      <line class="chart-grid" x1="{left}" y1="{top}" x2="{left}" y2="{height - bottom}"/>
+      <line class="chart-grid" x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}"/>
+      <line class="chart-grid chart-grid-mid" x1="{left}" y1="{top + plot_height / 2:.1f}" x2="{width - right}" y2="{top + plot_height / 2:.1f}"/>
+      <text class="chart-axis" x="4" y="{top + 5:.1f}">{upper:.1f}%</text>
+      <text class="chart-axis" x="4" y="{height - bottom + 5:.1f}">{lower:.1f}%</text>
+      {render_series("line_rate", "series-line")}
+      {render_series("branch_rate", "series-branch")}
+      <text class="chart-axis" x="{left}" y="{height - 8}">{html.escape(trend[0]["label"])}</text>
+      <text class="chart-axis chart-axis-end" x="{width - right}" y="{height - 8}">{html.escape(trend[-1]["label"])}</text>
+    </svg>
+    """
+
+
+def render_history_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
+    rows: list[str] = []
+    for report in metrics["history"]:
+        generated_at = parse_datetime(report["generated_at"])
+        rows.append(
+            "<tr>"
+            f'<td><a href="{html.escape(root_prefix + report["html_url"])}">'
+            f"{generated_at.strftime('%d %b %Y %H:%M UTC')}</a></td>"
+            f"<td>#{report['run_id']} · attempt {report['attempt']}</td>"
+            f"<td>{html.escape(report['branch'])}</td>"
+            f'<td class="number">{html.escape(format_percent(report["line_rate"]))}</td>'
+            f'<td class="number">{html.escape(format_percent(report["branch_rate"]))}</td>'
+            "<td>"
+            f'<a href="{html.escape(root_prefix + report["json_url"])}">JSON</a> · '
+            f'<a href="{html.escape(root_prefix + report["xml_url"])}">XML</a>'
+            "</td>"
+            "</tr>"
+        )
+    if rows:
+        return "\n".join(rows)
+    return (
+        '<tr><td colspan="6" class="empty-state">No reports in this period.</td></tr>'
+    )
 
 
 def render_module_rows(metrics: dict[str, Any]) -> str:
@@ -339,32 +433,44 @@ h2 { font-size: 19px; margin: 0; }
   display: inline-block; padding: 2px 7px; border-radius: 999px;
   background: var(--track); color: var(--text);
 }
+.period-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.period-link {
+  display: inline-block; padding: 5px 9px; border: 1px solid var(--border);
+  border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.period-link.active { border-color: var(--primary); color: var(--primary); font-weight: 600; }
 .button {
   display: inline-block; padding: 6px 10px; border: 1px solid var(--border);
   border-radius: 7px; background: var(--surface);
 }
 .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
-.card, .table-wrap, .trend {
+.card, .table-wrap, .coverage-chart-wrap {
   background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
 }
 .card { padding: 16px; }
 .stat-value { display: block; font-size: 28px; margin: 3px 0; }
 .section { margin-top: 22px; }
 .section-head { align-items: baseline; margin-bottom: 10px; }
-.trend {
-  height: 220px; display: grid;
-  grid-template-columns: repeat(var(--days), minmax(48px, 1fr));
-  gap: 12px; padding: 16px; overflow-x: auto;
+.coverage-chart-wrap { padding: 14px; overflow-x: auto; }
+.coverage-chart-head { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); }
+.coverage-chart-head span { display: inline-flex; align-items: center; gap: 6px; }
+.coverage-chart-head i { width: 18px; height: 3px; display: inline-block; }
+.legend-line { background: var(--series); }
+.legend-branch { background: var(--primary); }
+.coverage-chart { display: block; min-width: 620px; width: 100%; height: auto; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-grid-mid { stroke-dasharray: 4 5; }
+.chart-axis { fill: var(--muted); font-size: 11px; }
+.chart-axis-end { text-anchor: end; }
+.coverage-line {
+  fill: none; stroke: currentColor; stroke-width: 3;
+  stroke-linecap: round; stroke-linejoin: round;
 }
-.trend-day {
-  min-width: 48px; display: grid; grid-template-rows: auto 1fr auto;
-  gap: 5px; align-items: end; text-align: center;
+.series-line { color: var(--series); }
+.series-branch { color: var(--primary); }
+circle.series-line, circle.series-branch {
+  fill: var(--surface); stroke: currentColor; stroke-width: 2;
 }
-.trend-track {
-  height: 145px; display: flex; align-items: flex-end;
-  background: var(--track);
-}
-.trend-track span { display: block; width: 100%; background: var(--series); }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
@@ -393,11 +499,31 @@ tr:last-child td { border-bottom: 0; }
 """
 
 
-def render_dashboard(metrics: dict[str, Any]) -> str:
+def render_period_links(
+    periods: list[tuple[int, str]],
+    *,
+    current_days: int,
+) -> str:
+    return "".join(
+        (
+            f'<a class="period-link{" active" if days == current_days else ""}" '
+            f'href="{html.escape(link)}">{days} days</a>'
+        )
+        for days, link in periods
+    )
+
+
+def render_dashboard(
+    metrics: dict[str, Any],
+    *,
+    root_prefix: str,
+    quality_url: str,
+    periods: list[tuple[int, str]],
+) -> str:
     latest = metrics["latest"]
     if latest is None:
         header_meta = '<span class="muted">No coverage reports published yet.</span>'
-        actions = '<a class="button" href="../">Back to QA metrics</a>'
+        actions = f'<a class="button" href="{html.escape(quality_url)}">Back to QA metrics</a>'
         stats = (
             '<article class="card"><span class="muted">Line coverage</span>'
             '<strong class="stat-value">—</strong></article>'
@@ -410,8 +536,8 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
             f"<span>{html.escape(latest['sha'][:8])}</span>"
         )
         actions = (
-            '<a class="button" href="../">Back to QA metrics</a>'
-            f'<a class="button" href="{html.escape(latest["html_url"])}">'
+            f'<a class="button" href="{html.escape(quality_url)}">Back to QA metrics</a>'
+            f'<a class="button" href="{html.escape(root_prefix + latest["html_url"])}">'
             "Open standard HTML report</a>"
         )
         stats = f"""
@@ -453,7 +579,12 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
           <h1>API test framework coverage</h1>
           <div class="meta">{header_meta}</div>
         </div>
-        <div class="actions">{actions}</div>
+        <div>
+          <div class="actions">{actions}</div>
+          <div class="period-links" aria-label="Saved coverage periods">
+            {render_period_links(periods, current_days=metrics["window"]["days"])}
+          </div>
+        </div>
       </header>
 
       <section class="stats" aria-label="Coverage summary">{stats}</section>
@@ -463,8 +594,30 @@ def render_dashboard(metrics: dict[str, Any]) -> str:
           <h2>{metrics["window"]["days"]}-day trend</h2>
           <span class="section-note">Latest API regression report per UTC day</span>
         </div>
-        <div class="trend" style="--days:{metrics["window"]["days"]}">
-          {render_trend(metrics)}
+        <div class="coverage-chart-wrap">
+          {render_coverage_trend(metrics)}
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Coverage report history</h2>
+          <span class="section-note">Every published API coverage report in this period</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Generated</th>
+                <th>Run</th>
+                <th>Branch</th>
+                <th class="number">Lines</th>
+                <th class="number">Branches</th>
+                <th>Data</th>
+              </tr>
+            </thead>
+            <tbody>{render_history_rows(metrics, root_prefix=root_prefix)}</tbody>
+          </table>
         </div>
       </section>
 
@@ -511,18 +664,53 @@ def append_github_output(metrics: dict[str, Any]) -> None:
             output.write(f"line_coverage={latest['line_rate']}\n")
 
 
+def resolve_site_path(site_dir: Path, value: str) -> tuple[Path, Path]:
+    relative = Path(value)
+    if relative.is_absolute() or ".." in relative.parts:
+        raise ValueError("site paths must be relative and cannot contain '..'")
+    return site_dir / relative, relative
+
+
+def saved_period_links(
+    site_dir: Path,
+    destination_relative: Path,
+    current_days: int,
+) -> list[tuple[int, str]]:
+    saved_days = {current_days}
+    period_root = site_dir / "quality" / "coverage" / "periods"
+    for metrics_path in period_root.glob("*/metrics.json"):
+        try:
+            saved_days.add(int(metrics_path.parent.name))
+        except ValueError:
+            continue
+    in_period_snapshot = destination_relative.parts[:3] == (
+        "quality",
+        "coverage",
+        "periods",
+    )
+    return [
+        (
+            days,
+            f"../{days}/" if in_period_snapshot else f"periods/{days}/",
+        )
+        for days in sorted(saved_days)
+    ]
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--site-dir", required=True, type=Path)
     parser.add_argument("--days", type=int, default=7)
+    parser.add_argument("--destination", default="quality/coverage")
+    parser.add_argument("--quality-url", default="../")
     parser.add_argument("--now", help="ISO-8601 UTC timestamp used as window end")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-    if args.days < 1 or args.days > 90:
-        raise ValueError("--days must be between 1 and 90")
+    if args.days < 1:
+        raise ValueError("--days must be a positive integer")
     now = parse_datetime(args.now) if args.now else datetime.now(UTC)
     reports = load_coverage_reports(
         args.site_dir,
@@ -530,14 +718,26 @@ def main() -> None:
         window_end=now,
     )
     metrics = build_metrics(reports, now=now, days=args.days)
-    destination = args.site_dir / "quality" / "coverage"
+    destination, destination_relative = resolve_site_path(
+        args.site_dir,
+        args.destination,
+    )
     destination.mkdir(parents=True, exist_ok=True)
     destination.joinpath("metrics.json").write_text(
         json.dumps(metrics, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     destination.joinpath("index.html").write_text(
-        render_dashboard(metrics),
+        render_dashboard(
+            metrics,
+            root_prefix="../" * len(destination_relative.parts),
+            quality_url=args.quality_url,
+            periods=saved_period_links(
+                args.site_dir,
+                destination_relative,
+                args.days,
+            ),
+        ),
         encoding="utf-8",
     )
     append_github_output(metrics)

@@ -219,6 +219,10 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/reports/regression/
 
 После деплоя ссылка на конкретный отчет также появляется в GitHub Actions workflow summary и в environment `github-pages`.
 
+Индекс Allure-отчетов содержит фильтр истории по произвольному положительному
+числу календарных UTC-дней. Кнопка `Show all` возвращает полную опубликованную
+историю.
+
 ## QA metrics dashboard
 
 Workflow `.github/workflows/qa-metrics-dashboard.yml` ежедневно в `03:30 UTC`
@@ -230,8 +234,10 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/quality/
 ```
 
 По умолчанию окно включает текущий и шесть предыдущих календарных дней UTC.
-Ручной запуск поддерживает окна 7, 14 и 30 дней. Dashboard пересобирается из
-двух независимых источников:
+При ручном запуске поле `days` принимает любое положительное целое число.
+Для scheduled запуска окно можно изменить repository variable
+`QA_METRICS_DAYS`, не меняя YAML. Dashboard пересобирается из двух независимых
+источников:
 
 - GitHub Actions API — все завершенные workflow runs, включая runs без
   опубликованного Allure report;
@@ -252,15 +258,32 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/quality/
 - **Retry rate** — retries / (финальные результаты + retries);
 - **p95 duration** — 95-й перцентиль длительности workflow или теста.
 
+В блоке `Metric history` эти показатели показаны по календарным UTC-дням:
+test pass rate, pipeline success rate, p95 длительности workflow и число flaky
+результатов. Дни без данных остаются разрывами и не подменяются нулями.
+
 Отдельно показываются API, Chromium, Firefox и WebKit, проблемные/нестабильные
 тесты и последние workflow runs. Если запуск завершился без опубликованного
 Allure report, он влияет на pipeline stability и явно отмечается как
 `No report`, но не подмешивается в тестовую статистику.
 
-API coverage в dashboard не вычисляется: в репозитории пока нет эталонного
-OpenAPI/Swagger inventory, поэтому процент покрытия был бы недостоверным.
-Machine-readable snapshot тех же показателей публикуется в
-`quality/metrics.json`.
+Покрытие API-контракта по endpoint-ам в dashboard не вычисляется: в репозитории
+пока нет эталонного OpenAPI/Swagger inventory, поэтому такой процент был бы
+недостоверным. Покрытие Python-кода API test framework публикуется отдельно,
+как описано ниже.
+
+Каждый выбранный период сохраняется как отдельный snapshot:
+
+```text
+quality/periods/<days>/
+quality/coverage/periods/<days>/
+```
+
+На обеих страницах отображаются ссылки на все ранее сохраненные периоды.
+Переход `Open coverage` ведет из QA snapshot в coverage snapshot того же окна,
+а `Back to QA metrics` — обратно. Пути `quality/` и `quality/coverage/` всегда
+указывают на результат последнего запуска. Machine-readable данные сохраняются
+рядом с каждой страницей в `metrics.json`.
 
 ### API test framework coverage
 
@@ -298,10 +321,11 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/quality/coverage/
 ```
 
 На ней отображаются line coverage, branch coverage, изменение относительно
-предыдущего отчёта, семидневный тренд и модули с минимальным покрытием. Ссылка
-на стандартный построчный HTML-report остается доступна для детального анализа.
-Окно по умолчанию — 7 UTC-дней; для scheduled workflow его можно изменить
-repository variable `QA_METRICS_DAYS`, не меняя YAML.
+предыдущего отчёта, график обеих метрик за выбранное окно, история всех
+coverage-отчетов внутри окна и модули с минимальным покрытием. Из строки истории
+можно открыть стандартный построчный HTML-report либо исходные JSON/XML.
+Окно по умолчанию — 7 UTC-дней; ручной workflow принимает любое положительное
+целое число дней.
 Pages artifact получает имя с `github.run_attempt`, поэтому rerun одного
 workflow не создаёт несколько конфликтующих artifacts с именем `github-pages`.
 
