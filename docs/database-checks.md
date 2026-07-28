@@ -28,7 +28,8 @@ Data Directory запущенного Docker-контейнера. Он пров
 | --- | --- |
 | `TEAMCITY_CONFIG_CONTAINER` | имя TeamCity Server Docker-контейнера |
 | `TEAMCITY_CONFIG_DATA_DIR` | Data Directory внутри контейнера, default `/data/teamcity_server/datadir` |
-| `TEAMCITY_CONFIGURATION_TIMEOUT` | ожидание применения XML в секундах, default `20` |
+| `TEAMCITY_CONFIGURATION_TIMEOUT_SECONDS` | ожидание применения XML в секундах, default `20` |
+| `TEAMCITY_CONFIGURATION_POLL_INTERVAL_SECONDS` | интервал чтения XML в секундах, default `0.25` |
 
 Проверки помечаются `@pytest.mark.configuration` и `@pytest.mark.regression`.
 Они одинаково работают на HSQLDB и PostgreSQL, поскольку оба стенда используют
@@ -92,7 +93,8 @@ TeamCity хранит логические флаги в PostgreSQL как `smal
 | `TEAMCITY_DB_BACKUP_DIR` | доступная тестам директория TeamCity backup |
 | `TEAMCITY_DB_CONTAINER` | имя TeamCity Docker-контейнера; локально `teamcity-server-local`, в CI `teamcity-server-ci` |
 | `TEAMCITY_DB_CONTAINER_BACKUP_DIR` | путь backup внутри контейнера |
-| `TEAMCITY_DB_BACKUP_TIMEOUT` | ожидание snapshot-а в секундах, default `120` |
+| `TEAMCITY_DB_BACKUP_TIMEOUT_SECONDS` | ожидание snapshot-а в секундах, default `120` |
+| `TEAMCITY_DB_BACKUP_POLL_INTERVAL_SECONDS` | интервал проверки backup status в секундах, default `0.5` |
 | `TEAMCITY_ACCESS_TOKEN` | временный Bearer token CI-администратора для REST API |
 | `TEAMCITY_POSTGRES_PASSWORD` | временный пароль PostgreSQL-контейнера в CI |
 

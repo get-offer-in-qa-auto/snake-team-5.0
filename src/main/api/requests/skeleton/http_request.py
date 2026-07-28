@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from src.main.api.configs.timeouts import TimeoutConfig
 from src.main.api.requests.skeleton.endpoint import Endpoint
 
 
@@ -10,3 +11,4 @@ class HttpRequest:
         self.request_spec = request_spec
         self.endpoint = endpoint
         self.response_spec = response_spec
+        self.request_timeout = TimeoutConfig.http_request()

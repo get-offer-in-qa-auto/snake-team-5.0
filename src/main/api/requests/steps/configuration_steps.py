@@ -2,7 +2,7 @@ import time
 
 import allure
 
-from src.main.api.configs.config import Config
+from src.main.api.configs.timeouts import TimeoutConfig
 from src.main.api.configuration.client import (
     BuildStepConfiguration,
     TeamCityConfigurationClient,
@@ -13,7 +13,8 @@ from src.main.api.models.create_build_step_request import CreateBuildStepRequest
 class ConfigurationSteps:
     def __init__(self, client: TeamCityConfigurationClient | None = None):
         self.client = client or TeamCityConfigurationClient()
-        self.timeout = float(Config.get("TEAMCITY_CONFIGURATION_TIMEOUT", "20"))
+        self.timeout = TimeoutConfig.configuration_wait_seconds()
+        self.poll_interval = TimeoutConfig.configuration_poll_interval_seconds()
 
     @allure.step("Verify build step {step_id} is persisted in TeamCity configuration")
     def verify_build_step_persisted(
@@ -42,7 +43,7 @@ class ConfigurationSteps:
                     return last_step
             except FileNotFoundError as error:
                 last_error = error
-            time.sleep(0.25)
+            time.sleep(self.poll_interval)
 
         details = str(last_error) if last_error else "runner was not found in XML"
         raise AssertionError(
@@ -67,7 +68,7 @@ class ConfigurationSteps:
                     return
             except FileNotFoundError as error:
                 last_error = error
-            time.sleep(0.25)
+            time.sleep(self.poll_interval)
 
         details = str(last_error) if last_error else "runner is still present in XML"
         raise AssertionError(

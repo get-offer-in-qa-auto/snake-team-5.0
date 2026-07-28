@@ -15,6 +15,7 @@ from filelock import FileLock
 from psycopg.rows import dict_row
 
 from src.main.api.configs.config import Config
+from src.main.api.configs.timeouts import TimeoutConfig
 from src.main.api.database.executor import (
     DBExecutor,
     PostgreSQLExecutor,
@@ -32,8 +33,9 @@ class DatabaseClient(ABC):
 class TeamCityBackupDatabaseClient(DatabaseClient):
     def __init__(self) -> None:
         self.server_url = RequestSpecs._server_url()
-        self.timeout = int(Config.get("TEAMCITY_REQUEST_TIMEOUT", "20"))
-        self.backup_timeout = int(Config.get("TEAMCITY_DB_BACKUP_TIMEOUT", "120"))
+        self.request_timeout = TimeoutConfig.http_request()
+        self.backup_timeout = TimeoutConfig.database_backup_wait_seconds()
+        self.poll_interval = TimeoutConfig.database_backup_poll_interval_seconds()
         self.backup_dir = _configured_backup_dir()
         self.container = str(Config.get("TEAMCITY_DB_CONTAINER", "")).strip()
         self.container_backup_dir = str(
@@ -69,7 +71,7 @@ class TeamCityBackupDatabaseClient(DatabaseClient):
                 "fileName": file_name,
             },
             headers=self._backup_headers(csrf=True),
-            timeout=self.timeout,
+            timeout=self.request_timeout,
         )
         response.raise_for_status()
         actual_name = response.text.strip() or file_name
@@ -106,12 +108,12 @@ class TeamCityBackupDatabaseClient(DatabaseClient):
             response = requests.get(
                 f"{self.server_url}/app/rest/server/backup",
                 headers=self._backup_headers(csrf=False),
-                timeout=self.timeout,
+                timeout=self.request_timeout,
             )
             response.raise_for_status()
             if response.text.strip().lower() == "idle":
                 return
-            time.sleep(0.5)
+            time.sleep(self.poll_interval)
         raise TimeoutError(
             f"TeamCity database backup did not finish in {self.backup_timeout} seconds"
         )
