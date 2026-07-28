@@ -20,6 +20,14 @@ REPORT_ID_PATTERN = re.compile(r"^(?P<run_id>\d+)-attempt-(?P<attempt>\d+)$")
 FAILED_STATUSES = {"failed", "broken"}
 COMPLETED_TEST_STATUSES = {"passed", "failed", "broken", "skipped", "unknown"}
 UI_SCOPE_ORDER = ("API", "UI · Chromium", "UI · Firefox", "UI · WebKit")
+QUALITY_TARGET_KEYS = (
+    "test_pass_rate",
+    "pipeline_success_rate",
+    "workflow_duration_seconds",
+    "flaky_results",
+)
+QUALITY_TARGET_DIRECTIONS = {"minimum", "maximum"}
+PERCENTAGE_TARGET_KEYS = {"test_pass_rate", "pipeline_success_rate"}
 
 
 @dataclass(frozen=True)
@@ -138,6 +146,38 @@ def load_json(path: Path) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def load_quality_targets(path: Path) -> dict[str, dict[str, Any]]:
+    payload = load_json(path)
+    if payload is None:
+        raise ValueError(f"quality targets config is missing or invalid: {path}")
+
+    targets: dict[str, dict[str, Any]] = {}
+    for key in QUALITY_TARGET_KEYS:
+        raw_target = payload.get(key)
+        if not isinstance(raw_target, dict):
+            raise ValueError(f"quality target {key!r} must be an object")
+        direction = str(raw_target.get("direction") or "")
+        if direction not in QUALITY_TARGET_DIRECTIONS:
+            raise ValueError(
+                f"quality target {key!r} direction must be one of "
+                f"{sorted(QUALITY_TARGET_DIRECTIONS)}"
+            )
+        try:
+            value = float(raw_target["value"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(
+                f"quality target {key!r} value must be a number"
+            ) from error
+        if not math.isfinite(value) or value < 0:
+            raise ValueError(f"quality target {key!r} value must be non-negative")
+        if key in PERCENTAGE_TARGET_KEYS and value > 100:
+            raise ValueError(
+                f"quality target {key!r} value must not be greater than 100"
+            )
+        targets[key] = {"direction": direction, "value": value}
+    return targets
+
+
 def load_published_reports(
     site_dir: Path,
     suite: str,
@@ -253,6 +293,58 @@ def status_counts(reports: list[PublishedReport]) -> Counter[str]:
                 status = "unknown"
             counts[status] += 1
     return counts
+
+
+def report_metrics(report: PublishedReport) -> dict[str, Any]:
+    counts: Counter[str] = Counter()
+    flaky_results = 0
+    for test in report.tests:
+        status = str(test.get("status") or "unknown")
+        if status not in COMPLETED_TEST_STATUSES:
+            status = "unknown"
+        counts[status] += 1
+        if bool(test.get("flaky")) or test_retry_count(test) > 0:
+            flaky_results += 1
+
+    total = sum(counts.values())
+    return {
+        "test_pass_rate": percentage(counts["passed"], total),
+        "flaky_results": flaky_results,
+        "test_total": total,
+        "test_failed": counts["failed"] + counts["broken"],
+    }
+
+
+def aggregate_run_trends(
+    runs: list[WorkflowRun],
+    reports: list[PublishedReport],
+) -> list[dict[str, Any]]:
+    reports_by_run = {report.run_id: report for report in reports}
+    points: list[dict[str, Any]] = []
+    for run in runs:
+        report = reports_by_run.get(run.id)
+        report_values = report_metrics(report) if report else {}
+        points.append(
+            {
+                "run_id": run.id,
+                "run_number": run.number,
+                "attempt": run.attempt,
+                "label": run.created_at.strftime("%d %b %H:%M"),
+                "created_at": run.created_at.isoformat(timespec="seconds"),
+                "run_url": run.url,
+                "report_url": f"{report.path}/" if report else None,
+                "conclusion": run.conclusion,
+                "test_pass_rate": report_values.get("test_pass_rate"),
+                "pipeline_success_rate": (
+                    100.0 if run.conclusion == "success" else 0.0
+                ),
+                "workflow_duration_seconds": round(run.duration_seconds, 1),
+                "flaky_results": report_values.get("flaky_results"),
+                "test_total": report_values.get("test_total"),
+                "test_failed": report_values.get("test_failed"),
+            }
+        )
+    return points
 
 
 def aggregate_daily(
@@ -494,6 +586,7 @@ def build_metrics(
     *,
     now: datetime,
     days: int,
+    quality_targets: dict[str, dict[str, Any]],
     coverage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     counts = status_counts(reports)
@@ -577,6 +670,8 @@ def build_metrics(
             window_end=now,
             days=days,
         ),
+        "run_trends": aggregate_run_trends(runs, reports),
+        "quality_targets": quality_targets,
         "suites": aggregate_suites(reports),
         "attention": aggregate_tests(reports),
         "recent_runs": recent_runs,
@@ -596,6 +691,21 @@ def format_duration(seconds: float) -> str:
     return f"{remaining_seconds}s"
 
 
+def target_passed(value: float, target: dict[str, Any]) -> bool:
+    threshold = float(target["value"])
+    if target["direction"] == "minimum":
+        return value >= threshold
+    return value <= threshold
+
+
+def format_target(
+    target: dict[str, Any],
+    formatter: Callable[[float], str],
+) -> str:
+    operator = "≥" if target["direction"] == "minimum" else "≤"
+    return f"{operator} {formatter(float(target['value']))}"
+
+
 def render_line_chart(
     metrics: dict[str, Any],
     *,
@@ -605,33 +715,39 @@ def render_line_chart(
     css_class: str,
     percentage_scale: bool = False,
 ) -> str:
-    days = metrics["daily"]
-    values = [float(day[field]) if day.get(field) is not None else None for day in days]
+    points = metrics["run_trends"]
+    target = metrics["quality_targets"][field]
+    values = [
+        float(point[field]) if point.get(field) is not None else None
+        for point in points
+    ]
     available = [value for value in values if value is not None]
+    target_text = format_target(target, formatter)
     if not available:
         return (
             '<article class="chart-card">'
+            '<div class="chart-head">'
             f"<h3>{html.escape(title)}</h3>"
+            f'<span class="target-badge">Target {html.escape(target_text)}</span>'
+            "</div>"
             '<p class="empty-state">No data in this period.</p>'
             "</article>"
         )
 
+    lower = 0.0
     if percentage_scale:
-        lower = max(0.0, min(available) - 5.0)
-        upper = min(100.0, max(available) + 5.0)
+        upper = 100.0
     else:
-        lower = 0.0
-        upper = max(available) * 1.1
+        upper = max(max(available), float(target["value"])) * 1.15
     if math.isclose(lower, upper):
-        lower = max(0.0, lower - 1.0)
-        upper = upper + 1.0
+        upper = 1.0
 
     width = 720.0
-    height = 190.0
-    left = 42.0
-    right = 16.0
-    top = 18.0
-    bottom = 32.0
+    height = 250.0
+    left = 54.0
+    right = 18.0
+    top = 24.0
+    bottom = 62.0
     plot_width = width - left - right
     plot_height = height - top - bottom
 
@@ -653,12 +769,17 @@ def render_line_chart(
             continue
         x, y = point(index, value)
         current.append(f"{x:.1f},{y:.1f}")
-        if len(values) <= 60 or index in (0, len(values) - 1):
-            label = f"{days[index]['label']}: {formatter(value)}"
-            circles.append(
-                f'<circle class="{css_class}" cx="{x:.1f}" cy="{y:.1f}" r="3">'
-                f"<title>{html.escape(label)}</title></circle>"
-            )
+        state = "ok" if target_passed(value, target) else "fail"
+        label = (
+            f"Run #{points[index]['run_number']} · {points[index]['label']}: "
+            f"{formatter(value)} · target {target_text}"
+        )
+        circles.append(
+            f'<a href="{html.escape(points[index]["run_url"])}">'
+            f'<circle class="chart-point chart-point-{state}" '
+            f'cx="{x:.1f}" cy="{y:.1f}" r="4">'
+            f"<title>{html.escape(label)}</title></circle></a>"
+        )
     if current:
         segments.append(current)
 
@@ -670,25 +791,63 @@ def render_line_chart(
     latest_index = max(index for index, value in enumerate(values) if value is not None)
     latest_value = values[latest_index]
     assert latest_value is not None
-    start_label = days[0]["label"] if days else ""
-    end_label = days[-1]["label"] if days else ""
+    latest_state = "ok" if target_passed(latest_value, target) else "fail"
+    target_y = point(0, float(target["value"]))[1]
+
+    grid_lines: list[str] = []
+    for grid_index in range(5):
+        ratio = grid_index / 4
+        y = top + plot_height * ratio
+        grid_value = upper - (upper - lower) * ratio
+        grid_lines.append(
+            f'<line class="chart-grid" x1="{left}" y1="{y:.1f}" '
+            f'x2="{width - right}" y2="{y:.1f}"/>'
+            f'<text class="chart-axis chart-axis-y" x="{left - 8}" '
+            f'y="{y + 4:.1f}">{html.escape(formatter(grid_value))}</text>'
+        )
+
+    label_count = min(6, len(points))
+    if label_count <= 1:
+        label_indices = {0}
+    else:
+        label_indices = {
+            round(index * (len(points) - 1) / (label_count - 1))
+            for index in range(label_count)
+        }
+    x_labels: list[str] = []
+    for index in sorted(label_indices):
+        x = point(index, lower)[0]
+        x_labels.append(
+            f'<text class="chart-axis chart-axis-x" '
+            f'transform="translate({x:.1f} {height - 30:.1f}) rotate(-22)">'
+            f"{html.escape(str(points[index]['label']))}</text>"
+        )
+
     return f"""
     <article class="chart-card">
       <div class="chart-head">
-        <h3>{html.escape(title)}</h3>
-        <strong>{html.escape(formatter(latest_value))}</strong>
+        <div>
+          <h3>{html.escape(title)}</h3>
+          <span class="target-badge">Target {html.escape(target_text)}</span>
+        </div>
+        <div class="chart-latest">
+          <strong>{html.escape(formatter(latest_value))}</strong>
+          <span class="target-status target-status-{latest_state}">
+            {"On target" if latest_state == "ok" else "Off target"}
+          </span>
+        </div>
       </div>
       <svg class="line-chart" viewBox="0 0 {width:.0f} {height:.0f}" role="img"
-           aria-label="{html.escape(title)} over {metrics["window"]["days"]} days">
-        <line class="chart-grid" x1="{left}" y1="{top}" x2="{left}" y2="{height - bottom}"/>
-        <line class="chart-grid" x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}"/>
-        <line class="chart-grid chart-grid-mid" x1="{left}" y1="{top + plot_height / 2:.1f}" x2="{width - right}" y2="{top + plot_height / 2:.1f}"/>
-        <text class="chart-axis" x="4" y="{top + 5:.1f}">{html.escape(formatter(upper))}</text>
-        <text class="chart-axis" x="4" y="{height - bottom + 5:.1f}">{html.escape(formatter(lower))}</text>
+           aria-label="{html.escape(title)} by workflow run over {metrics["window"]["days"]} days">
+        {"".join(grid_lines)}
+        <line class="target-line" x1="{left}" y1="{target_y:.1f}"
+              x2="{width - right}" y2="{target_y:.1f}"/>
+        <text class="target-label" x="{left + 6}" y="{max(13.0, target_y - 7):.1f}">
+          Target {html.escape(target_text)}
+        </text>
         {lines}
         {"".join(circles)}
-        <text class="chart-axis" x="{left}" y="{height - 8}">{html.escape(start_label)}</text>
-        <text class="chart-axis chart-axis-end" x="{width - right}" y="{height - 8}">{html.escape(end_label)}</text>
+        {"".join(x_labels)}
       </svg>
     </article>
     """
@@ -699,7 +858,7 @@ def render_metric_charts(metrics: dict[str, Any]) -> str:
         (
             render_line_chart(
                 metrics,
-                field="pass_rate",
+                field="test_pass_rate",
                 title="Test pass rate",
                 formatter=lambda value: f"{value:.1f}%",
                 css_class="chart-green",
@@ -708,21 +867,21 @@ def render_metric_charts(metrics: dict[str, Any]) -> str:
             render_line_chart(
                 metrics,
                 field="pipeline_success_rate",
-                title="Pipeline success rate",
-                formatter=lambda value: f"{value:.1f}%",
+                title="Pipeline result",
+                formatter=lambda value: f"{value:.0f}%",
                 css_class="chart-blue",
                 percentage_scale=True,
             ),
             render_line_chart(
                 metrics,
-                field="pipeline_p95_duration_seconds",
-                title="Workflow p95 duration",
-                formatter=lambda value: format_duration(value),
+                field="workflow_duration_seconds",
+                title="Workflow duration",
+                formatter=format_duration,
                 css_class="chart-purple",
             ),
             render_line_chart(
                 metrics,
-                field="flaky",
+                field="flaky_results",
                 title="Flaky test results",
                 formatter=lambda value: str(round(value)),
                 css_class="chart-orange",
@@ -733,10 +892,15 @@ def render_metric_charts(metrics: dict[str, Any]) -> str:
 
 def render_suite_cards(metrics: dict[str, Any]) -> str:
     cards: list[str] = []
+    pass_rate_target = metrics["quality_targets"]["test_pass_rate"]
     for suite in metrics["suites"]:
         rate = suite["pass_rate"]
         width = 0 if rate is None else max(0, min(100, rate))
-        state = "healthy" if rate is not None and rate >= 99 else "warning"
+        state = (
+            "healthy"
+            if rate is not None and target_passed(rate, pass_rate_target)
+            else "warning"
+        )
         cards.append(
             '<article class="suite">'
             f"<h3>{html.escape(suite['name'])}</h3>"
@@ -867,22 +1031,37 @@ p { margin: 0; }
   border: 1px solid var(--border); border-radius: 12px;
 }
 .chart-head {
-  display: flex; align-items: baseline; justify-content: space-between;
-  gap: 12px; margin-bottom: 4px;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 8px;
 }
 .chart-head strong { font-size: 18px; }
+.chart-head > div:first-child { display: grid; gap: 3px; }
+.target-badge { color: var(--muted); font-size: 12px; }
+.chart-latest {
+  display: flex; align-items: flex-end; flex-direction: column; gap: 3px;
+  text-align: right;
+}
+.target-status {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.target-status-ok { color: var(--healthy); background: var(--healthy-soft); }
+.target-status-fail { color: var(--danger); background: var(--danger-soft); }
 .line-chart { display: block; width: 100%; height: auto; overflow: visible; }
 .chart-grid { stroke: var(--border); stroke-width: 1; }
-.chart-grid-mid { stroke-dasharray: 4 5; }
 .chart-axis { fill: var(--muted); font-size: 11px; }
-.chart-axis-end { text-anchor: end; }
+.chart-axis-y, .chart-axis-x { text-anchor: end; }
+.target-line {
+  stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 5;
+}
+.target-label { fill: var(--muted); font-size: 11px; font-weight: 600; }
 .chart-line {
   fill: none; stroke: currentColor; stroke-width: 3;
   stroke-linecap: round; stroke-linejoin: round;
 }
-circle.chart-green, circle.chart-blue, circle.chart-purple, circle.chart-orange {
-  fill: var(--surface); stroke: currentColor; stroke-width: 2;
-}
+.chart-point { fill: var(--surface); stroke-width: 2.5; }
+.chart-point-ok { stroke: var(--healthy); }
+.chart-point-fail { stroke: var(--danger); }
 .chart-green { color: var(--healthy); }
 .chart-blue { color: var(--primary); }
 .chart-purple { color: #8250df; }
@@ -1040,7 +1219,7 @@ def render_dashboard(
       <section class="section">
         <div class="section-head">
           <h2>Metric history</h2>
-          <span class="section-note">Daily values for the selected period</span>
+          <span class="section-note">Every completed workflow run · targets from configuration</span>
         </div>
         <div class="chart-grid-layout">
           {render_metric_charts(metrics)}
@@ -1163,6 +1342,11 @@ def parse_args() -> argparse.Namespace:
         default="quality/coverage/metrics.json",
     )
     parser.add_argument("--coverage-url", default="coverage/")
+    parser.add_argument(
+        "--targets-config",
+        type=Path,
+        default=Path("resources/qa_metrics_targets.json"),
+    )
     parser.add_argument("--now", help="ISO-8601 UTC timestamp used as window end")
     return parser.parse_args()
 
@@ -1188,11 +1372,13 @@ def main() -> None:
     )
     coverage_path, _ = resolve_site_path(args.site_dir, args.coverage_metrics)
     coverage = load_json(coverage_path)
+    quality_targets = load_quality_targets(args.targets_config)
     metrics = build_metrics(
         runs,
         reports,
         now=now,
         days=args.days,
+        quality_targets=quality_targets,
         coverage=coverage,
     )
 
