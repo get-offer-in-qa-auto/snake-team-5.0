@@ -66,17 +66,25 @@ class UserSteps(BaseSteps):
         assert created_token.value
         assert created_token.creationTime
 
+        self.verify_user_token_stored(user_request, token_request)
+
+    @allure.step("Verify user token is stored")
+    def verify_user_token_stored(
+        self,
+        user_request: CreateUserRequest,
+        token_request: CreateUserTokenRequest,
+    ) -> None:
         stored_tokens = self.get_user_tokens(user_request)
         stored_token = next(
             (
                 token
                 for token in stored_tokens.token
-                if token.name == created_token.name
+                if token.name == token_request.name
             ),
             None,
         )
         assert stored_token is not None, (
-            f"Token {created_token.name!r} is not stored for user "
+            f"Token {token_request.name!r} is not stored for user "
             f"{user_request.username!r}"
         )
         assert stored_token.value is None
