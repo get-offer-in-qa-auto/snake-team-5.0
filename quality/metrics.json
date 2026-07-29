@@ -43,90 +43,6 @@
       "signal": "Intermittent failure"
     },
     {
-      "failed_runs": 2,
-      "flaky": true,
-      "full_name": "tests.api.project_test#test_created_project_is_persisted_in_database",
-      "identity": "63820b9c633e9765202907ea1c701155",
-      "last_seen": "2026-07-17T13:56:46+00:00",
-      "name": "Created project is persisted in database",
-      "p95_duration_ms": 2226.2,
-      "report_link": "reports/regression/29585656554-attempt-1/#testresult/2432b6e111e8bb1f",
-      "retries": 0,
-      "runs": 19,
-      "scope": "tests.api",
-      "signal": "Intermittent failure"
-    },
-    {
-      "failed_runs": 2,
-      "flaky": true,
-      "full_name": "tests.api.project_test#test_create_project_without_authorization",
-      "identity": "3e0f45226b9d785b02366a4aea88da0c",
-      "last_seen": "2026-07-17T13:56:46+00:00",
-      "name": "test_create_project_without_authorization",
-      "p95_duration_ms": 1140.8,
-      "report_link": "reports/regression/29585656554-attempt-1/#testresult/527e7851bb596e6c",
-      "retries": 0,
-      "runs": 20,
-      "scope": "tests.api",
-      "signal": "Intermittent failure"
-    },
-    {
-      "failed_runs": 2,
-      "flaky": true,
-      "full_name": "tests.api.build_configuration_test#test_create_build_configuration_with_unknown_project",
-      "identity": "92cc76f3de06774986dac5ad4897ef11",
-      "last_seen": "2026-07-17T13:56:46+00:00",
-      "name": "test_create_build_configuration_with_unknown_project",
-      "p95_duration_ms": 1131.9,
-      "report_link": "reports/regression/29585656554-attempt-1/#testresult/6ad0e7debc770c45",
-      "retries": 0,
-      "runs": 20,
-      "scope": "tests.api",
-      "signal": "Intermittent failure"
-    },
-    {
-      "failed_runs": 2,
-      "flaky": true,
-      "full_name": "tests.api.user_test.user_test#test_create_user_without_authorization",
-      "identity": "7486222f62198ddf733981b68f3760d5",
-      "last_seen": "2026-07-17T13:56:46+00:00",
-      "name": "test_create_user_without_authorization",
-      "p95_duration_ms": 1060.5,
-      "report_link": "reports/regression/29585656554-attempt-1/#testresult/dc6a450d55f44669",
-      "retries": 0,
-      "runs": 20,
-      "scope": "tests.api.user_test",
-      "signal": "Intermittent failure"
-    },
-    {
-      "failed_runs": 2,
-      "flaky": true,
-      "full_name": "tests.api.user_test.user_test#test_created_user_is_persisted_in_database",
-      "identity": "f0010d2f537ecb49c26451256fc9e380",
-      "last_seen": "2026-07-17T13:56:46+00:00",
-      "name": "Created user is persisted in database",
-      "p95_duration_ms": 790.1,
-      "report_link": "reports/regression/29585656554-attempt-1/#testresult/c96f64f195850d83",
-      "retries": 0,
-      "runs": 19,
-      "scope": "tests.api.user_test",
-      "signal": "Intermittent failure"
-    },
-    {
-      "failed_runs": 2,
-      "flaky": true,
-      "full_name": "tests.api.build_configuration_test#test_created_build_configuration_is_persisted_in_database",
-      "identity": "bcbca9190b357792af6296713e4f0ba5",
-      "last_seen": "2026-07-17T13:56:46+00:00",
-      "name": "Created build configuration is persisted in database",
-      "p95_duration_ms": 783.3,
-      "report_link": "reports/regression/29585656554-attempt-1/#testresult/1268f9bb7e5fdd95",
-      "retries": 0,
-      "runs": 19,
-      "scope": "tests.api",
-      "signal": "Intermittent failure"
-    },
-    {
       "failed_runs": 1,
       "flaky": true,
       "full_name": "tests.ui.identity_access.test_permissions#test_project_viewer_cannot_create_entities",
@@ -139,6 +55,62 @@
       "runs": 11,
       "scope": "UI \u00b7 WebKit",
       "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 1,
+      "flaky": true,
+      "full_name": "tests.api.build_execution.test_build_runtime_parameters#test_build_run_with_runtime_parameter",
+      "identity": "42db35554be3d04493f4dcc2f8e73d1a",
+      "last_seen": "2026-07-28T13:27:52+00:00",
+      "name": "Manual build run receives a runtime parameter",
+      "p95_duration_ms": 13508.9,
+      "report_link": "reports/regression/30361897861-attempt-2/#testresult/214fd680971c5b4d",
+      "retries": 0,
+      "runs": 43,
+      "scope": "API",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 1,
+      "flaky": true,
+      "full_name": "tests.api.build_execution.test_manual_build_run#test_successful_build_run",
+      "identity": "0213e39e02cdaf7abace75bccfaa5482",
+      "last_seen": "2026-07-28T13:27:52+00:00",
+      "name": "Manual build run finishes successfully",
+      "p95_duration_ms": 12486.1,
+      "report_link": "reports/regression/30361897861-attempt-2/#testresult/708b910e3d44a060",
+      "retries": 0,
+      "runs": 43,
+      "scope": "API",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 1,
+      "flaky": true,
+      "full_name": "tests.ui.auth.test_login#test_admin_can_login",
+      "identity": "3a1c0fa994409a71272d24e80ede5f03",
+      "last_seen": "2026-07-28T13:27:52+00:00",
+      "name": "test_admin_can_login[chromium]",
+      "p95_duration_ms": 12384.0,
+      "report_link": "reports/regression/30361897861-attempt-2/#testresult/605d65c37722a52a",
+      "retries": 0,
+      "runs": 31,
+      "scope": "UI",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 1,
+      "flaky": true,
+      "full_name": "tests.api.build_steps.test_build_step_configuration_persistence#test_updated_build_step_is_persisted_in_configuration",
+      "identity": "4f49c2243601ea754cc16fb9a3da0435",
+      "last_seen": "2026-07-28T13:27:52+00:00",
+      "name": "Updated build step is persisted in TeamCity configuration",
+      "p95_duration_ms": 125.9,
+      "report_link": "reports/regression/30361897861-attempt-2/#testresult/3cd242b3ac948316",
+      "retries": 0,
+      "runs": 43,
+      "scope": "API",
+      "signal": "Intermittent failure"
     }
   ],
   "coverage": {
@@ -146,7 +118,7 @@
       "branch_rate": 0.0,
       "line_rate": 0.0
     },
-    "generated_at": "2026-07-28T13:29:32+00:00",
+    "generated_at": "2026-07-29T06:11:24+00:00",
     "history": [
       {
         "attempt": 2,
@@ -302,10 +274,6 @@
       "sha": "639f4bb924eba4c4ace60e929f5a9a35b0ae9c66",
       "source": "src/main/api",
       "xml_url": "coverage/30361897861-attempt-2/coverage.xml"
-    },
-    "latest_context": {
-      "is_today": true,
-      "label": "Today at 13:27 UTC"
     },
     "modules": [
       {
@@ -781,10 +749,6 @@
         "path": "src/main/api/requests/steps/user_steps.py"
       }
     ],
-    "period_delta": {
-      "branch_rate": null,
-      "line_rate": null
-    },
     "previous": {
       "attempt": 1,
       "branch": "68/merge",
@@ -811,256 +775,61 @@
     "trend": [
       {
         "branch_rate": null,
-        "date": "2026-07-15",
-        "generated_at": null,
-        "html_url": null,
-        "label": "15 Jul",
-        "line_rate": null,
-        "report_id": null,
-        "run_id": null
-      },
-      {
-        "branch_rate": null,
-        "date": "2026-07-16",
-        "generated_at": null,
-        "html_url": null,
-        "label": "16 Jul",
-        "line_rate": null,
-        "report_id": null,
-        "run_id": null
-      },
-      {
-        "branch_rate": null,
-        "date": "2026-07-17",
-        "generated_at": null,
-        "html_url": null,
-        "label": "17 Jul",
-        "line_rate": null,
-        "report_id": null,
-        "run_id": null
-      },
-      {
-        "branch_rate": null,
-        "date": "2026-07-18",
-        "generated_at": null,
-        "html_url": null,
-        "label": "18 Jul",
-        "line_rate": null,
-        "report_id": null,
-        "run_id": null
-      },
-      {
-        "branch_rate": null,
-        "date": "2026-07-19",
-        "generated_at": null,
-        "html_url": null,
-        "label": "19 Jul",
-        "line_rate": null,
-        "report_id": null,
-        "run_id": null
-      },
-      {
-        "branch_rate": null,
-        "date": "2026-07-20",
-        "generated_at": null,
-        "html_url": null,
-        "label": "20 Jul",
-        "line_rate": null,
-        "report_id": null,
-        "run_id": null
-      },
-      {
-        "branch_rate": null,
-        "date": "2026-07-21",
-        "generated_at": null,
-        "html_url": null,
-        "label": "21 Jul",
-        "line_rate": null,
-        "report_id": null,
-        "run_id": null
-      },
-      {
-        "branch_rate": null,
-        "date": "2026-07-22",
-        "generated_at": null,
-        "html_url": null,
-        "label": "22 Jul",
-        "line_rate": null,
-        "report_id": null,
-        "run_id": null
-      },
-      {
-        "branch_rate": null,
         "date": "2026-07-23",
-        "generated_at": null,
-        "html_url": null,
         "label": "23 Jul",
         "line_rate": null,
-        "report_id": null,
-        "run_id": null
+        "report_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-24",
-        "generated_at": null,
-        "html_url": null,
         "label": "24 Jul",
         "line_rate": null,
-        "report_id": null,
-        "run_id": null
+        "report_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-25",
-        "generated_at": null,
-        "html_url": null,
         "label": "25 Jul",
         "line_rate": null,
-        "report_id": null,
-        "run_id": null
+        "report_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-26",
-        "generated_at": null,
-        "html_url": null,
         "label": "26 Jul",
         "line_rate": null,
-        "report_id": null,
-        "run_id": null
+        "report_id": null
       },
       {
         "branch_rate": null,
         "date": "2026-07-27",
-        "generated_at": null,
-        "html_url": null,
         "label": "27 Jul",
         "line_rate": null,
-        "report_id": null,
-        "run_id": null
+        "report_id": null
       },
       {
         "branch_rate": 55.7,
         "date": "2026-07-28",
-        "generated_at": "2026-07-28T13:27:52+00:00",
-        "html_url": "coverage/30361897861-attempt-2/html/",
         "label": "28 Jul",
         "line_rate": 89.6,
-        "report_id": "30361897861-attempt-2",
-        "run_id": 30361897861
+        "report_id": "30361897861-attempt-2"
+      },
+      {
+        "branch_rate": null,
+        "date": "2026-07-29",
+        "label": "29 Jul",
+        "line_rate": null,
+        "report_id": null
       }
     ],
     "window": {
-      "days": 14,
-      "end": "2026-07-28T13:29:32+00:00",
-      "start": "2026-07-15T00:00:00+00:00"
+      "days": 7,
+      "end": "2026-07-29T06:11:24+00:00",
+      "start": "2026-07-23T00:00:00+00:00"
     }
   },
   "daily": [
-    {
-      "date": "2026-07-15",
-      "failed": 0,
-      "flaky": 0,
-      "label": "15 Jul",
-      "pass_rate": null,
-      "passed": 0,
-      "pipeline_p95_duration_seconds": null,
-      "pipeline_runs": 0,
-      "pipeline_success_rate": null,
-      "skipped": 0,
-      "total": 0
-    },
-    {
-      "date": "2026-07-16",
-      "failed": 13,
-      "flaky": 0,
-      "label": "16 Jul",
-      "pass_rate": 94.37,
-      "passed": 218,
-      "pipeline_p95_duration_seconds": 233.9,
-      "pipeline_runs": 4,
-      "pipeline_success_rate": 25.0,
-      "skipped": 0,
-      "total": 231
-    },
-    {
-      "date": "2026-07-17",
-      "failed": 3,
-      "flaky": 0,
-      "label": "17 Jul",
-      "pass_rate": 99.6,
-      "passed": 750,
-      "pipeline_p95_duration_seconds": 399.8,
-      "pipeline_runs": 13,
-      "pipeline_success_rate": 69.23,
-      "skipped": 0,
-      "total": 753
-    },
-    {
-      "date": "2026-07-18",
-      "failed": 0,
-      "flaky": 0,
-      "label": "18 Jul",
-      "pass_rate": null,
-      "passed": 0,
-      "pipeline_p95_duration_seconds": null,
-      "pipeline_runs": 0,
-      "pipeline_success_rate": null,
-      "skipped": 0,
-      "total": 0
-    },
-    {
-      "date": "2026-07-19",
-      "failed": 0,
-      "flaky": 0,
-      "label": "19 Jul",
-      "pass_rate": null,
-      "passed": 0,
-      "pipeline_p95_duration_seconds": null,
-      "pipeline_runs": 0,
-      "pipeline_success_rate": null,
-      "skipped": 0,
-      "total": 0
-    },
-    {
-      "date": "2026-07-20",
-      "failed": 0,
-      "flaky": 0,
-      "label": "20 Jul",
-      "pass_rate": null,
-      "passed": 0,
-      "pipeline_p95_duration_seconds": null,
-      "pipeline_runs": 0,
-      "pipeline_success_rate": null,
-      "skipped": 0,
-      "total": 0
-    },
-    {
-      "date": "2026-07-21",
-      "failed": 0,
-      "flaky": 0,
-      "label": "21 Jul",
-      "pass_rate": 100.0,
-      "passed": 52,
-      "pipeline_p95_duration_seconds": 309.0,
-      "pipeline_runs": 1,
-      "pipeline_success_rate": 100.0,
-      "skipped": 0,
-      "total": 52
-    },
-    {
-      "date": "2026-07-22",
-      "failed": 0,
-      "flaky": 0,
-      "label": "22 Jul",
-      "pass_rate": null,
-      "passed": 0,
-      "pipeline_p95_duration_seconds": null,
-      "pipeline_runs": 0,
-      "pipeline_success_rate": null,
-      "skipped": 0,
-      "total": 0
-    },
     {
       "date": "2026-07-23",
       "failed": 1,
@@ -1138,20 +907,33 @@
       "pipeline_success_rate": 88.89,
       "skipped": 0,
       "total": 639
+    },
+    {
+      "date": "2026-07-29",
+      "failed": 0,
+      "flaky": 0,
+      "label": "29 Jul",
+      "pass_rate": null,
+      "passed": 0,
+      "pipeline_p95_duration_seconds": null,
+      "pipeline_runs": 0,
+      "pipeline_success_rate": null,
+      "skipped": 0,
+      "total": 0
     }
   ],
   "data_quality": {
-    "completed_runs": 65,
-    "published_reports": 68,
-    "runs_without_report": 4
+    "completed_runs": 47,
+    "published_reports": 46,
+    "runs_without_report": 1
   },
-  "generated_at": "2026-07-28T13:29:33+00:00",
+  "generated_at": "2026-07-29T06:11:25+00:00",
   "pipeline": {
-    "completed": 65,
-    "p95_duration_seconds": 434.0,
-    "success_rate": 75.38,
-    "successful": 49,
-    "unsuccessful": 16
+    "completed": 47,
+    "p95_duration_seconds": 440.0,
+    "success_rate": 80.85,
+    "successful": 38,
+    "unsuccessful": 9
   },
   "quality_targets": {
     "flaky_results": {
@@ -1294,294 +1076,6 @@
     }
   ],
   "run_trends": [
-    {
-      "attempt": 1,
-      "conclusion": "failure",
-      "created_at": "2026-07-16T11:34:39+00:00",
-      "flaky_results": 0,
-      "label": "16 Jul 11:34",
-      "pipeline_success_rate": 0.0,
-      "report_url": "reports/regression/29494927926-attempt-1/",
-      "run_id": 29494927926,
-      "run_number": 6,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29494927926",
-      "test_failed": 3,
-      "test_pass_rate": 91.67,
-      "test_total": 36,
-      "workflow_duration_seconds": 180.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "failure",
-      "created_at": "2026-07-16T13:39:51+00:00",
-      "flaky_results": 0,
-      "label": "16 Jul 13:39",
-      "pipeline_success_rate": 0.0,
-      "report_url": "reports/regression/29503152005-attempt-1/",
-      "run_id": 29503152005,
-      "run_number": 7,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29503152005",
-      "test_failed": 9,
-      "test_pass_rate": 76.92,
-      "test_total": 39,
-      "workflow_duration_seconds": 184.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-16T14:48:47+00:00",
-      "flaky_results": 0,
-      "label": "16 Jul 14:48",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29508288127-attempt-1/",
-      "run_id": 29508288127,
-      "run_number": 8,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29508288127",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 39,
-      "workflow_duration_seconds": 188.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "failure",
-      "created_at": "2026-07-16T14:53:33+00:00",
-      "flaky_results": 0,
-      "label": "16 Jul 14:53",
-      "pipeline_success_rate": 0.0,
-      "report_url": "reports/regression/29508647065-attempt-1/",
-      "run_id": 29508647065,
-      "run_number": 9,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29508647065",
-      "test_failed": 1,
-      "test_pass_rate": 97.44,
-      "test_total": 39,
-      "workflow_duration_seconds": 242.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-17T09:36:05+00:00",
-      "flaky_results": 0,
-      "label": "17 Jul 09:36",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29570550483-attempt-1/",
-      "run_id": 29570550483,
-      "run_number": 10,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29570550483",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 54,
-      "workflow_duration_seconds": 326.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-17T11:13:35+00:00",
-      "flaky_results": 0,
-      "label": "17 Jul 11:13",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29576133280-attempt-1/",
-      "run_id": 29576133280,
-      "run_number": 11,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29576133280",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 50,
-      "workflow_duration_seconds": 311.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "failure",
-      "created_at": "2026-07-17T11:38:13+00:00",
-      "flaky_results": null,
-      "label": "17 Jul 11:38",
-      "pipeline_success_rate": 0.0,
-      "report_url": null,
-      "run_id": 29577499824,
-      "run_number": 12,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29577499824",
-      "test_failed": null,
-      "test_pass_rate": null,
-      "test_total": null,
-      "workflow_duration_seconds": 410.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "failure",
-      "created_at": "2026-07-17T11:47:15+00:00",
-      "flaky_results": null,
-      "label": "17 Jul 11:47",
-      "pipeline_success_rate": 0.0,
-      "report_url": null,
-      "run_id": 29578011153,
-      "run_number": 13,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29578011153",
-      "test_failed": null,
-      "test_pass_rate": null,
-      "test_total": null,
-      "workflow_duration_seconds": 393.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "failure",
-      "created_at": "2026-07-17T11:58:09+00:00",
-      "flaky_results": 0,
-      "label": "17 Jul 11:58",
-      "pipeline_success_rate": 0.0,
-      "report_url": "reports/regression/29578612834-attempt-1/",
-      "run_id": 29578612834,
-      "run_number": 14,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29578612834",
-      "test_failed": 3,
-      "test_pass_rate": 94.0,
-      "test_total": 50,
-      "workflow_duration_seconds": 325.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-17T12:07:40+00:00",
-      "flaky_results": 0,
-      "label": "17 Jul 12:07",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29579157628-attempt-1/",
-      "run_id": 29579157628,
-      "run_number": 15,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29579157628",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 50,
-      "workflow_duration_seconds": 334.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "failure",
-      "created_at": "2026-07-17T12:28:48+00:00",
-      "flaky_results": null,
-      "label": "17 Jul 12:28",
-      "pipeline_success_rate": 0.0,
-      "report_url": null,
-      "run_id": 29580366728,
-      "run_number": 16,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29580366728",
-      "test_failed": null,
-      "test_pass_rate": null,
-      "test_total": null,
-      "workflow_duration_seconds": 27.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-17T12:30:11+00:00",
-      "flaky_results": 0,
-      "label": "17 Jul 12:30",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29580449652-attempt-1/",
-      "run_id": 29580449652,
-      "run_number": 17,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29580449652",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 50,
-      "workflow_duration_seconds": 320.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-17T12:55:59+00:00",
-      "flaky_results": 0,
-      "label": "17 Jul 12:55",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29582051850-attempt-1/",
-      "run_id": 29582051850,
-      "run_number": 18,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29582051850",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 50,
-      "workflow_duration_seconds": 326.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-17T13:06:07+00:00",
-      "flaky_results": 0,
-      "label": "17 Jul 13:06",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29582679534-attempt-1/",
-      "run_id": 29582679534,
-      "run_number": 19,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29582679534",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 50,
-      "workflow_duration_seconds": 343.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-17T13:45:47+00:00",
-      "flaky_results": 0,
-      "label": "17 Jul 13:45",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29585221320-attempt-1/",
-      "run_id": 29585221320,
-      "run_number": 20,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29585221320",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 50,
-      "workflow_duration_seconds": 271.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-17T13:52:30+00:00",
-      "flaky_results": 0,
-      "label": "17 Jul 13:52",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29585656554-attempt-1/",
-      "run_id": 29585656554,
-      "run_number": 21,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29585656554",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 50,
-      "workflow_duration_seconds": 276.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-17T14:11:46+00:00",
-      "flaky_results": 0,
-      "label": "17 Jul 14:11",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29586974624-attempt-1/",
-      "run_id": 29586974624,
-      "run_number": 22,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29586974624",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 50,
-      "workflow_duration_seconds": 274.0
-    },
-    {
-      "attempt": 1,
-      "conclusion": "success",
-      "created_at": "2026-07-21T19:44:47+00:00",
-      "flaky_results": 0,
-      "label": "21 Jul 19:44",
-      "pipeline_success_rate": 100.0,
-      "report_url": "reports/regression/29862813757-attempt-1/",
-      "run_id": 29862813757,
-      "run_number": 23,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/29862813757",
-      "test_failed": 0,
-      "test_pass_rate": 100.0,
-      "test_total": 52,
-      "workflow_duration_seconds": 309.0
-    },
     {
       "attempt": 1,
       "conclusion": "success",
@@ -2340,11 +1834,11 @@
       "failed": 3,
       "flaky_tests": 0,
       "name": "API",
-      "p95_duration_ms": 11249.0,
-      "pass_rate": 99.87,
-      "passed": 2265,
+      "p95_duration_ms": 11248.6,
+      "pass_rate": 99.86,
+      "passed": 2165,
       "skipped": 0,
-      "total": 2268,
+      "total": 2168,
       "unique_tests": 50
     },
     {
@@ -2384,72 +1878,28 @@
       "failed": 7,
       "flaky_tests": 0,
       "name": "UI",
-      "p95_duration_ms": 32197.5,
-      "pass_rate": 90.79,
-      "passed": 69,
+      "p95_duration_ms": 32252.1,
+      "pass_rate": 90.54,
+      "passed": 67,
       "skipped": 0,
-      "total": 76,
+      "total": 74,
       "unique_tests": 16
-    },
-    {
-      "failed": 11,
-      "flaky_tests": 0,
-      "name": "tests.api",
-      "p95_duration_ms": 12314.4,
-      "pass_rate": 98.09,
-      "passed": 564,
-      "skipped": 0,
-      "total": 575,
-      "unique_tests": 33
-    },
-    {
-      "failed": 5,
-      "flaky_tests": 0,
-      "name": "tests.api.user_test",
-      "p95_duration_ms": 666.2,
-      "pass_rate": 98.53,
-      "passed": 334,
-      "skipped": 0,
-      "total": 339,
-      "unique_tests": 17
-    },
-    {
-      "failed": 0,
-      "flaky_tests": 0,
-      "name": "tests.scripts",
-      "p95_duration_ms": 2.0,
-      "pass_rate": 100.0,
-      "passed": 8,
-      "skipped": 0,
-      "total": 8,
-      "unique_tests": 3
-    },
-    {
-      "failed": 0,
-      "flaky_tests": 0,
-      "name": "tests.smoke",
-      "p95_duration_ms": 76.1,
-      "pass_rate": 100.0,
-      "passed": 12,
-      "skipped": 0,
-      "total": 12,
-      "unique_tests": 1
     }
   ],
   "tests": {
-    "failed": 28,
-    "flaky": 18,
-    "pass_rate": 99.2,
-    "passed": 3481,
+    "failed": 12,
+    "flaky": 8,
+    "pass_rate": 99.51,
+    "passed": 2461,
     "retries": 0,
     "retry_rate": 0.0,
     "skipped": 0,
-    "total": 3509,
-    "unique": 125
+    "total": 2473,
+    "unique": 71
   },
   "window": {
-    "days": 14,
-    "end": "2026-07-28T13:29:33+00:00",
-    "start": "2026-07-15T00:00:00+00:00"
+    "days": 7,
+    "end": "2026-07-29T06:11:25+00:00",
+    "start": "2026-07-23T00:00:00+00:00"
   }
 }

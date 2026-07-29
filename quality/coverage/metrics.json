@@ -3,7 +3,7 @@
     "branch_rate": 0.0,
     "line_rate": 0.0
   },
-  "generated_at": "2026-07-28T13:29:32+00:00",
+  "generated_at": "2026-07-29T06:11:24+00:00",
   "history": [
     {
       "attempt": 2,
@@ -159,10 +159,6 @@
     "sha": "639f4bb924eba4c4ace60e929f5a9a35b0ae9c66",
     "source": "src/main/api",
     "xml_url": "coverage/30361897861-attempt-2/coverage.xml"
-  },
-  "latest_context": {
-    "is_today": true,
-    "label": "Today at 13:27 UTC"
   },
   "modules": [
     {
@@ -638,10 +634,6 @@
       "path": "src/main/api/requests/steps/user_steps.py"
     }
   ],
-  "period_delta": {
-    "branch_rate": null,
-    "line_rate": null
-  },
   "previous": {
     "attempt": 1,
     "branch": "68/merge",
@@ -668,148 +660,57 @@
   "trend": [
     {
       "branch_rate": null,
-      "date": "2026-07-15",
-      "generated_at": null,
-      "html_url": null,
-      "label": "15 Jul",
-      "line_rate": null,
-      "report_id": null,
-      "run_id": null
-    },
-    {
-      "branch_rate": null,
-      "date": "2026-07-16",
-      "generated_at": null,
-      "html_url": null,
-      "label": "16 Jul",
-      "line_rate": null,
-      "report_id": null,
-      "run_id": null
-    },
-    {
-      "branch_rate": null,
-      "date": "2026-07-17",
-      "generated_at": null,
-      "html_url": null,
-      "label": "17 Jul",
-      "line_rate": null,
-      "report_id": null,
-      "run_id": null
-    },
-    {
-      "branch_rate": null,
-      "date": "2026-07-18",
-      "generated_at": null,
-      "html_url": null,
-      "label": "18 Jul",
-      "line_rate": null,
-      "report_id": null,
-      "run_id": null
-    },
-    {
-      "branch_rate": null,
-      "date": "2026-07-19",
-      "generated_at": null,
-      "html_url": null,
-      "label": "19 Jul",
-      "line_rate": null,
-      "report_id": null,
-      "run_id": null
-    },
-    {
-      "branch_rate": null,
-      "date": "2026-07-20",
-      "generated_at": null,
-      "html_url": null,
-      "label": "20 Jul",
-      "line_rate": null,
-      "report_id": null,
-      "run_id": null
-    },
-    {
-      "branch_rate": null,
-      "date": "2026-07-21",
-      "generated_at": null,
-      "html_url": null,
-      "label": "21 Jul",
-      "line_rate": null,
-      "report_id": null,
-      "run_id": null
-    },
-    {
-      "branch_rate": null,
-      "date": "2026-07-22",
-      "generated_at": null,
-      "html_url": null,
-      "label": "22 Jul",
-      "line_rate": null,
-      "report_id": null,
-      "run_id": null
-    },
-    {
-      "branch_rate": null,
       "date": "2026-07-23",
-      "generated_at": null,
-      "html_url": null,
       "label": "23 Jul",
       "line_rate": null,
-      "report_id": null,
-      "run_id": null
+      "report_id": null
     },
     {
       "branch_rate": null,
       "date": "2026-07-24",
-      "generated_at": null,
-      "html_url": null,
       "label": "24 Jul",
       "line_rate": null,
-      "report_id": null,
-      "run_id": null
+      "report_id": null
     },
     {
       "branch_rate": null,
       "date": "2026-07-25",
-      "generated_at": null,
-      "html_url": null,
       "label": "25 Jul",
       "line_rate": null,
-      "report_id": null,
-      "run_id": null
+      "report_id": null
     },
     {
       "branch_rate": null,
       "date": "2026-07-26",
-      "generated_at": null,
-      "html_url": null,
       "label": "26 Jul",
       "line_rate": null,
-      "report_id": null,
-      "run_id": null
+      "report_id": null
     },
     {
       "branch_rate": null,
       "date": "2026-07-27",
-      "generated_at": null,
-      "html_url": null,
       "label": "27 Jul",
       "line_rate": null,
-      "report_id": null,
-      "run_id": null
+      "report_id": null
     },
     {
       "branch_rate": 55.7,
       "date": "2026-07-28",
-      "generated_at": "2026-07-28T13:27:52+00:00",
-      "html_url": "coverage/30361897861-attempt-2/html/",
       "label": "28 Jul",
       "line_rate": 89.6,
-      "report_id": "30361897861-attempt-2",
-      "run_id": 30361897861
+      "report_id": "30361897861-attempt-2"
+    },
+    {
+      "branch_rate": null,
+      "date": "2026-07-29",
+      "label": "29 Jul",
+      "line_rate": null,
+      "report_id": null
     }
   ],
   "window": {
-    "days": 14,
-    "end": "2026-07-28T13:29:32+00:00",
-    "start": "2026-07-15T00:00:00+00:00"
+    "days": 7,
+    "end": "2026-07-29T06:11:24+00:00",
+    "start": "2026-07-23T00:00:00+00:00"
   }
 }
