@@ -1,10 +1,32 @@
 {
   "delta": {
     "branch_rate": 0.0,
-    "line_rate": 0.0
+    "line_rate": 0.02
   },
-  "generated_at": "2026-07-29T06:11:24+00:00",
+  "generated_at": "2026-07-29T14:02:31+00:00",
   "history": [
+    {
+      "attempt": 1,
+      "branch": "69/merge",
+      "branch_rate": 55.7,
+      "covered_branches": 127,
+      "covered_lines": 1597,
+      "excluded_lines": 22,
+      "generated_at": "2026-07-29T14:02:31+00:00",
+      "html_url": "coverage/30458351141-attempt-1/html/",
+      "json_url": "coverage/30458351141-attempt-1/coverage.json",
+      "line_rate": 89.62,
+      "missing_branches": 101,
+      "missing_lines": 185,
+      "num_branches": 228,
+      "num_statements": 1782,
+      "report_id": "30458351141-attempt-1",
+      "run_id": 30458351141,
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30458351141",
+      "sha": "9f9bb718492d1e8cb8ba4ec020bd91ba9908862f",
+      "source": "src/main/api",
+      "xml_url": "coverage/30458351141-attempt-1/coverage.xml"
+    },
     {
       "attempt": 2,
       "branch": "ekonchina/current-coverage-trend",
@@ -139,26 +161,26 @@
     }
   ],
   "latest": {
-    "attempt": 2,
-    "branch": "ekonchina/current-coverage-trend",
+    "attempt": 1,
+    "branch": "69/merge",
     "branch_rate": 55.7,
     "covered_branches": 127,
-    "covered_lines": 1594,
+    "covered_lines": 1597,
     "excluded_lines": 22,
-    "generated_at": "2026-07-28T13:27:52+00:00",
-    "html_url": "coverage/30361897861-attempt-2/html/",
-    "json_url": "coverage/30361897861-attempt-2/coverage.json",
-    "line_rate": 89.6,
+    "generated_at": "2026-07-29T14:02:31+00:00",
+    "html_url": "coverage/30458351141-attempt-1/html/",
+    "json_url": "coverage/30458351141-attempt-1/coverage.json",
+    "line_rate": 89.62,
     "missing_branches": 101,
     "missing_lines": 185,
     "num_branches": 228,
-    "num_statements": 1779,
-    "report_id": "30361897861-attempt-2",
-    "run_id": 30361897861,
-    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861",
-    "sha": "639f4bb924eba4c4ace60e929f5a9a35b0ae9c66",
+    "num_statements": 1782,
+    "report_id": "30458351141-attempt-1",
+    "run_id": 30458351141,
+    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30458351141",
+    "sha": "9f9bb718492d1e8cb8ba4ec020bd91ba9908862f",
     "source": "src/main/api",
-    "xml_url": "coverage/30361897861-attempt-2/coverage.xml"
+    "xml_url": "coverage/30458351141-attempt-1/coverage.xml"
   },
   "modules": [
     {
@@ -627,36 +649,36 @@
     },
     {
       "branch_rate": null,
-      "covered_lines": 62,
+      "covered_lines": 65,
       "line_rate": 100.0,
       "missing": "\u2014",
-      "num_statements": 62,
+      "num_statements": 65,
       "path": "src/main/api/requests/steps/user_steps.py"
     }
   ],
   "previous": {
-    "attempt": 1,
-    "branch": "68/merge",
+    "attempt": 2,
+    "branch": "ekonchina/current-coverage-trend",
     "branch_rate": 55.7,
     "covered_branches": 127,
     "covered_lines": 1594,
     "excluded_lines": 22,
-    "generated_at": "2026-07-28T12:42:28+00:00",
-    "html_url": "coverage/30359694450-attempt-1/html/",
-    "json_url": "coverage/30359694450-attempt-1/coverage.json",
+    "generated_at": "2026-07-28T13:27:52+00:00",
+    "html_url": "coverage/30361897861-attempt-2/html/",
+    "json_url": "coverage/30361897861-attempt-2/coverage.json",
     "line_rate": 89.6,
     "missing_branches": 101,
     "missing_lines": 185,
     "num_branches": 228,
     "num_statements": 1779,
-    "report_id": "30359694450-attempt-1",
-    "run_id": 30359694450,
-    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450",
-    "sha": "57e93fef8cbae1cad2e5873f5a6725712fd2c317",
+    "report_id": "30361897861-attempt-2",
+    "run_id": 30361897861,
+    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861",
+    "sha": "639f4bb924eba4c4ace60e929f5a9a35b0ae9c66",
     "source": "src/main/api",
-    "xml_url": "coverage/30359694450-attempt-1/coverage.xml"
+    "xml_url": "coverage/30361897861-attempt-2/coverage.xml"
   },
-  "reports": 6,
+  "reports": 7,
   "trend": [
     {
       "branch_rate": null,
@@ -701,16 +723,16 @@
       "report_id": "30361897861-attempt-2"
     },
     {
-      "branch_rate": null,
+      "branch_rate": 55.7,
       "date": "2026-07-29",
       "label": "29 Jul",
-      "line_rate": null,
-      "report_id": null
+      "line_rate": 89.62,
+      "report_id": "30458351141-attempt-1"
     }
   ],
   "window": {
     "days": 7,
-    "end": "2026-07-29T06:11:24+00:00",
+    "end": "2026-07-29T14:02:31+00:00",
     "start": "2026-07-23T00:00:00+00:00"
   }
 }
