@@ -10,32 +10,32 @@
     "with_coverage": 59,
     "with_coverage_rate": 100.0
   },
-  "generated_at": "2026-07-30T15:11:44+00:00",
+  "generated_at": "2026-07-30T15:22:04+00:00",
   "latest": {
     "attempt": 1,
-    "branch": "71/merge",
+    "branch": "70/merge",
     "branch_rate": 55.7,
     "covered_branches": 127,
     "covered_lines": 1594,
     "excluded_lines": 22,
-    "generated_at": "2026-07-30T15:05:27+00:00",
-    "html_url": "coverage/30554436296-attempt-1/html/",
-    "json_url": "coverage/30554436296-attempt-1/coverage.json",
+    "generated_at": "2026-07-30T15:22:04+00:00",
+    "html_url": "coverage/30555853101-attempt-1/html/",
+    "json_url": "coverage/30555853101-attempt-1/coverage.json",
     "line_rate": 89.6,
     "missing_branches": 101,
     "missing_lines": 185,
     "num_branches": 228,
     "num_statements": 1779,
-    "report_id": "30554436296-attempt-1",
-    "run_id": 30554436296,
-    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30554436296",
-    "sha": "82cb6fb610ebbf6bc6b74657143f6f6b8fce1229",
+    "report_id": "30555853101-attempt-1",
+    "run_id": 30555853101,
+    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30555853101",
+    "sha": "67f1b7a543ae485b353f1af528edb7873a85ec55",
     "source": "src/main/api",
-    "xml_url": "coverage/30554436296-attempt-1/coverage.xml"
+    "xml_url": "coverage/30555853101-attempt-1/coverage.xml"
   },
   "latest_context": {
     "is_today": true,
-    "label": "Today at 15:05 UTC"
+    "label": "Today at 15:22 UTC"
   },
   "mode": "current-snapshot",
   "modules": [
@@ -748,5 +748,5 @@
       "path": "src/main/api/requests/steps/user_steps.py"
     }
   ],
-  "reports": 9
+  "reports": 10
 }
