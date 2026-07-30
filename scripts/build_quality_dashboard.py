@@ -10,7 +10,6 @@ import math
 import os
 import re
 from collections import Counter, defaultdict
-from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -21,13 +20,25 @@ FAILED_STATUSES = {"failed", "broken"}
 COMPLETED_TEST_STATUSES = {"passed", "failed", "broken", "skipped", "unknown"}
 UI_SCOPE_ORDER = ("API", "UI · Chromium", "UI · Firefox", "UI · WebKit")
 QUALITY_TARGET_KEYS = (
-    "test_pass_rate",
-    "pipeline_success_rate",
-    "workflow_duration_seconds",
-    "flaky_results",
+    "pass_rate",
+    "fail_rate",
+    "broken_rate",
+    "flaky_rate",
+    "stability_rate",
+    "avg_duration_sec",
+    "avg_api_duration_sec",
+    "ui_run_duration_sec",
+    "api_run_duration_sec",
+    "suite_duration_sec",
 )
 QUALITY_TARGET_DIRECTIONS = {"minimum", "maximum"}
-PERCENTAGE_TARGET_KEYS = {"test_pass_rate", "pipeline_success_rate"}
+PERCENTAGE_TARGET_KEYS = {
+    "pass_rate",
+    "fail_rate",
+    "broken_rate",
+    "flaky_rate",
+    "stability_rate",
+}
 
 
 @dataclass(frozen=True)
@@ -42,9 +53,12 @@ class WorkflowRun:
     created_at: datetime
     started_at: datetime
     updated_at: datetime
+    test_duration_seconds: float | None = None
 
     @property
     def duration_seconds(self) -> float:
+        if self.test_duration_seconds is not None:
+            return max(0.0, self.test_duration_seconds)
         return max(0.0, (self.updated_at - self.started_at).total_seconds())
 
 
@@ -130,6 +144,11 @@ def load_workflow_runs(
             created_at=created_at,
             started_at=started_at,
             updated_at=updated_at,
+            test_duration_seconds=(
+                float(item["test_duration_seconds"])
+                if item.get("test_duration_seconds") is not None
+                else None
+            ),
         )
         previous = latest_attempts.get(run.id)
         if previous is None or run.attempt >= previous.attempt:
@@ -174,7 +193,12 @@ def load_quality_targets(path: Path) -> dict[str, dict[str, Any]]:
             raise ValueError(
                 f"quality target {key!r} value must not be greater than 100"
             )
-        targets[key] = {"direction": direction, "value": value}
+        targets[key] = {
+            "direction": direction,
+            "value": value,
+            "name": str(raw_target.get("name") or key.replace("_", " ").title()),
+            "recommendation": str(raw_target.get("recommendation") or ""),
+        }
     return targets
 
 
@@ -580,6 +604,325 @@ def aggregate_tests(reports: list[PublishedReport]) -> list[dict[str, Any]]:
     return selected
 
 
+def average(values: list[float]) -> float:
+    return round(sum(values) / len(values), 2) if values else 0.0
+
+
+def ratio_percent(numerator: int, denominator: int) -> float:
+    return numerator / denominator * 100 if denominator else 0.0
+
+
+def is_api_test(test: dict[str, Any]) -> bool:
+    scope = test_scope(test).lower()
+    full_name = str(test.get("fullName") or test.get("name") or "").lower()
+    return scope == "api" or ".api." in full_name
+
+
+def is_ui_test(test: dict[str, Any]) -> bool:
+    scope = test_scope(test).lower()
+    full_name = str(test.get("fullName") or test.get("name") or "").lower()
+    return scope.startswith("ui") or ".ui." in full_name
+
+
+def report_wall_clock_seconds(report: PublishedReport) -> float:
+    bounds: list[tuple[float, float]] = []
+    for test in report.tests:
+        time_payload = test.get("time")
+        if not isinstance(time_payload, dict):
+            continue
+        try:
+            started_at = float(time_payload["start"])
+            stopped_at = float(time_payload["stop"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if stopped_at >= started_at:
+            bounds.append((started_at, stopped_at))
+    if not bounds:
+        return 0.0
+    return (max(stop for _, stop in bounds) - min(start for start, _ in bounds)) / 1000
+
+
+def reference_run_metrics(
+    runs: list[WorkflowRun],
+    reports: list[PublishedReport],
+    quality_targets: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Build one row per Allure report using the reference dashboard formulas."""
+    runs_by_id = {run.id: run for run in runs}
+    rows: list[dict[str, Any]] = []
+    distribution_keys = ("pass_rate", "fail_rate", "broken_rate")
+
+    for report in sorted(reports, key=lambda item: item.generated_at):
+        counts: Counter[str] = Counter()
+        total_duration_ms = 0.0
+        api_duration_ms = 0.0
+        ui_duration_ms = 0.0
+        api_tests = 0
+        ui_tests = 0
+        api_flaky_tests = 0
+        ui_flaky_tests = 0
+
+        for test in report.tests:
+            status = str(test.get("status") or "unknown").lower()
+            counts[status] += 1
+            duration_ms = test_duration_ms(test)
+            total_duration_ms += duration_ms
+            flaky = bool(test.get("flaky"))
+            if is_api_test(test):
+                api_tests += 1
+                api_duration_ms += duration_ms
+                api_flaky_tests += int(flaky)
+            if is_ui_test(test):
+                ui_tests += 1
+                ui_duration_ms += duration_ms
+                ui_flaky_tests += int(flaky)
+
+        total_tests = sum(counts.values())
+        passed_tests = counts["passed"]
+        failed_tests = counts["failed"]
+        broken_tests = counts["broken"]
+        flaky_tests = api_flaky_tests + ui_flaky_tests
+        run = runs_by_id.get(report.run_id)
+        suite_duration_seconds = (
+            run.duration_seconds
+            if run is not None
+            else report_wall_clock_seconds(report)
+        )
+
+        row: dict[str, Any] = {
+            "run_id": report.run_id,
+            "run_number": run.number if run is not None else report.run_id,
+            "attempt": report.attempt,
+            "run_label": report.generated_at.strftime("%Y-%m-%d %H:%M"),
+            "generated_at": report.generated_at.isoformat(timespec="seconds"),
+            "run_url": run.url if run is not None else report.run_url,
+            "report_url": f"{report.path}/",
+            "total_tests": total_tests,
+            "api_tests": api_tests,
+            "ui_tests": ui_tests,
+            "passed_tests": passed_tests,
+            "pass_rate": ratio_percent(passed_tests, total_tests),
+            "failed_tests": failed_tests,
+            "fail_rate": ratio_percent(failed_tests, total_tests),
+            "broken_tests": broken_tests,
+            "broken_rate": ratio_percent(broken_tests, total_tests),
+            "flaky_tests": flaky_tests,
+            "flaky_rate": ratio_percent(flaky_tests, total_tests),
+            "ui_flaky_tests": ui_flaky_tests,
+            "ui_flaky_rate": ratio_percent(ui_flaky_tests, ui_tests),
+            "api_flaky_tests": api_flaky_tests,
+            "api_flaky_rate": ratio_percent(api_flaky_tests, api_tests),
+            "run_success": total_tests > 0 and passed_tests == total_tests,
+            # The reference averages each run's average over all final test results.
+            "avg_duration_sec": total_duration_ms / total_tests / 1000
+            if total_tests
+            else 0.0,
+            "avg_api_duration_sec": api_duration_ms / api_tests / 1000
+            if api_tests
+            else 0.0,
+            "ui_run_duration_sec": ui_duration_ms / 1000,
+            "api_run_duration_sec": api_duration_ms / 1000,
+            "suite_duration_sec": suite_duration_seconds,
+        }
+        passed_gates = sum(
+            target_passed(float(row[key]), quality_targets[key])
+            for key in distribution_keys
+        )
+        row["quality_gates_passed"] = passed_gates
+        row["quality_gates_failed"] = len(distribution_keys) - passed_gates
+        row["quality_gate_status"] = (
+            "OK" if row["quality_gates_failed"] == 0 else "Failed"
+        )
+        rows.append(row)
+
+    return rows
+
+
+def average_formula(
+    label: str,
+    rows: list[dict[str, Any]],
+    field: str,
+    unit: str,
+) -> str:
+    if not rows:
+        return f"{label} = n/a"
+    series = " + ".join(f"{float(row[field]):.2f}" for row in rows)
+    value = average([float(row[field]) for row in rows])
+    return f"{label} = ({series}) / {len(rows)} = {value:.2f}{unit}"
+
+
+def build_quality_gates(
+    rows: list[dict[str, Any]],
+    quality_targets: dict[str, dict[str, Any]],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    total_runs = len(rows)
+    total_tests = sum(int(row["total_tests"]) for row in rows)
+    total_flaky = sum(int(row["flaky_tests"]) for row in rows)
+    successful_runs = sum(bool(row["run_success"]) for row in rows)
+    values = {
+        "pass_rate": average([float(row["pass_rate"]) for row in rows]),
+        "fail_rate": average([float(row["fail_rate"]) for row in rows]),
+        "broken_rate": average([float(row["broken_rate"]) for row in rows]),
+        "flaky_rate": percentage(total_flaky, total_tests) or 0.0,
+        "stability_rate": percentage(successful_runs, total_runs) or 0.0,
+        "avg_duration_sec": average([float(row["avg_duration_sec"]) for row in rows]),
+        "avg_api_duration_sec": average(
+            [float(row["avg_api_duration_sec"]) for row in rows]
+        ),
+        "ui_run_duration_sec": average(
+            [float(row["ui_run_duration_sec"]) for row in rows]
+        ),
+        "api_run_duration_sec": average(
+            [float(row["api_run_duration_sec"]) for row in rows]
+        ),
+        "suite_duration_sec": average(
+            [float(row["suite_duration_sec"]) for row in rows]
+        ),
+        "ui_flaky_rate": average([float(row["ui_flaky_rate"]) for row in rows]),
+        "api_flaky_rate": average([float(row["api_flaky_rate"]) for row in rows]),
+    }
+    formulas = {
+        "pass_rate": average_formula("average pass rate", rows, "pass_rate", "%"),
+        "fail_rate": average_formula("average fail rate", rows, "fail_rate", "%"),
+        "broken_rate": average_formula("average broken rate", rows, "broken_rate", "%"),
+        "flaky_rate": (
+            f"flaky rate = {total_flaky} / {total_tests} = {values['flaky_rate']:.2f}%"
+        ),
+        "stability_rate": (
+            f"stability = {successful_runs} / {total_runs} = "
+            f"{values['stability_rate']:.2f}%"
+        ),
+        "avg_duration_sec": average_formula(
+            "average test duration", rows, "avg_duration_sec", "s"
+        ),
+        "avg_api_duration_sec": average_formula(
+            "average API test duration", rows, "avg_api_duration_sec", "s"
+        ),
+        "ui_run_duration_sec": average_formula(
+            "average UI run duration", rows, "ui_run_duration_sec", "s"
+        ),
+        "api_run_duration_sec": average_formula(
+            "average API run duration", rows, "api_run_duration_sec", "s"
+        ),
+        "suite_duration_sec": average_formula(
+            "average pipeline duration", rows, "suite_duration_sec", "s"
+        ),
+        "ui_flaky_rate": average_formula(
+            "average UI flaky rate", rows, "ui_flaky_rate", "%"
+        ),
+        "api_flaky_rate": average_formula(
+            "average API flaky rate", rows, "api_flaky_rate", "%"
+        ),
+    }
+    descriptions = {
+        "pass_rate": "Unweighted average of the final pass rate of every published run.",
+        "fail_rate": "Unweighted average of the final failed-test rate of every published run.",
+        "broken_rate": "Unweighted average of the final broken-test rate of every published run.",
+        "flaky_rate": "All flaky API and UI results divided by all final test results.",
+        "stability_rate": "Published runs where every final test result passed, divided by all published runs.",
+        "avg_duration_sec": "Unweighted average of each run's mean final-test duration.",
+        "avg_api_duration_sec": "Unweighted average of each run's mean API-test duration.",
+        "ui_run_duration_sec": "Unweighted average of the summed UI test duration in each run.",
+        "api_run_duration_sec": "Unweighted average of the summed API test duration in each run.",
+        "suite_duration_sec": "Unweighted average of the GitHub Actions test-stage duration.",
+        "ui_flaky_rate": "Unweighted average of the UI flaky rate of every published run.",
+        "api_flaky_rate": "Unweighted average of the API flaky rate of every published run.",
+    }
+
+    gate_order = (
+        "pass_rate",
+        "fail_rate",
+        "broken_rate",
+        "flaky_rate",
+        "ui_flaky_rate",
+        "api_flaky_rate",
+        "stability_rate",
+        "avg_duration_sec",
+        "avg_api_duration_sec",
+        "ui_run_duration_sec",
+        "api_run_duration_sec",
+        "suite_duration_sec",
+    )
+    gates: list[dict[str, Any]] = []
+    for key in gate_order:
+        target_key = "flaky_rate" if key in {"ui_flaky_rate", "api_flaky_rate"} else key
+        target = quality_targets[target_key]
+        direction = str(target["direction"])
+        threshold = float(target["value"])
+        value = float(values[key])
+        passed = value >= threshold if direction == "minimum" else value <= threshold
+        default_name = key.replace("_", " ").title()
+        name = (
+            "Average UI Flaky Rate"
+            if key == "ui_flaky_rate"
+            else "Average API Flaky Rate"
+            if key == "api_flaky_rate"
+            else str(target.get("name") or default_name)
+        )
+        gates.append(
+            {
+                "key": key,
+                "name": name,
+                "value": value,
+                "unit": "%" if key.endswith("_rate") else "s",
+                "target": threshold,
+                "direction": direction,
+                "threshold": (
+                    f">= {threshold:.2f}"
+                    if direction == "minimum"
+                    else f"<= {threshold:.2f}"
+                ),
+                "status": "ok" if passed else "fail",
+                "status_label": "OK" if passed else "Failed",
+                "formula": formulas[key],
+                "description": descriptions[key],
+                "recommendation": str(target.get("recommendation") or ""),
+            }
+        )
+
+    summary = {
+        "published_runs": total_runs,
+        "successful_runs": successful_runs,
+        "total_tests": total_tests,
+        "total_flaky": total_flaky,
+        **values,
+    }
+    return summary, gates
+
+
+def slowest_tests(
+    reports: list[PublishedReport], *, ui: bool, limit: int = 4
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for report in reports:
+        for test in report.tests:
+            if is_ui_test(test) if ui else is_api_test(test):
+                duration_seconds = round(test_duration_ms(test) / 1000, 2)
+                if duration_seconds <= 0:
+                    continue
+                records.append(
+                    {
+                        "run_id": report.run_id,
+                        "run_label": report.generated_at.strftime("%Y-%m-%d %H:%M"),
+                        "test_name": str(
+                            test.get("fullName")
+                            or test.get("name")
+                            or test.get("uid")
+                            or "unknown"
+                        ),
+                        "duration_sec": duration_seconds,
+                        "status": str(test.get("status") or "unknown"),
+                        "report_url": (
+                            f"{report.path}/#testresult/{test['uid']}"
+                            if test.get("uid")
+                            else f"{report.path}/"
+                        ),
+                    }
+                )
+    records.sort(key=lambda item: float(item["duration_sec"]), reverse=True)
+    return records[:limit]
+
+
 def build_metrics(
     runs: list[WorkflowRun],
     reports: list[PublishedReport],
@@ -589,6 +932,11 @@ def build_metrics(
     quality_targets: dict[str, dict[str, Any]],
     coverage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    reference_rows = reference_run_metrics(runs, reports, quality_targets)
+    reference_summary, quality_gates = build_quality_gates(
+        reference_rows,
+        quality_targets,
+    )
     counts = status_counts(reports)
     test_total = sum(counts.values())
     test_passed = counts["passed"]
@@ -615,7 +963,7 @@ def build_metrics(
     report_by_run = {report.run_id: report for report in reports}
 
     recent_runs = []
-    for run in sorted(runs, key=lambda item: item.created_at, reverse=True)[:10]:
+    for run in sorted(runs, key=lambda item: item.created_at, reverse=True):
         report = report_by_run.get(run.id)
         recent_runs.append(
             {
@@ -672,6 +1020,11 @@ def build_metrics(
         ),
         "run_trends": aggregate_run_trends(runs, reports),
         "quality_targets": quality_targets,
+        "reference_summary": reference_summary,
+        "quality_gates": quality_gates,
+        "metric_runs": reference_rows,
+        "slowest_ui_tests": slowest_tests(reports, ui=True),
+        "slowest_api_tests": slowest_tests(reports, ui=False),
         "suites": aggregate_suites(reports),
         "attention": aggregate_tests(reports),
         "recent_runs": recent_runs,
@@ -698,244 +1051,6 @@ def target_passed(value: float, target: dict[str, Any]) -> bool:
     return value <= threshold
 
 
-def format_target(
-    target: dict[str, Any],
-    formatter: Callable[[float], str],
-) -> str:
-    operator = "≥" if target["direction"] == "minimum" else "≤"
-    return f"{operator} {formatter(float(target['value']))}"
-
-
-def render_line_chart(
-    metrics: dict[str, Any],
-    *,
-    field: str,
-    title: str,
-    formatter: Callable[[float], str],
-    css_class: str,
-    percentage_scale: bool = False,
-) -> str:
-    points = metrics["run_trends"]
-    target = metrics["quality_targets"][field]
-    values = [
-        float(point[field]) if point.get(field) is not None else None
-        for point in points
-    ]
-    available = [value for value in values if value is not None]
-    target_text = format_target(target, formatter)
-    if not available:
-        return (
-            '<article class="chart-card">'
-            '<div class="chart-head">'
-            f"<h3>{html.escape(title)}</h3>"
-            f'<span class="target-badge">Target {html.escape(target_text)}</span>'
-            "</div>"
-            '<p class="empty-state">No data in this period.</p>'
-            "</article>"
-        )
-
-    lower = 0.0
-    if percentage_scale:
-        upper = 100.0
-    else:
-        upper = max(max(available), float(target["value"])) * 1.15
-    if math.isclose(lower, upper):
-        upper = 1.0
-
-    width = 720.0
-    height = 250.0
-    left = 54.0
-    right = 18.0
-    top = 24.0
-    bottom = 62.0
-    plot_width = width - left - right
-    plot_height = height - top - bottom
-
-    def point(index: int, value: float) -> tuple[float, float]:
-        x = left
-        if len(values) > 1:
-            x += index * plot_width / (len(values) - 1)
-        y = top + (upper - value) * plot_height / (upper - lower)
-        return x, y
-
-    segments: list[list[str]] = []
-    current: list[str] = []
-    circles: list[str] = []
-    for index, value in enumerate(values):
-        if value is None:
-            if current:
-                segments.append(current)
-                current = []
-            continue
-        x, y = point(index, value)
-        current.append(f"{x:.1f},{y:.1f}")
-        state = "ok" if target_passed(value, target) else "fail"
-        label = (
-            f"Run #{points[index]['run_number']} · {points[index]['label']}: "
-            f"{formatter(value)} · target {target_text}"
-        )
-        circles.append(
-            f'<a href="{html.escape(points[index]["run_url"])}">'
-            f'<circle class="chart-point chart-point-{state}" '
-            f'cx="{x:.1f}" cy="{y:.1f}" r="4">'
-            f"<title>{html.escape(label)}</title></circle></a>"
-        )
-    if current:
-        segments.append(current)
-
-    lines = "".join(
-        f'<polyline class="chart-line {css_class}" points="{" ".join(segment)}"/>'
-        for segment in segments
-        if len(segment) > 1
-    )
-    latest_index = max(index for index, value in enumerate(values) if value is not None)
-    latest_value = values[latest_index]
-    assert latest_value is not None
-    latest_state = "ok" if target_passed(latest_value, target) else "fail"
-    target_y = point(0, float(target["value"]))[1]
-
-    grid_lines: list[str] = []
-    for grid_index in range(5):
-        ratio = grid_index / 4
-        y = top + plot_height * ratio
-        grid_value = upper - (upper - lower) * ratio
-        grid_lines.append(
-            f'<line class="chart-grid" x1="{left}" y1="{y:.1f}" '
-            f'x2="{width - right}" y2="{y:.1f}"/>'
-            f'<text class="chart-axis chart-axis-y" x="{left - 8}" '
-            f'y="{y + 4:.1f}">{html.escape(formatter(grid_value))}</text>'
-        )
-
-    label_count = min(6, len(points))
-    if label_count <= 1:
-        label_indices = {0}
-    else:
-        label_indices = {
-            round(index * (len(points) - 1) / (label_count - 1))
-            for index in range(label_count)
-        }
-    x_labels: list[str] = []
-    for index in sorted(label_indices):
-        x = point(index, lower)[0]
-        x_labels.append(
-            f'<text class="chart-axis chart-axis-x" '
-            f'transform="translate({x:.1f} {height - 30:.1f}) rotate(-22)">'
-            f"{html.escape(str(points[index]['label']))}</text>"
-        )
-
-    return f"""
-    <article class="chart-card">
-      <div class="chart-head">
-        <div>
-          <h3>{html.escape(title)}</h3>
-          <span class="target-badge">Target {html.escape(target_text)}</span>
-        </div>
-        <div class="chart-latest">
-          <strong>{html.escape(formatter(latest_value))}</strong>
-          <span class="target-status target-status-{latest_state}">
-            {"On target" if latest_state == "ok" else "Off target"}
-          </span>
-        </div>
-      </div>
-      <svg class="line-chart" viewBox="0 0 {width:.0f} {height:.0f}" role="img"
-           aria-label="{html.escape(title)} by workflow run over {metrics["window"]["days"]} days">
-        {"".join(grid_lines)}
-        <line class="target-line" x1="{left}" y1="{target_y:.1f}"
-              x2="{width - right}" y2="{target_y:.1f}"/>
-        <text class="target-label" x="{left + 6}" y="{max(13.0, target_y - 7):.1f}">
-          Target {html.escape(target_text)}
-        </text>
-        {lines}
-        {"".join(circles)}
-        {"".join(x_labels)}
-      </svg>
-    </article>
-    """
-
-
-def render_metric_charts(metrics: dict[str, Any]) -> str:
-    return "\n".join(
-        (
-            render_line_chart(
-                metrics,
-                field="test_pass_rate",
-                title="Test pass rate",
-                formatter=lambda value: f"{value:.1f}%",
-                css_class="chart-green",
-                percentage_scale=True,
-            ),
-            render_line_chart(
-                metrics,
-                field="pipeline_success_rate",
-                title="Pipeline result",
-                formatter=lambda value: f"{value:.0f}%",
-                css_class="chart-blue",
-                percentage_scale=True,
-            ),
-            render_line_chart(
-                metrics,
-                field="workflow_duration_seconds",
-                title="Workflow duration",
-                formatter=format_duration,
-                css_class="chart-purple",
-            ),
-            render_line_chart(
-                metrics,
-                field="flaky_results",
-                title="Flaky test results",
-                formatter=lambda value: str(round(value)),
-                css_class="chart-orange",
-            ),
-        )
-    )
-
-
-def render_suite_cards(metrics: dict[str, Any]) -> str:
-    cards: list[str] = []
-    pass_rate_target = metrics["quality_targets"]["test_pass_rate"]
-    for suite in metrics["suites"]:
-        rate = suite["pass_rate"]
-        width = 0 if rate is None else max(0, min(100, rate))
-        state = (
-            "healthy"
-            if rate is not None and target_passed(rate, pass_rate_target)
-            else "warning"
-        )
-        cards.append(
-            '<article class="suite">'
-            f"<h3>{html.escape(suite['name'])}</h3>"
-            f'<strong class="suite-value">{html.escape(format_percent(rate))}</strong>'
-            f'<div class="progress"><span class="{state}" style="width: {width:.1f}%"></span></div>'
-            "<p>"
-            f"{suite['flaky_tests']} flaky · "
-            f"p95 {html.escape(format_duration(suite['p95_duration_ms'] / 1000))}"
-            "</p>"
-            "</article>"
-        )
-    if cards:
-        return "\n".join(cards)
-    return '<p class="empty-state">No published test results in this window.</p>'
-
-
-def render_attention_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
-    rows: list[str] = []
-    for test in metrics["attention"]:
-        rows.append(
-            "<tr>"
-            f'<td><a href="{html.escape(root_prefix + test["report_link"])}">'
-            f"{html.escape(test['name'])}</a></td>"
-            f'<td><span class="badge">{html.escape(test["signal"])}</span></td>'
-            f'<td class="number">{test["failed_runs"]} / {test["runs"]}</td>'
-            f'<td class="number">{test["retries"]}</td>'
-            f"<td>{html.escape(test['scope'])}</td>"
-            f'<td class="number">{html.escape(format_duration(test["p95_duration_ms"] / 1000))}</td>'
-            "</tr>"
-        )
-    if rows:
-        return "\n".join(rows)
-    return '<tr><td colspan="6" class="empty-state">No test data available.</td></tr>'
-
-
 def render_run_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
     rows: list[str] = []
     for run in metrics["recent_runs"]:
@@ -960,24 +1075,23 @@ def render_run_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
     return '<tr><td colspan="6" class="empty-state">No completed runs found.</td></tr>'
 
 
-DASHBOARD_CSS = """
+LINEAR_REPORT_CSS = """
 :root {
   color-scheme: light;
   --background: #f6f8fa;
   --surface: #ffffff;
   --text: #1f2328;
-  --muted: #636c76;
+  --muted: #59636e;
   --border: #d0d7de;
   --primary: #0969da;
-  --healthy: #1a7f37;
-  --healthy-soft: #dafbe1;
-  --warning: #bf8700;
-  --warning-soft: #fff8c5;
-  --danger: #cf222e;
-  --danger-soft: #ffebe9;
-  --track: #eaeef2;
+  --ok: #1a7f37;
+  --ok-soft: #dafbe1;
+  --fail: #cf222e;
+  --fail-soft: #ffebe9;
+  --neutral-soft: #eaeef2;
 }
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
   margin: 0;
   background: var(--background);
@@ -986,143 +1100,236 @@ body {
 }
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
-.page { width: min(1180px, 100%); margin: 0 auto; padding: 28px 20px 48px; }
+.page { width: min(1320px, 100%); margin: 0 auto; padding: 28px 20px 56px; }
 .topbar {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 18px; flex-wrap: wrap; margin-bottom: 20px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 20px; flex-wrap: wrap;
 }
-h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; }
-h2 { font-size: 19px; margin: 0; }
-h3 { font-size: 15px; margin: 0; }
+h1 { margin: 0 0 4px; font-size: 30px; }
+h2 { margin: 0; font-size: 21px; }
+h3 { margin: 18px 0 8px; font-size: 16px; }
 p { margin: 0; }
-.muted, .section-note, .suite p { color: var(--muted); }
-.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.period {
-  display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
-}
-.period-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--healthy); }
-.period-links { display: flex; gap: 6px; flex-wrap: wrap; }
-.period-link {
-  display: inline-block; padding: 5px 9px; border: 1px solid var(--border);
-  border-radius: 999px; background: var(--surface); color: var(--text);
+.muted, .section-note { color: var(--muted); }
+.top-actions, .period-links, .contents { display: flex; gap: 8px; flex-wrap: wrap; }
+.period-link, .contents a {
+  display: inline-block; padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--surface); color: var(--text);
 }
 .period-link.active { border-color: var(--primary); color: var(--primary); font-weight: 600; }
-.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-  padding: 16px;
+.window {
+  margin-top: 14px; padding: 12px 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
 }
-.stat-label { color: var(--muted); }
-.stat-value { display: block; font-size: 30px; line-height: 1.2; margin: 4px 0; }
-.stat-context { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.badge {
-  display: inline-block; padding: 2px 7px; border-radius: 999px;
-  background: var(--track); color: var(--text); white-space: nowrap;
-}
-.section { margin-top: 22px; }
+.contents { margin-top: 14px; }
+.section { margin-top: 28px; scroll-margin-top: 12px; }
 .section-head {
-  display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
-  flex-wrap: wrap; margin-bottom: 10px;
+  display: flex; justify-content: space-between; gap: 12px;
+  align-items: baseline; flex-wrap: wrap; margin-bottom: 10px;
 }
-.chart-grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.chart-card {
-  min-width: 0; padding: 14px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 12px;
+.table-wrap {
+  overflow-x: auto; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
 }
-.chart-head {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 12px; margin-bottom: 8px;
-}
-.chart-head strong { font-size: 18px; }
-.chart-head > div:first-child { display: grid; gap: 3px; }
-.target-badge { color: var(--muted); font-size: 12px; }
-.chart-latest {
-  display: flex; align-items: flex-end; flex-direction: column; gap: 3px;
-  text-align: right;
-}
-.target-status {
-  display: inline-block; padding: 2px 7px; border-radius: 999px;
-  font-size: 11px; font-weight: 600; white-space: nowrap;
-}
-.target-status-ok { color: var(--healthy); background: var(--healthy-soft); }
-.target-status-fail { color: var(--danger); background: var(--danger-soft); }
-.line-chart { display: block; width: 100%; height: auto; overflow: visible; }
-.chart-grid { stroke: var(--border); stroke-width: 1; }
-.chart-axis { fill: var(--muted); font-size: 11px; }
-.chart-axis-y, .chart-axis-x { text-anchor: end; }
-.target-line {
-  stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 5;
-}
-.target-label { fill: var(--muted); font-size: 11px; font-weight: 600; }
-.chart-line {
-  fill: none; stroke: currentColor; stroke-width: 3;
-  stroke-linecap: round; stroke-linejoin: round;
-}
-.chart-point { fill: var(--surface); stroke-width: 2.5; }
-.chart-point-ok { stroke: var(--healthy); }
-.chart-point-fail { stroke: var(--danger); }
-.chart-green { color: var(--healthy); }
-.chart-blue { color: var(--primary); }
-.chart-purple { color: #8250df; }
-.chart-orange { color: #bc4c00; }
-.healthy { background: var(--healthy); }
-.warning { background: var(--warning); }
-.danger { background: var(--danger); }
-.empty { background: var(--track); }
-.trend-label { font-weight: 600; white-space: nowrap; }
-.trend-detail { font-size: 12px; white-space: nowrap; }
-.suites { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; }
-.suite { padding: 4px 16px 6px 0; }
-.suite + .suite { border-left: 1px solid var(--border); padding-left: 16px; }
-.suite-value { display: block; font-size: 22px; margin: 3px 0; }
-.progress { height: 7px; border-radius: 999px; overflow: hidden; background: var(--track); margin: 7px 0; }
-.progress span { display: block; height: 100%; border-radius: inherit; }
-.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
 table { width: 100%; border-collapse: collapse; }
-th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-th { color: var(--muted); font-size: 13px; font-weight: 600; }
+th, td {
+  padding: 9px 11px; text-align: left; vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+th { background: var(--background); color: var(--muted); font-size: 13px; }
 tr:last-child td { border-bottom: 0; }
 .number { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.status {
-  display: inline-block; padding: 2px 7px; border-radius: 999px; font-weight: 600;
+.formula {
+  min-width: 320px; color: var(--muted);
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
+  overflow-wrap: anywhere;
 }
-.status-success { color: var(--healthy); background: var(--healthy-soft); }
-.status-failure, .status-timed_out, .status-action_required {
-  color: var(--danger); background: var(--danger-soft);
+.description { min-width: 240px; }
+.status {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  font-weight: 700; white-space: nowrap;
+}
+.status-ok, .status-success { color: var(--ok); background: var(--ok-soft); }
+.status-fail, .status-failure, .status-broken, .status-timed_out {
+  color: var(--fail); background: var(--fail-soft);
 }
 .status-cancelled, .status-skipped, .status-neutral, .status-unknown {
-  color: var(--warning); background: var(--warning-soft);
+  color: var(--muted); background: var(--neutral-soft);
 }
-.empty-state { color: var(--muted); padding: 14px; }
+.summary {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px; margin-top: 16px;
+}
+.summary article {
+  padding: 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.summary strong { display: block; margin-top: 3px; font-size: 25px; }
+.empty-state { padding: 14px; color: var(--muted); }
 .footer {
   display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-  color: var(--muted); margin-top: 24px; font-size: 13px;
+  margin-top: 28px; color: var(--muted); font-size: 13px;
 }
-@media (max-width: 760px) {
-  .stats { grid-template-columns: 1fr; }
-  .suites { grid-template-columns: 1fr 1fr; gap: 14px; }
-  .suite + .suite { border-left: 0; padding-left: 0; }
-  .chart-grid-layout { grid-template-columns: 1fr; }
+@media (max-width: 860px) {
+  .summary { grid-template-columns: 1fr 1fr; }
 }
-@media (min-width: 761px) and (max-width: 980px) {
-  .stats { grid-template-columns: 1fr 1fr; }
-}
-@media (max-width: 480px) {
-  .page { padding: 20px 12px 36px; }
-  .suites { grid-template-columns: 1fr; }
+@media (max-width: 520px) {
+  .page { padding: 20px 12px 40px; }
+  .summary { grid-template-columns: 1fr; }
 }
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
     --background: #0d1117; --surface: #161b22; --text: #e6edf3;
     --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
-    --healthy: #3fb950; --healthy-soft: #12261a;
-    --warning: #d29922; --warning-soft: #2d250d;
-    --danger: #f85149; --danger-soft: #32191c; --track: #30363d;
+    --ok: #3fb950; --ok-soft: #12261a;
+    --fail: #f85149; --fail-soft: #32191c; --neutral-soft: #21262d;
   }
 }
 """
+
+
+def gate_by_key(metrics: dict[str, Any], key: str) -> dict[str, Any]:
+    return next(gate for gate in metrics["quality_gates"] if gate["key"] == key)
+
+
+def render_gate_rows(metrics: dict[str, Any], keys: tuple[str, ...]) -> str:
+    rows: list[str] = []
+    for key in keys:
+        gate = gate_by_key(metrics, key)
+        rows.append(
+            "<tr>"
+            f"<td><strong>{html.escape(gate['name'])}</strong></td>"
+            f'<td class="number">{float(gate["value"]):.2f}{html.escape(gate["unit"])}</td>'
+            f'<td class="number">{html.escape(gate["threshold"])}{html.escape(gate["unit"])}</td>'
+            f'<td><span class="status status-{gate["status"]}">{gate["status_label"]}</span></td>'
+            f'<td class="formula">{html.escape(gate["formula"])}</td>'
+            f'<td class="description">{html.escape(gate["description"])}'
+            + (
+                f'<br><span class="muted">Action: {html.escape(gate["recommendation"])}</span>'
+                if gate["recommendation"]
+                else ""
+            )
+            + "</td></tr>"
+        )
+    return "\n".join(rows)
+
+
+def render_distribution_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
+    rows: list[str] = []
+    for run in metrics["metric_runs"]:
+        rows.append(
+            "<tr>"
+            f'<td><a href="{html.escape(run["run_url"])}">{html.escape(run["run_label"])}</a>'
+            f'<br><a class="muted" href="{html.escape(root_prefix + run["report_url"])}">'
+            f"Allure · run #{run['run_number']}</a></td>"
+            f'<td class="number">{run["total_tests"]}</td>'
+            f'<td class="number">{run["passed_tests"]} / {float(run["pass_rate"]):.2f}%</td>'
+            f'<td class="number">{run["failed_tests"]} / {float(run["fail_rate"]):.2f}%</td>'
+            f'<td class="number">{run["broken_tests"]} / {float(run["broken_rate"]):.2f}%</td>'
+            f'<td><span class="status status-{"ok" if run["quality_gate_status"] == "OK" else "fail"}">'
+            f"{run['quality_gate_status']}</span><br>"
+            f'<span class="muted">{run["quality_gates_passed"]} passed / '
+            f"{run['quality_gates_failed']} failed</span></td>"
+            "</tr>"
+        )
+    return (
+        "\n".join(rows)
+        or '<tr><td colspan="6" class="empty-state">No published reports.</td></tr>'
+    )
+
+
+def render_flaky_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
+    rows: list[str] = []
+    for run in metrics["metric_runs"]:
+        rows.append(
+            "<tr>"
+            f'<td><a href="{html.escape(root_prefix + run["report_url"])}">'
+            f"{html.escape(run['run_label'])}</a></td>"
+            f'<td class="number">{run["flaky_tests"]} / {float(run["flaky_rate"]):.2f}%</td>'
+            f'<td class="number">{run["ui_flaky_tests"]} / {run["ui_tests"]} / '
+            f"{float(run['ui_flaky_rate']):.2f}%</td>"
+            f'<td class="number">{run["api_flaky_tests"]} / {run["api_tests"]} / '
+            f"{float(run['api_flaky_rate']):.2f}%</td>"
+            "</tr>"
+        )
+    return (
+        "\n".join(rows)
+        or '<tr><td colspan="4" class="empty-state">No published reports.</td></tr>'
+    )
+
+
+def render_stability_rows(metrics: dict[str, Any]) -> str:
+    rows: list[str] = []
+    for run in metrics["metric_runs"]:
+        state = "ok" if run["run_success"] else "fail"
+        label = "Successful" if run["run_success"] else "Unstable"
+        rows.append(
+            "<tr>"
+            f'<td><a href="{html.escape(run["run_url"])}">{html.escape(run["run_label"])}</a></td>'
+            f'<td class="number">{run["passed_tests"]} / {run["total_tests"]}</td>'
+            f'<td><span class="status status-{state}">{label}</span></td>'
+            "</tr>"
+        )
+    return (
+        "\n".join(rows)
+        or '<tr><td colspan="3" class="empty-state">No published reports.</td></tr>'
+    )
+
+
+def render_duration_rows(metrics: dict[str, Any]) -> str:
+    rows: list[str] = []
+    duration_fields = (
+        ("avg_duration_sec", "avg_duration_sec"),
+        ("avg_api_duration_sec", "avg_api_duration_sec"),
+        ("ui_run_duration_sec", "ui_run_duration_sec"),
+        ("api_run_duration_sec", "api_run_duration_sec"),
+        ("suite_duration_sec", "suite_duration_sec"),
+    )
+    for run in metrics["metric_runs"]:
+        cells = [
+            f'<td><a href="{html.escape(run["run_url"])}">{html.escape(run["run_label"])}</a></td>'
+        ]
+        for field, gate_key in duration_fields:
+            value = float(run[field])
+            gate = gate_by_key(metrics, gate_key)
+            direction = gate["direction"]
+            target = float(gate["target"])
+            passed = value >= target if direction == "minimum" else value <= target
+            cells.append(
+                f'<td class="number">{value:.2f}s '
+                f'<span class="status status-{"ok" if passed else "fail"}">'
+                f"{'OK' if passed else 'Failed'}</span></td>"
+            )
+        rows.append("<tr>" + "".join(cells) + "</tr>")
+    return (
+        "\n".join(rows)
+        or '<tr><td colspan="6" class="empty-state">No published reports.</td></tr>'
+    )
+
+
+def render_slowest_rows(
+    metrics: dict[str, Any], *, key: str, gate_key: str, root_prefix: str
+) -> str:
+    gate = gate_by_key(metrics, gate_key)
+    target = float(gate["target"])
+    rows: list[str] = []
+    for test in metrics[key]:
+        duration = float(test["duration_sec"])
+        rows.append(
+            "<tr>"
+            f'<td><a href="{html.escape(root_prefix + test["report_url"])}">'
+            f"{html.escape(test['run_label'])}</a></td>"
+            f"<td>{html.escape(test['test_name'])}</td>"
+            f'<td class="number">{duration:.2f}s</td>'
+            f'<td class="number">&lt;= {target:.2f}s</td>'
+            f'<td><span class="status status-{"ok" if duration <= target else "fail"}">'
+            f"{'OK' if duration <= target else 'Failed'}</span></td>"
+            "</tr>"
+        )
+    return (
+        "\n".join(rows)
+        or '<tr><td colspan="5" class="empty-state">No duration data.</td></tr>'
+    )
 
 
 def render_period_links(
@@ -1146,10 +1353,9 @@ def render_dashboard(
     coverage_url: str,
     periods: list[tuple[int, str]],
 ) -> str:
-    pipeline = metrics["pipeline"]
-    tests = metrics["tests"]
     quality = metrics["data_quality"]
     coverage = metrics.get("coverage")
+    summary = metrics["reference_summary"]
     generated_at = parse_datetime(metrics["generated_at"])
     window_start = parse_datetime(metrics["window"]["start"])
     window_end = parse_datetime(metrics["window"]["end"])
@@ -1158,121 +1364,228 @@ def render_dashboard(
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TeamCity QA metrics</title>
-    <style>{DASHBOARD_CSS}</style>
+    <title>TeamCity QA metrics report</title>
+    <style>{LINEAR_REPORT_CSS}</style>
   </head>
   <body>
     <main class="page">
       <header class="topbar">
         <div>
-          <h1>TeamCity QA metrics</h1>
-          <p class="muted">Rolling quality health for TeamCity Regression</p>
+          <h1>TeamCity QA metrics report</h1>
+          <p class="muted">Every metric, target and calculation for TeamCity Regression</p>
         </div>
         <div class="top-actions">
           <div class="period-links" aria-label="Saved metric periods">
             {render_period_links(periods, current_days=metrics["window"]["days"])}
           </div>
+          <a class="period-link" href="{html.escape(coverage_url)}">Code coverage</a>
           <a class="period-link" href="{html.escape(root_prefix + "reports/")}">All reports</a>
-          <div class="period">
-            <span class="period-dot" aria-hidden="true"></span>
-            <strong>{metrics["window"]["days"]} days</strong>
-            <span>{window_start.strftime("%d %b")}–{window_end.strftime("%d %b %Y")}</span>
-          </div>
         </div>
       </header>
 
-      <section class="stats" aria-label="Quality summary">
-        <article class="card">
-          <span class="stat-label">Pipeline stability</span>
-          <strong class="stat-value">{format_percent(pipeline["success_rate"])}</strong>
-          <div class="stat-context">
-            <span>{pipeline["successful"]} of {pipeline["completed"]} successful</span>
-            <span class="badge">p95 {format_duration(pipeline["p95_duration_seconds"])}</span>
-          </div>
+      <div class="window">
+        <strong>Period:</strong> {metrics["window"]["days"]} UTC calendar days,
+        {window_start.strftime("%d %b %Y %H:%M")}–{window_end.strftime("%d %b %Y %H:%M")}.
+        Metrics use published Allure reports; workflow runs without a report are listed separately
+        and do not enter test calculations.
+      </div>
+
+      <nav class="contents" aria-label="Report sections">
+        <a href="#distribution">Test distribution</a>
+        <a href="#reliability">Flaky tests</a>
+        <a href="#stability">Stability</a>
+        <a href="#speed">Speed</a>
+        <a href="#coverage">Coverage</a>
+        <a href="#workflow-runs">Workflow runs</a>
+      </nav>
+
+      <section class="summary" aria-label="Report totals">
+        <article>
+          <span class="muted">Published runs</span>
+          <strong>{summary["published_runs"]}</strong>
+          <span>{summary["successful_runs"]} fully passed</span>
         </article>
-        <article class="card">
-          <span class="stat-label">Test reliability</span>
-          <strong class="stat-value">{format_percent(tests["pass_rate"])}</strong>
-          <div class="stat-context">
-            <span>{tests["total"]:,} final results</span>
-            <span class="badge">{tests["failed"]} failed</span>
-          </div>
+        <article>
+          <span class="muted">Final test results</span>
+          <strong>{summary["total_tests"]:,}</strong>
+          <span>one final result per test and run</span>
         </article>
-        <article class="card">
-          <span class="stat-label">Flaky tests</span>
-          <strong class="stat-value">{tests["flaky"]}</strong>
-          <div class="stat-context">
-            <span>{format_percent(tests["retry_rate"])} retry rate</span>
-            <span class="badge">{tests["retries"]} retries</span>
-          </div>
+        <article>
+          <span class="muted">Average pass rate</span>
+          <strong>{summary["pass_rate"]:.2f}%</strong>
+          <span>unweighted average across runs</span>
         </article>
-        <article class="card">
-          <span class="stat-label">API framework coverage</span>
-          <strong class="stat-value">{format_percent(coverage["latest"]["line_rate"]) if coverage and coverage.get("latest") else "—"}</strong>
-          <div class="stat-context">
-            <span>{format_percent(coverage["latest"]["branch_rate"]) + " branches" if coverage and coverage.get("latest") else "No reports yet"}</span>
-            <a class="badge" href="{html.escape(coverage_url)}">Open coverage</a>
-          </div>
+        <article>
+          <span class="muted">Flaky rate</span>
+          <strong>{summary["flaky_rate"]:.2f}%</strong>
+          <span>{summary["total_flaky"]} flaky results</span>
         </article>
       </section>
 
-      <section class="section">
+      <section class="section" id="distribution">
         <div class="section-head">
-          <h2>Metric history</h2>
-          <span class="section-note">Every completed workflow run · targets from configuration</span>
-        </div>
-        <div class="chart-grid-layout">
-          {render_metric_charts(metrics)}
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Where instability is</h2>
-          <span class="section-note">Final pass rate · flaky tests · p95 test duration</span>
-        </div>
-        <div class="card suites">
-          {render_suite_cards(metrics)}
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Needs attention</h2>
-          <span class="section-note">Final failures and flakiness first, then slow tests</span>
+          <h2>1. Test result distribution</h2>
+          <span class="section-note">Rates are calculated per run, then averaged without weighting</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Test</th>
-                <th>Signal</th>
-                <th class="number">Failed runs</th>
-                <th class="number">Retries</th>
-                <th>Scope</th>
-                <th class="number">p95</th>
+                <th>Metric</th><th class="number">Value</th><th class="number">Target</th>
+                <th>Status</th><th>Exact calculation</th><th>Meaning and action</th>
               </tr>
             </thead>
-            <tbody>{render_attention_rows(metrics, root_prefix=root_prefix)}</tbody>
+            <tbody>{render_gate_rows(metrics, ("pass_rate", "fail_rate", "broken_rate"))}</tbody>
+          </table>
+        </div>
+        <h3>Every published run</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th><th class="number">Total</th><th class="number">Passed / rate</th>
+                <th class="number">Failed / rate</th><th class="number">Broken / rate</th>
+                <th>3 distribution gates</th>
+              </tr>
+            </thead>
+            <tbody>{render_distribution_rows(metrics, root_prefix=root_prefix)}</tbody>
           </table>
         </div>
       </section>
 
-      <section class="section">
+      <section class="section" id="reliability">
         <div class="section-head">
-          <h2>Recent regression runs</h2>
-          <span class="section-note">{quality["published_reports"]} published reports · {quality["runs_without_report"]} runs without report</span>
+          <h2>2. Flaky-test reliability</h2>
+          <span class="section-note">Only Allure results explicitly marked flaky are counted</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Run</th>
-                <th>Conclusion</th>
-                <th>Event</th>
-                <th>Branch</th>
-                <th class="number">Duration</th>
-                <th>Report</th>
+                <th>Metric</th><th class="number">Value</th><th class="number">Target</th>
+                <th>Status</th><th>Exact calculation</th><th>Meaning and action</th>
+              </tr>
+            </thead>
+            <tbody>{render_gate_rows(metrics, ("flaky_rate", "ui_flaky_rate", "api_flaky_rate"))}</tbody>
+          </table>
+        </div>
+        <h3>Every published run</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th><th class="number">All flaky / rate</th>
+                <th class="number">UI flaky / UI total / rate</th>
+                <th class="number">API flaky / API total / rate</th>
+              </tr>
+            </thead>
+            <tbody>{render_flaky_rows(metrics, root_prefix=root_prefix)}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="stability">
+        <div class="section-head">
+          <h2>3. Test-run stability</h2>
+          <span class="section-note">A run is successful only when it has tests and every final result passed</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Metric</th><th class="number">Value</th><th class="number">Target</th>
+                <th>Status</th><th>Exact calculation</th><th>Meaning and action</th>
+              </tr>
+            </thead>
+            <tbody>{render_gate_rows(metrics, ("stability_rate",))}</tbody>
+          </table>
+        </div>
+        <h3>Every published run</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Run</th><th class="number">Passed / total</th><th>Result</th></tr>
+            </thead>
+            <tbody>{render_stability_rows(metrics)}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="speed">
+        <div class="section-head">
+          <h2>4. Test and pipeline speed</h2>
+          <span class="section-note">The report shows every average explicitly; no percentile is hidden behind a card</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Metric</th><th class="number">Value</th><th class="number">Target</th>
+                <th>Status</th><th>Exact calculation</th><th>Meaning and action</th>
+              </tr>
+            </thead>
+            <tbody>{render_gate_rows(metrics, ("avg_duration_sec", "avg_api_duration_sec", "ui_run_duration_sec", "api_run_duration_sec", "suite_duration_sec"))}</tbody>
+          </table>
+        </div>
+        <h3>Every published run</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th><th class="number">Avg test</th><th class="number">Avg API test</th>
+                <th class="number">UI run</th><th class="number">API run</th>
+                <th class="number">Pipeline</th>
+              </tr>
+            </thead>
+            <tbody>{render_duration_rows(metrics)}</tbody>
+          </table>
+        </div>
+        <h3>Slowest UI tests</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Run</th><th>Test</th><th class="number">Duration</th><th class="number">Target</th><th>Status</th></tr></thead>
+            <tbody>{render_slowest_rows(metrics, key="slowest_ui_tests", gate_key="avg_duration_sec", root_prefix=root_prefix)}</tbody>
+          </table>
+        </div>
+        <h3>Slowest API tests</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Run</th><th>Test</th><th class="number">Duration</th><th class="number">Target</th><th>Status</th></tr></thead>
+            <tbody>{render_slowest_rows(metrics, key="slowest_api_tests", gate_key="avg_api_duration_sec", root_prefix=root_prefix)}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="coverage">
+        <div class="section-head">
+          <h2>5. API framework code coverage</h2>
+          <span class="section-note">Latest coverage.py measurement; kept separate from test quality formulas</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Line coverage</th><th>Branch coverage</th><th>Source report</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>{format_percent(coverage["latest"]["line_rate"]) if coverage and coverage.get("latest") else "No report"}</td>
+                <td>{format_percent(coverage["latest"]["branch_rate"]) if coverage and coverage.get("latest") else "No report"}</td>
+                <td><a href="{html.escape(coverage_url)}">Open complete coverage report</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="workflow-runs">
+        <div class="section-head">
+          <h2>6. All workflow runs in the period</h2>
+          <span class="section-note">{quality["published_reports"]} reports · {quality["runs_without_report"]} runs without report</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th><th>Conclusion</th><th>Event</th><th>Branch</th>
+                <th class="number">Test-stage duration</th><th>Report</th>
               </tr>
             </thead>
             <tbody>{render_run_rows(metrics, root_prefix=root_prefix)}</tbody>
@@ -1282,12 +1595,138 @@ def render_dashboard(
 
       <footer class="footer">
         <span>Updated {generated_at.strftime("%d %b %Y %H:%M UTC")}</span>
-        <span>Sources: GitHub Actions API and persistent Allure reports</span>
+        <span>Sources: GitHub Actions jobs and persistent Allure final test cases</span>
       </footer>
     </main>
   </body>
 </html>
 """
+
+
+def markdown_cell(value: Any) -> str:
+    return str(value).replace("|", "\\|").replace("\n", " ")
+
+
+def render_markdown_report(metrics: dict[str, Any]) -> str:
+    summary = metrics["reference_summary"]
+    window = metrics["window"]
+    lines = [
+        "# TeamCity QA metrics report",
+        "",
+        (
+            f"Period: **{window['days']} UTC calendar days** "
+            f"({window['start']} — {window['end']})."
+        ),
+        "",
+        (
+            f"Published runs: **{summary['published_runs']}** · "
+            f"fully passed: **{summary['successful_runs']}** · "
+            f"final test results: **{summary['total_tests']}** · "
+            f"flaky results: **{summary['total_flaky']}**."
+        ),
+        "",
+        "## Quality gates and exact calculations",
+        "",
+        "| Metric | Value | Target | Status | Calculation |",
+        "|---|---:|---:|---|---|",
+    ]
+    for gate in metrics["quality_gates"]:
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    markdown_cell(gate["name"]),
+                    f"{float(gate['value']):.2f}{gate['unit']}",
+                    f"{gate['threshold']}{gate['unit']}",
+                    markdown_cell(gate["status_label"]),
+                    markdown_cell(gate["formula"]),
+                )
+            )
+            + " |"
+        )
+
+    lines.extend(
+        (
+            "",
+            "## Every published run",
+            "",
+            "| Run | Total | Passed | Failed | Broken | Flaky | Stability | Avg test | Avg API | UI run | API run | Pipeline |",
+            "|---|---:|---:|---:|---:|---:|---|---:|---:|---:|---:|---:|",
+        )
+    )
+    for run in metrics["metric_runs"]:
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    f"[{markdown_cell(run['run_label'])}]({run['run_url']})",
+                    str(run["total_tests"]),
+                    f"{run['passed_tests']} / {float(run['pass_rate']):.2f}%",
+                    f"{run['failed_tests']} / {float(run['fail_rate']):.2f}%",
+                    f"{run['broken_tests']} / {float(run['broken_rate']):.2f}%",
+                    f"{run['flaky_tests']} / {float(run['flaky_rate']):.2f}%",
+                    "Successful" if run["run_success"] else "Unstable",
+                    f"{float(run['avg_duration_sec']):.2f}s",
+                    f"{float(run['avg_api_duration_sec']):.2f}s",
+                    f"{float(run['ui_run_duration_sec']):.2f}s",
+                    f"{float(run['api_run_duration_sec']):.2f}s",
+                    f"{float(run['suite_duration_sec']):.2f}s",
+                )
+            )
+            + " |"
+        )
+
+    for title, key, target_key in (
+        ("Slowest UI tests", "slowest_ui_tests", "avg_duration_sec"),
+        ("Slowest API tests", "slowest_api_tests", "avg_api_duration_sec"),
+    ):
+        target = float(gate_by_key(metrics, target_key)["target"])
+        lines.extend(
+            (
+                "",
+                f"## {title}",
+                "",
+                "| Run | Test | Duration | Target | Status |",
+                "|---|---|---:|---:|---|",
+            )
+        )
+        if not metrics[key]:
+            lines.append("| — | No duration data | — | — | — |")
+        for test in metrics[key]:
+            duration = float(test["duration_sec"])
+            lines.append(
+                "| "
+                + " | ".join(
+                    (
+                        markdown_cell(test["run_label"]),
+                        markdown_cell(test["test_name"]),
+                        f"{duration:.2f}s",
+                        f"<= {target:.2f}s",
+                        "OK" if duration <= target else "Failed",
+                    )
+                )
+                + " |"
+            )
+
+    quality = metrics["data_quality"]
+    lines.extend(
+        (
+            "",
+            "## Data completeness",
+            "",
+            f"- Completed workflow runs: **{quality['completed_runs']}**",
+            f"- Published Allure reports used in test metrics: **{quality['published_reports']}**",
+            f"- Workflow runs without a published report: **{quality['runs_without_report']}**",
+            "",
+            (
+                "Flaky counts use final Allure test cases explicitly marked `flaky`. "
+                "Pass, fail and broken rates are calculated per run and then averaged "
+                "without weighting, matching the reference report."
+            ),
+            "",
+        )
+    )
+    return "\n".join(lines)
 
 
 def append_github_output(metrics: dict[str, Any]) -> None:
@@ -1300,6 +1739,8 @@ def append_github_output(metrics: dict[str, Any]) -> None:
         output.write(
             f"published_reports={metrics['data_quality']['published_reports']}\n"
         )
+        output.write(f"average_pass_rate={metrics['reference_summary']['pass_rate']}\n")
+        output.write(f"flaky_rate={metrics['reference_summary']['flaky_rate']}\n")
 
 
 def resolve_site_path(site_dir: Path, value: str) -> tuple[Path, Path]:
@@ -1402,6 +1843,10 @@ def main() -> None:
                 args.days,
             ),
         ),
+        encoding="utf-8",
+    )
+    destination.joinpath("report.md").write_text(
+        render_markdown_report(metrics),
         encoding="utf-8",
     )
     append_github_output(metrics)
