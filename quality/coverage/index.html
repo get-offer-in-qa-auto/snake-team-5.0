@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>API test framework coverage</title>
+    <title>API framework code coverage</title>
     <style>
 :root {
   color-scheme: light;
@@ -12,20 +12,23 @@
   --text: #1f2328;
   --muted: #636c76;
   --border: #d0d7de;
-  --primary: #0969da;
-  --series: #1a7f37;
+  --primary: #2f81f7;
+  --green: #2da44e;
+  --amber: #bf8700;
+  --red: #cf222e;
+  --purple: #8250df;
   --track: #eaeef2;
 }
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--background); color: var(--text);
-  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 code { overflow-wrap: anywhere; }
-.page { width: min(1180px, 100%); margin: 0 auto; padding: 28px 20px 48px; }
-.topbar, .section-head, .meta, .actions {
+.page { width: min(1280px, 100%); margin: 0 auto; padding: 26px 20px 48px; }
+.topbar, .meta, .actions, .section-head {
   display: flex; align-items: center; justify-content: space-between;
   gap: 10px; flex-wrap: wrap;
 }
@@ -37,67 +40,111 @@ h2 { font-size: 19px; margin: 0; }
   display: inline-block; padding: 2px 7px; border-radius: 999px;
   background: var(--track); color: var(--text);
 }
-.period-links { display: flex; gap: 6px; flex-wrap: wrap; }
-.period-link {
-  display: inline-block; padding: 5px 9px; border: 1px solid var(--border);
-  border-radius: 999px; background: var(--surface); color: var(--text);
-}
-.period-link.active { border-color: var(--primary); color: var(--primary); font-weight: 600; }
 .button {
-  display: inline-block; padding: 6px 10px; border: 1px solid var(--border);
-  border-radius: 7px; background: var(--surface);
+  display: inline-block; padding: 7px 11px; border: 1px solid var(--border);
+  border-radius: 7px; background: var(--surface); color: var(--text);
 }
-.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
-.card, .table-wrap, .coverage-chart-wrap {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+.button-primary { color: #fff; background: var(--primary); border-color: var(--primary); }
+.snapshot-note {
+  margin-top: 14px; padding: 10px 12px; border-left: 3px solid var(--primary);
+  background: var(--surface); border-radius: 0 7px 7px 0;
 }
-.card { padding: 16px; }
-.stat-value { display: block; font-size: 28px; margin: 3px 0; }
+.donut-grid {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px; margin-top: 18px;
+}
+.donut-card, .progress-card, .chart-panel, .table-wrap {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+}
+.donut-card {
+  min-width: 0; padding: 12px; border-left: 3px solid var(--primary);
+}
+.donut-card h2 { font-size: 14px; font-weight: 600; }
+.donut {
+  --value: 0; --tone: var(--primary);
+  position: relative; width: 92px; height: 92px; margin: 12px auto;
+  border-radius: 50%;
+  background: conic-gradient(var(--tone) calc(var(--value) * 1%), var(--track) 0);
+}
+.donut::after {
+  content: ""; position: absolute; inset: 17px; border-radius: 50%;
+  background: var(--surface);
+}
+.donut strong {
+  position: absolute; inset: 0; z-index: 1; display: grid; place-items: center;
+  font-size: 17px; color: var(--tone); font-variant-numeric: tabular-nums;
+}
+.formula {
+  min-height: 74px; padding: 8px; background: var(--background);
+  color: var(--muted); font-size: 12px; overflow-wrap: anywhere;
+}
+.tone-blue { --tone: var(--primary); }
+.tone-purple { --tone: var(--purple); }
+.tone-green { --tone: var(--green); }
+.tone-amber { --tone: var(--amber); }
+.tone-red { --tone: var(--red); }
+.progress-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;
+}
+.progress-card { padding: 12px; border-left: 3px solid var(--primary); }
+.progress-head { display: flex; justify-content: space-between; gap: 10px; }
+.progress-track {
+  height: 9px; margin: 8px 0; overflow: hidden; border-radius: 999px;
+  background: var(--track);
+}
+.progress-track span { display: block; height: 100%; background: var(--primary); }
+.progress-card.files .progress-track span { background: var(--green); }
 .section { margin-top: 22px; }
 .section-head { align-items: baseline; margin-bottom: 10px; }
-.coverage-chart-wrap { padding: 14px; overflow-x: auto; }
-.coverage-chart-head { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); }
-.coverage-chart-head span { display: inline-flex; align-items: center; gap: 6px; }
-.coverage-chart-head i { width: 18px; height: 3px; display: inline-block; }
-.legend-line { background: var(--series); }
-.legend-branch { background: var(--primary); }
-.coverage-chart { display: block; min-width: 620px; width: 100%; height: auto; }
-.chart-grid { stroke: var(--border); stroke-width: 1; }
-.chart-grid-mid { stroke-dasharray: 4 5; }
-.chart-axis { fill: var(--muted); font-size: 11px; }
-.chart-axis-end { text-anchor: end; }
-.coverage-line {
-  fill: none; stroke: currentColor; stroke-width: 3;
-  stroke-linecap: round; stroke-linejoin: round;
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.chart-panel { min-width: 0; padding: 14px; }
+.chart-panel h2 { margin-bottom: 12px; }
+.bar-list { display: grid; gap: 9px; }
+.bar-row {
+  display: grid; grid-template-columns: minmax(120px, 1.2fr) minmax(160px, 3fr) 70px;
+  gap: 9px; align-items: center;
 }
-.series-line { color: var(--series); }
-.series-branch { color: var(--primary); }
-circle.series-line, circle.series-branch {
-  fill: var(--surface); stroke: currentColor; stroke-width: 2;
-}
+.bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { height: 18px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.bar-track span { display: block; min-width: 2px; height: 100%; background: var(--green); }
+.bar-row.inventory:nth-child(2) .bar-track span,
+.bar-row.inventory:nth-child(4) .bar-track span { background: var(--red); }
+.bar-value { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
-th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-th { color: var(--muted); font-size: 13px; font-weight: 600; }
+th, td { padding: 9px 11px; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); background: var(--background); font-size: 13px; }
 tr:last-child td { border-bottom: 0; }
 .number { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.coverage-cell { min-width: 130px; background: linear-gradient(var(--track), var(--track)) center/100% 7px no-repeat; }
-.coverage-cell span { display: block; height: 7px; background: var(--series); }
+.coverage-cell {
+  min-width: 130px;
+  background: linear-gradient(var(--track), var(--track)) center/100% 7px no-repeat;
+}
+.coverage-cell span { display: block; height: 7px; background: var(--green); }
 .empty-state { color: var(--muted); padding: 14px; }
-.footer { color: var(--muted); margin-top: 24px; font-size: 13px; }
+.footer {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  color: var(--muted); margin-top: 24px; font-size: 13px;
+}
+@media (max-width: 980px) {
+  .donut-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 @media (max-width: 760px) {
-  .stats { grid-template-columns: 1fr 1fr; }
+  .donut-grid { grid-template-columns: 1fr 1fr; }
+  .chart-grid, .progress-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
   .page { padding: 20px 12px 36px; }
-  .stats { grid-template-columns: 1fr; }
+  .donut-grid { grid-template-columns: 1fr; }
+  .bar-row { grid-template-columns: minmax(100px, 1fr) minmax(120px, 2fr) 62px; }
 }
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
     --background: #0d1117; --surface: #161b22; --text: #e6edf3;
     --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
-    --series: #3fb950; --track: #30363d;
+    --green: #3fb950; --amber: #d29922; --red: #f85149;
+    --purple: #a371f7; --track: #30363d;
   }
 }
 </style>
@@ -106,110 +153,136 @@ tr:last-child td { border-bottom: 0; }
     <main class="page">
       <header class="topbar">
         <div>
-          <span class="muted">QA metrics / Coverage</span>
-          <h1>API test framework coverage</h1>
-          <div class="meta"><span class="badge">src/main/api</span><span>Run 30499117530</span><span>70/merge</span><span>55900d0b</span></div>
+          <span class="muted">QA metrics / Code coverage</span>
+          <h1>⚙ API Coverage Analysis</h1>
+          <div class="meta"><span class="badge">Current snapshot</span><span class="badge">Today at 15:05 UTC</span><span>Run 30554436296</span><span>71/merge</span><span>82cb6fb6</span></div>
         </div>
-        <div>
-          <div class="actions"><a class="button" href="../">Back to QA metrics</a><a class="button" href="../../coverage/30499117530-attempt-1/html/">Open standard HTML report</a></div>
-          <div class="period-links" aria-label="Saved coverage periods">
-            <a class="period-link active" href="periods/7/">7 days</a><a class="period-link" href="periods/14/">14 days</a>
-          </div>
+        <div class="actions">
+          <a class="button" href="../">Open QA metrics</a>
+          <a class="button button-primary" href="../../coverage/30554436296-attempt-1/html/">Open original coverage.py page</a>
         </div>
       </header>
 
-      <section class="stats" aria-label="Coverage summary">
-        <article class="card">
-          <span class="muted">Line coverage</span>
-          <strong class="stat-value">89.6%</strong>
-          <span>-0.0 pp vs previous report</span>
-        </article>
-        <article class="card">
-          <span class="muted">Branch coverage</span>
-          <strong class="stat-value">55.7%</strong>
-          <span>127 of 228 branches</span>
-        </article>
-        <article class="card">
-          <span class="muted">Covered lines</span>
-          <strong class="stat-value">1,594</strong>
-          <span>185 lines missing</span>
-        </article>
-        <article class="card">
-          <span class="muted">Measured files</span>
-          <strong class="stat-value">59</strong>
-          <span>1,779 statements</span>
-        </article>
-        </section>
+      <div class="snapshot-note">
+        <strong>Current state only.</strong>
+        This page uses the latest published coverage measurement and does not
+        average or aggregate coverage over a 7-, 14-, or any other day window.
+      </div>
 
-      <section class="section">
-        <div class="section-head">
-          <h2>7-day trend</h2>
-          <span class="section-note">Latest API regression report per UTC day</span>
-        </div>
-        <div class="coverage-chart-wrap">
-          
-    <div class="coverage-chart-head">
-      <span><i class="legend-line"></i>Line coverage</span>
-      <span><i class="legend-branch"></i>Branch coverage</span>
-    </div>
-    <svg class="coverage-chart" viewBox="0 0 900 230" role="img"
-         aria-label="Line and branch coverage over 7 days">
-      <line class="chart-grid" x1="48.0" y1="20.0" x2="48.0" y2="196.0"/>
-      <line class="chart-grid" x1="48.0" y1="196.0" x2="882.0" y2="196.0"/>
-      <line class="chart-grid chart-grid-mid" x1="48.0" y1="108.0" x2="882.0" y2="108.0"/>
-      <text class="chart-axis" x="4" y="25.0">94.6%</text>
-      <text class="chart-axis" x="4" y="201.0">50.7%</text>
-      <polyline class="coverage-line series-line" points="604.0,40.0 743.0,40.0"/><circle class="series-line" cx="604.0" cy="40.0" r="3"><title>28 Jul: 89.6%</title></circle><circle class="series-line" cx="743.0" cy="40.0" r="3"><title>29 Jul: 89.6%</title></circle>
-      <polyline class="coverage-line series-branch" points="604.0,176.0 743.0,176.0"/><circle class="series-branch" cx="604.0" cy="176.0" r="3"><title>28 Jul: 55.7%</title></circle><circle class="series-branch" cx="743.0" cy="176.0" r="3"><title>29 Jul: 55.7%</title></circle>
-      <text class="chart-axis" x="48.0" y="222.0">24 Jul</text>
-      <text class="chart-axis chart-axis-end" x="882.0" y="222.0">30 Jul</text>
-    </svg>
+      <section class="donut-grid" aria-label="Current coverage summary">
+    <article class="donut-card">
+      <h2>Line Coverage</h2>
+      <div class="donut tone-blue" style="--value:89.60">
+        <strong>89.6%</strong>
+      </div>
+      <div class="formula">
+        <strong>Calculated:</strong> 1,594 / 1,779 × 100%
+        <br><strong>Source:</strong> current statements
+      </div>
+    </article>
     
+    <article class="donut-card">
+      <h2>Branch Coverage</h2>
+      <div class="donut tone-purple" style="--value:55.70">
+        <strong>55.7%</strong>
+      </div>
+      <div class="formula">
+        <strong>Calculated:</strong> 127 / 228 × 100%
+        <br><strong>Source:</strong> current branches
+      </div>
+    </article>
+    
+    <article class="donut-card">
+      <h2>Full Coverage</h2>
+      <div class="donut tone-green" style="--value:62.71">
+        <strong>62.7%</strong>
+      </div>
+      <div class="formula">
+        <strong>Calculated:</strong> 37 / 59 × 100%
+        <br><strong>Source:</strong> current measured files
+      </div>
+    </article>
+    
+    <article class="donut-card">
+      <h2>Partial Coverage</h2>
+      <div class="donut tone-amber" style="--value:37.29">
+        <strong>37.3%</strong>
+      </div>
+      <div class="formula">
+        <strong>Calculated:</strong> 22 / 59 × 100%
+        <br><strong>Source:</strong> current measured files
+      </div>
+    </article>
+    
+    <article class="donut-card">
+      <h2>Empty Coverage</h2>
+      <div class="donut tone-red" style="--value:0.00">
+        <strong>0.0%</strong>
+      </div>
+      <div class="formula">
+        <strong>Calculated:</strong> 0 / 59 × 100%
+        <br><strong>Source:</strong> current measured files
+      </div>
+    </article>
+    </section>
+      <section class="progress-grid" aria-label="Current coverage progress">
+    <article class="progress-card ">
+      <div class="progress-head">
+        <strong>Statements Coverage</strong>
+        <span>89.6%</span>
+      </div>
+      <div class="progress-track"><span style="width:89.60%"></span></div>
+      <span>Covered: 1,594 · Total: 1,779</span>
+    </article>
+    
+    <article class="progress-card files">
+      <div class="progress-head">
+        <strong>Files With Coverage</strong>
+        <span>100.0%</span>
+      </div>
+      <div class="progress-track"><span style="width:100.00%"></span></div>
+      <span>Covered: 59 · Total: 59</span>
+    </article>
+    </section>
+
+      <section class="section">
+        <div class="chart-grid">
+          <article class="chart-panel">
+            <h2>Lowest Line Coverage by File</h2>
+            <div class="bar-list"><div class="bar-row"><code class="bar-label" title="src/main/api/fixtures/object_fixtures.py">object_fixtures.py</code><div class="bar-track"><span style="width:40.38%"></span></div><span class="bar-value">40.4%</span></div>
+<div class="bar-row"><code class="bar-label" title="src/main/api/fixtures/user_fixtures.py">user_fixtures.py</code><div class="bar-track"><span style="width:61.54%"></span></div><span class="bar-value">61.5%</span></div>
+<div class="bar-row"><code class="bar-label" title="src/main/api/classes/session_storage.py">session_storage.py</code><div class="bar-track"><span style="width:62.50%"></span></div><span class="bar-value">62.5%</span></div>
+<div class="bar-row"><code class="bar-label" title="src/main/api/database/executor.py">executor.py</code><div class="bar-track"><span style="width:71.43%"></span></div><span class="bar-value">71.4%</span></div>
+<div class="bar-row"><code class="bar-label" title="src/main/api/utils/cleanup_helper.py">cleanup_helper.py</code><div class="bar-track"><span style="width:74.51%"></span></div><span class="bar-value">74.5%</span></div>
+<div class="bar-row"><code class="bar-label" title="src/main/api/requests/steps/configuration_steps.py">configuration_steps.py</code><div class="bar-track"><span style="width:76.19%"></span></div><span class="bar-value">76.2%</span></div>
+<div class="bar-row"><code class="bar-label" title="src/main/api/fixtures/created_objects_registry.py">created_objects_registry.py</code><div class="bar-track"><span style="width:79.25%"></span></div><span class="bar-value">79.2%</span></div>
+<div class="bar-row"><code class="bar-label" title="src/main/api/database/client.py">client.py</code><div class="bar-track"><span style="width:82.69%"></span></div><span class="bar-value">82.7%</span></div>
+<div class="bar-row"><code class="bar-label" title="src/main/api/generators/random_model_generator.py">random_model_generator.py</code><div class="bar-track"><span style="width:83.67%"></span></div><span class="bar-value">83.7%</span></div>
+<div class="bar-row"><code class="bar-label" title="src/main/api/configuration/client.py">client.py</code><div class="bar-track"><span style="width:86.05%"></span></div><span class="bar-value">86.0%</span></div></div>
+          </article>
+          <article class="chart-panel">
+            <h2>Current Coverage Inventory</h2>
+            <div class="bar-list"><div class="bar-row inventory"><span class="bar-label">Covered lines</span><div class="bar-track"><span style="width:100.00%"></span></div><span class="bar-value">1,594</span></div>
+<div class="bar-row inventory"><span class="bar-label">Missing lines</span><div class="bar-track"><span style="width:11.61%"></span></div><span class="bar-value">185</span></div>
+<div class="bar-row inventory"><span class="bar-label">Covered branches</span><div class="bar-track"><span style="width:7.97%"></span></div><span class="bar-value">127</span></div>
+<div class="bar-row inventory"><span class="bar-label">Missing branches</span><div class="bar-track"><span style="width:6.34%"></span></div><span class="bar-value">101</span></div></div>
+          </article>
         </div>
       </section>
 
       <section class="section">
         <div class="section-head">
-          <h2>Coverage report history</h2>
-          <span class="section-note">Every published API coverage report in this period</span>
+          <h2>Coverage by File</h2>
+          <span class="section-note">Current measurement · lowest line coverage first</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Generated</th>
-                <th>Run</th>
-                <th>Branch</th>
+                <th>File</th>
                 <th class="number">Lines</th>
                 <th class="number">Branches</th>
-                <th>Data</th>
-              </tr>
-            </thead>
-            <tbody><tr><td><a href="../../coverage/30499117530-attempt-1/html/">29 Jul 2026 23:24 UTC</a></td><td>#30499117530 · attempt 1</td><td>70/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30499117530-attempt-1/coverage.json">JSON</a> · <a href="../../coverage/30499117530-attempt-1/coverage.xml">XML</a></td></tr>
-<tr><td><a href="../../coverage/30458351141-attempt-1/html/">29 Jul 2026 14:02 UTC</a></td><td>#30458351141 · attempt 1</td><td>69/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30458351141-attempt-1/coverage.json">JSON</a> · <a href="../../coverage/30458351141-attempt-1/coverage.xml">XML</a></td></tr>
-<tr><td><a href="../../coverage/30361897861-attempt-2/html/">28 Jul 2026 13:27 UTC</a></td><td>#30361897861 · attempt 2</td><td>ekonchina/current-coverage-trend</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30361897861-attempt-2/coverage.json">JSON</a> · <a href="../../coverage/30361897861-attempt-2/coverage.xml">XML</a></td></tr>
-<tr><td><a href="../../coverage/30359694450-attempt-1/html/">28 Jul 2026 12:42 UTC</a></td><td>#30359694450 · attempt 1</td><td>68/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30359694450-attempt-1/coverage.json">JSON</a> · <a href="../../coverage/30359694450-attempt-1/coverage.xml">XML</a></td></tr>
-<tr><td><a href="../../coverage/30356644067-attempt-2/html/">28 Jul 2026 12:05 UTC</a></td><td>#30356644067 · attempt 2</td><td>67/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30356644067-attempt-2/coverage.json">JSON</a> · <a href="../../coverage/30356644067-attempt-2/coverage.xml">XML</a></td></tr>
-<tr><td><a href="../../coverage/30354410022-attempt-1/html/">28 Jul 2026 11:26 UTC</a></td><td>#30354410022 · attempt 1</td><td>66/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30354410022-attempt-1/coverage.json">JSON</a> · <a href="../../coverage/30354410022-attempt-1/coverage.xml">XML</a></td></tr>
-<tr><td><a href="../../coverage/30353623965-attempt-1/html/">28 Jul 2026 11:14 UTC</a></td><td>#30353623965 · attempt 1</td><td>65/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30353623965-attempt-1/coverage.json">JSON</a> · <a href="../../coverage/30353623965-attempt-1/coverage.xml">XML</a></td></tr>
-<tr><td><a href="../../coverage/30352655198-attempt-2/html/">28 Jul 2026 11:06 UTC</a></td><td>#30352655198 · attempt 2</td><td>65/merge</td><td class="number">89.6%</td><td class="number">55.7%</td><td><a href="../../coverage/30352655198-attempt-2/coverage.json">JSON</a> · <a href="../../coverage/30352655198-attempt-2/coverage.xml">XML</a></td></tr></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Coverage by module</h2>
-          <span class="section-note">Lowest line coverage first</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Module</th>
-                <th class="number">Lines</th>
-                <th class="number">Branches</th>
-                <th class="number">Covered</th>
+                <th class="number">Covered lines</th>
                 <th>Missing lines</th>
                 <th>Coverage</th>
               </tr>
@@ -278,7 +351,8 @@ tr:last-child td { border-bottom: 0; }
       </section>
 
       <footer class="footer">
-        Source: coverage.py JSON · 8 reports in this window
+        <span>Snapshot generated 30 Jul 2026 15:05 UTC</span>
+        <span>Source: latest coverage.py JSON · 9 archived measurements available</span>
       </footer>
     </main>
   </body>
