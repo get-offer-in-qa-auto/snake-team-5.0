@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a rolling API framework coverage dashboard from coverage.py reports."""
+"""Build a current API framework coverage snapshot from coverage.py reports."""
 
 from __future__ import annotations
 
@@ -186,6 +186,10 @@ def module_summaries(report: CoverageReport) -> list[dict[str, Any]]:
                 "branch_rate": percentage(covered_branches, num_branches),
                 "covered_lines": covered_lines,
                 "num_statements": num_statements,
+                "missing_lines": max(0, num_statements - covered_lines),
+                "covered_branches": covered_branches,
+                "num_branches": num_branches,
+                "missing_branches": max(0, num_branches - covered_branches),
                 "missing": compact_line_numbers(missing_lines),
             }
         )
@@ -221,58 +225,133 @@ def daily_trend(
                 "line_rate": summary["line_rate"] if summary else None,
                 "branch_rate": summary["branch_rate"] if summary else None,
                 "report_id": summary["report_id"] if summary else None,
+                "run_id": summary["run_id"] if summary else None,
+                "generated_at": summary["generated_at"] if summary else None,
+                "html_url": summary["html_url"] if summary else None,
             }
         )
     return trend
 
 
-def build_metrics(
-    reports: list[CoverageReport], *, now: datetime, days: int
-) -> dict[str, Any]:
-    latest = coverage_summary(reports[-1]) if reports else None
-    previous = coverage_summary(reports[-2]) if len(reports) > 1 else None
-    line_delta = None
-    branch_delta = None
-    if latest and previous:
-        if latest["line_rate"] is not None and previous["line_rate"] is not None:
-            line_delta = round(latest["line_rate"] - previous["line_rate"], 2)
-        if latest["branch_rate"] is not None and previous["branch_rate"] is not None:
-            branch_delta = round(latest["branch_rate"] - previous["branch_rate"], 2)
+def rate_delta(
+    current: dict[str, Any] | None,
+    previous: dict[str, Any] | None,
+    field: str,
+) -> float | None:
+    if current is None or previous is None:
+        return None
+    current_value = current.get(field)
+    previous_value = previous.get(field)
+    if current_value is None or previous_value is None:
+        return None
+    return round(float(current_value) - float(previous_value), 2)
+
+
+def trend_delta(trend: list[dict[str, Any]], field: str) -> float | None:
+    measured = [day for day in trend if day.get(field) is not None]
+    if len(measured) < 2:
+        return None
+    return rate_delta(measured[-1], measured[0], field)
+
+
+def file_coverage_summary(modules: list[dict[str, Any]]) -> dict[str, Any]:
+    measured = [module for module in modules if module["num_statements"] > 0]
+    full = [
+        module
+        for module in measured
+        if module["covered_lines"] == module["num_statements"]
+    ]
+    empty = [module for module in measured if module["covered_lines"] == 0]
+    partial = [
+        module
+        for module in measured
+        if 0 < module["covered_lines"] < module["num_statements"]
+    ]
+    with_coverage = len(full) + len(partial)
     return {
-        "generated_at": now.isoformat(timespec="seconds"),
-        "window": {
-            "days": days,
-            "start": window_start(now, days).isoformat(timespec="seconds"),
-            "end": now.isoformat(timespec="seconds"),
-        },
-        "reports": len(reports),
-        "latest": latest,
-        "previous": previous,
-        "delta": {
-            "line_rate": line_delta,
-            "branch_rate": branch_delta,
-        },
-        "trend": daily_trend(reports, now=now, days=days),
-        "modules": module_summaries(reports[-1]) if reports else [],
-        "history": [
-            coverage_summary(report)
-            for report in sorted(
-                reports,
-                key=lambda item: item.generated_at,
-                reverse=True,
-            )
-        ],
+        "total": len(measured),
+        "with_coverage": with_coverage,
+        "with_coverage_rate": percentage(with_coverage, len(measured)),
+        "full": len(full),
+        "full_rate": percentage(len(full), len(measured)),
+        "partial": len(partial),
+        "partial_rate": percentage(len(partial), len(measured)),
+        "empty": len(empty),
+        "empty_rate": percentage(len(empty), len(measured)),
     }
 
 
-def format_delta(value: float | None) -> str:
+def build_metrics(reports: list[CoverageReport], *, now: datetime) -> dict[str, Any]:
+    latest = coverage_summary(reports[-1]) if reports else None
+    modules = module_summaries(reports[-1]) if reports else []
+    latest_generated_at = (
+        parse_datetime(latest["generated_at"]) if latest is not None else None
+    )
+    return {
+        "generated_at": now.isoformat(timespec="seconds"),
+        "mode": "current-snapshot",
+        "reports": len(reports),
+        "latest": latest,
+        "latest_context": {
+            "is_today": (
+                latest_generated_at.date() == now.date()
+                if latest_generated_at is not None
+                else False
+            ),
+            "label": (
+                f"Today at {latest_generated_at.strftime('%H:%M UTC')}"
+                if latest_generated_at is not None
+                and latest_generated_at.date() == now.date()
+                else (
+                    "Last available "
+                    + latest_generated_at.strftime("%d %b %Y %H:%M UTC")
+                    if latest_generated_at is not None
+                    else "No coverage measurement available"
+                )
+            ),
+        },
+        "modules": modules,
+        "files": file_coverage_summary(modules),
+    }
+
+
+def format_delta(
+    value: float | None,
+    *,
+    reference: str,
+    unavailable: str,
+) -> str:
     if value is None:
-        return "No previous report"
-    sign = "+" if value > 0 else ""
-    return f"{sign}{value:.1f} pp vs previous report"
+        return unavailable
+    if value > 0:
+        return f"↑ +{value:.1f} pp vs {reference}"
+    if value < 0:
+        return f"↓ {value:.1f} pp vs {reference}"
+    return f"→ No change vs {reference}"
 
 
-def render_coverage_trend(metrics: dict[str, Any]) -> str:
+def render_delta(
+    value: float | None,
+    *,
+    reference: str,
+    unavailable: str,
+) -> str:
+    if value is None:
+        state = "unknown"
+    elif value > 0:
+        state = "up"
+    elif value < 0:
+        state = "down"
+    else:
+        state = "flat"
+    return (
+        f'<span class="delta delta-{state}">'
+        f"{html.escape(format_delta(value, reference=reference, unavailable=unavailable))}"
+        "</span>"
+    )
+
+
+def render_coverage_trend(metrics: dict[str, Any], *, root_prefix: str) -> str:
     trend = metrics["trend"]
     all_values = [
         float(value)
@@ -290,11 +369,11 @@ def render_coverage_trend(metrics: dict[str, Any]) -> str:
         upper += 1.0
 
     width = 900.0
-    height = 230.0
-    left = 48.0
+    height = 250.0
+    left = 54.0
     right = 18.0
-    top = 20.0
-    bottom = 34.0
+    top = 24.0
+    bottom = 62.0
     plot_width = width - left - right
     plot_height = height - top - bottom
 
@@ -316,12 +395,20 @@ def render_coverage_trend(metrics: dict[str, Any]) -> str:
                 x += index * plot_width / (len(values) - 1)
             y = top + (upper - value) * plot_height / (upper - lower)
             current.append(f"{x:.1f},{y:.1f}")
-            if len(values) <= 60 or index in (0, len(values) - 1):
-                label = f"{trend[index]['label']}: {value:.1f}%"
-                circles.append(
-                    f'<circle class="{css_class}" cx="{x:.1f}" cy="{y:.1f}" r="3">'
-                    f"<title>{html.escape(label)}</title></circle>"
+            label = (
+                f"{trend[index]['label']}: {value:.1f}% · run #{trend[index]['run_id']}"
+            )
+            circle = (
+                f'<circle class="{css_class}" cx="{x:.1f}" cy="{y:.1f}" r="4">'
+                f"<title>{html.escape(label)}</title></circle>"
+            )
+            report_url = trend[index].get("html_url")
+            if report_url:
+                circle = (
+                    f'<a href="{html.escape(root_prefix + str(report_url))}">'
+                    f"{circle}</a>"
                 )
+            circles.append(circle)
         if current:
             segments.append(current)
         lines = "".join(
@@ -331,22 +418,64 @@ def render_coverage_trend(metrics: dict[str, Any]) -> str:
         )
         return lines + "".join(circles)
 
+    grid_lines: list[str] = []
+    for grid_index in range(5):
+        ratio = grid_index / 4
+        y = top + plot_height * ratio
+        grid_value = upper - (upper - lower) * ratio
+        grid_lines.append(
+            f'<line class="chart-grid" x1="{left}" y1="{y:.1f}" '
+            f'x2="{width - right}" y2="{y:.1f}"/>'
+            f'<text class="chart-axis chart-axis-y" x="{left - 8}" '
+            f'y="{y + 4:.1f}">{grid_value:.1f}%</text>'
+        )
+
+    label_count = min(7, len(trend))
+    if label_count <= 1:
+        label_indices = {0}
+    else:
+        label_indices = {
+            round(index * (len(trend) - 1) / (label_count - 1))
+            for index in range(label_count)
+        }
+    x_labels: list[str] = []
+    for index in sorted(label_indices):
+        x = left
+        if len(trend) > 1:
+            x += index * plot_width / (len(trend) - 1)
+        x_labels.append(
+            f'<text class="chart-axis chart-axis-x" '
+            f'transform="translate({x:.1f} {height - 30:.1f}) rotate(-22)">'
+            f"{html.escape(str(trend[index]['label']))}</text>"
+        )
+
+    line_period_delta = render_delta(
+        metrics["period_delta"]["line_rate"],
+        reference="first measured day",
+        unavailable="Not enough history",
+    )
+    branch_period_delta = render_delta(
+        metrics["period_delta"]["branch_rate"],
+        reference="first measured day",
+        unavailable="Not enough history",
+    )
     return f"""
     <div class="coverage-chart-head">
-      <span><i class="legend-line"></i>Line coverage</span>
-      <span><i class="legend-branch"></i>Branch coverage</span>
+      <span>
+        <i class="legend-line"></i>Line coverage
+        {line_period_delta}
+      </span>
+      <span>
+        <i class="legend-branch"></i>Branch coverage
+        {branch_period_delta}
+      </span>
     </div>
     <svg class="coverage-chart" viewBox="0 0 {width:.0f} {height:.0f}" role="img"
          aria-label="Line and branch coverage over {metrics["window"]["days"]} days">
-      <line class="chart-grid" x1="{left}" y1="{top}" x2="{left}" y2="{height - bottom}"/>
-      <line class="chart-grid" x1="{left}" y1="{height - bottom}" x2="{width - right}" y2="{height - bottom}"/>
-      <line class="chart-grid chart-grid-mid" x1="{left}" y1="{top + plot_height / 2:.1f}" x2="{width - right}" y2="{top + plot_height / 2:.1f}"/>
-      <text class="chart-axis" x="4" y="{top + 5:.1f}">{upper:.1f}%</text>
-      <text class="chart-axis" x="4" y="{height - bottom + 5:.1f}">{lower:.1f}%</text>
+      {"".join(grid_lines)}
       {render_series("line_rate", "series-line")}
       {render_series("branch_rate", "series-branch")}
-      <text class="chart-axis" x="{left}" y="{height - 8}">{html.escape(trend[0]["label"])}</text>
-      <text class="chart-axis chart-axis-end" x="{width - right}" y="{height - 8}">{html.escape(trend[-1]["label"])}</text>
+      {"".join(x_labels)}
     </svg>
     """
 
@@ -449,19 +578,28 @@ h2 { font-size: 19px; margin: 0; }
 }
 .card { padding: 16px; }
 .stat-value { display: block; font-size: 28px; margin: 3px 0; }
+.stat-context { display: grid; gap: 6px; }
+.measurement-time { color: var(--muted); font-size: 12px; }
+.delta {
+  display: inline-block; width: fit-content; padding: 2px 7px;
+  border-radius: 999px; font-size: 12px; white-space: nowrap;
+}
+.delta-up { color: #1a7f37; background: #dafbe1; }
+.delta-down { color: #cf222e; background: #ffebe9; }
+.delta-flat, .delta-unknown { color: var(--muted); background: var(--track); }
 .section { margin-top: 22px; }
 .section-head { align-items: baseline; margin-bottom: 10px; }
 .coverage-chart-wrap { padding: 14px; overflow-x: auto; }
 .coverage-chart-head { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); }
 .coverage-chart-head span { display: inline-flex; align-items: center; gap: 6px; }
+.coverage-chart-head .delta { font-style: normal; }
 .coverage-chart-head i { width: 18px; height: 3px; display: inline-block; }
 .legend-line { background: var(--series); }
 .legend-branch { background: var(--primary); }
 .coverage-chart { display: block; min-width: 620px; width: 100%; height: auto; }
 .chart-grid { stroke: var(--border); stroke-width: 1; }
-.chart-grid-mid { stroke-dasharray: 4 5; }
 .chart-axis { fill: var(--muted); font-size: 11px; }
-.chart-axis-end { text-anchor: end; }
+.chart-axis-y, .chart-axis-x { text-anchor: end; }
 .coverage-line {
   fill: none; stroke: currentColor; stroke-width: 3;
   stroke-linecap: round; stroke-linejoin: round;
@@ -495,6 +633,8 @@ tr:last-child td { border-bottom: 0; }
     --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
     --series: #3fb950; --track: #30363d;
   }
+  .delta-up { color: #3fb950; background: #12261a; }
+  .delta-down { color: #f85149; background: #32191c; }
 }
 """
 
@@ -513,127 +653,395 @@ def render_period_links(
     )
 
 
+SNAPSHOT_CSS = """
+:root {
+  color-scheme: light;
+  --background: #f6f8fa;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --muted: #636c76;
+  --border: #d0d7de;
+  --primary: #2f81f7;
+  --green: #2da44e;
+  --amber: #bf8700;
+  --red: #cf222e;
+  --purple: #8250df;
+  --track: #eaeef2;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--background); color: var(--text);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { overflow-wrap: anywhere; }
+.page { width: min(1280px, 100%); margin: 0 auto; padding: 26px 20px 48px; }
+.topbar, .meta, .actions, .section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap;
+}
+.meta, .actions { justify-content: flex-start; }
+h1 { font-size: 28px; line-height: 1.2; margin: 3px 0; }
+h2 { font-size: 19px; margin: 0; }
+.muted, .section-note { color: var(--muted); }
+.badge {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  background: var(--track); color: var(--text);
+}
+.button {
+  display: inline-block; padding: 7px 11px; border: 1px solid var(--border);
+  border-radius: 7px; background: var(--surface); color: var(--text);
+}
+.button-primary { color: #fff; background: var(--primary); border-color: var(--primary); }
+.snapshot-note {
+  margin-top: 14px; padding: 10px 12px; border-left: 3px solid var(--primary);
+  background: var(--surface); border-radius: 0 7px 7px 0;
+}
+.donut-grid {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px; margin-top: 18px;
+}
+.donut-card, .progress-card, .chart-panel, .table-wrap {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
+}
+.donut-card {
+  min-width: 0; padding: 12px; border-left: 3px solid var(--primary);
+}
+.donut-card h2 { font-size: 14px; font-weight: 600; }
+.donut {
+  --value: 0; --tone: var(--primary);
+  position: relative; width: 92px; height: 92px; margin: 12px auto;
+  border-radius: 50%;
+  background: conic-gradient(var(--tone) calc(var(--value) * 1%), var(--track) 0);
+}
+.donut::after {
+  content: ""; position: absolute; inset: 17px; border-radius: 50%;
+  background: var(--surface);
+}
+.donut strong {
+  position: absolute; inset: 0; z-index: 1; display: grid; place-items: center;
+  font-size: 17px; color: var(--tone); font-variant-numeric: tabular-nums;
+}
+.formula {
+  min-height: 74px; padding: 8px; background: var(--background);
+  color: var(--muted); font-size: 12px; overflow-wrap: anywhere;
+}
+.tone-blue { --tone: var(--primary); }
+.tone-purple { --tone: var(--purple); }
+.tone-green { --tone: var(--green); }
+.tone-amber { --tone: var(--amber); }
+.tone-red { --tone: var(--red); }
+.progress-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;
+}
+.progress-card { padding: 12px; border-left: 3px solid var(--primary); }
+.progress-head { display: flex; justify-content: space-between; gap: 10px; }
+.progress-track {
+  height: 9px; margin: 8px 0; overflow: hidden; border-radius: 999px;
+  background: var(--track);
+}
+.progress-track span { display: block; height: 100%; background: var(--primary); }
+.progress-card.files .progress-track span { background: var(--green); }
+.section { margin-top: 22px; }
+.section-head { align-items: baseline; margin-bottom: 10px; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.chart-panel { min-width: 0; padding: 14px; }
+.chart-panel h2 { margin-bottom: 12px; }
+.bar-list { display: grid; gap: 9px; }
+.bar-row {
+  display: grid; grid-template-columns: minmax(120px, 1.2fr) minmax(160px, 3fr) 70px;
+  gap: 9px; align-items: center;
+}
+.bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-track { height: 18px; background: var(--track); border-radius: 4px; overflow: hidden; }
+.bar-track span { display: block; min-width: 2px; height: 100%; background: var(--green); }
+.bar-row.inventory:nth-child(2) .bar-track span,
+.bar-row.inventory:nth-child(4) .bar-track span { background: var(--red); }
+.bar-value { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 9px 11px; text-align: left; border-bottom: 1px solid var(--border); }
+th { color: var(--muted); background: var(--background); font-size: 13px; }
+tr:last-child td { border-bottom: 0; }
+.number { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.coverage-cell {
+  min-width: 130px;
+  background: linear-gradient(var(--track), var(--track)) center/100% 7px no-repeat;
+}
+.coverage-cell span { display: block; height: 7px; background: var(--green); }
+.empty-state { color: var(--muted); padding: 14px; }
+.footer {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  color: var(--muted); margin-top: 24px; font-size: 13px;
+}
+@media (max-width: 980px) {
+  .donut-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .donut-grid { grid-template-columns: 1fr 1fr; }
+  .chart-grid, .progress-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .page { padding: 20px 12px 36px; }
+  .donut-grid { grid-template-columns: 1fr; }
+  .bar-row { grid-template-columns: minmax(100px, 1fr) minmax(120px, 2fr) 62px; }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: #0d1117; --surface: #161b22; --text: #e6edf3;
+    --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
+    --green: #3fb950; --amber: #d29922; --red: #f85149;
+    --purple: #a371f7; --track: #30363d;
+  }
+}
+"""
+
+
+def render_donut_card(
+    title: str,
+    rate: float | None,
+    *,
+    numerator: int,
+    denominator: int,
+    tone: str,
+    subject: str,
+) -> str:
+    value = 0.0 if rate is None else max(0.0, min(100.0, rate))
+    display = "—" if rate is None else f"{rate:.1f}%"
+    return f"""
+    <article class="donut-card">
+      <h2>{html.escape(title)}</h2>
+      <div class="donut {tone}" style="--value:{value:.2f}">
+        <strong>{html.escape(display)}</strong>
+      </div>
+      <div class="formula">
+        <strong>Calculated:</strong> {numerator:,} / {denominator:,} × 100%
+        <br><strong>Source:</strong> current {html.escape(subject)}
+      </div>
+    </article>
+    """
+
+
+def render_progress_card(
+    title: str,
+    rate: float | None,
+    *,
+    covered: int,
+    total: int,
+    css_class: str = "",
+) -> str:
+    value = 0.0 if rate is None else max(0.0, min(100.0, rate))
+    return f"""
+    <article class="progress-card {css_class}">
+      <div class="progress-head">
+        <strong>{html.escape(title)}</strong>
+        <span>{html.escape(format_percent(rate))}</span>
+      </div>
+      <div class="progress-track"><span style="width:{value:.2f}%"></span></div>
+      <span>Covered: {covered:,} · Total: {total:,}</span>
+    </article>
+    """
+
+
+def render_lowest_file_bars(metrics: dict[str, Any]) -> str:
+    rows: list[str] = []
+    for module in metrics["modules"][:10]:
+        rate = module["line_rate"]
+        width = 0.0 if rate is None else max(0.0, min(100.0, float(rate)))
+        label = Path(module["path"]).name
+        rows.append(
+            '<div class="bar-row">'
+            f'<code class="bar-label" title="{html.escape(module["path"])}">'
+            f"{html.escape(label)}</code>"
+            f'<div class="bar-track"><span style="width:{width:.2f}%"></span></div>'
+            f'<span class="bar-value">{html.escape(format_percent(rate))}</span>'
+            "</div>"
+        )
+    return "\n".join(rows) or '<p class="empty-state">No measured files.</p>'
+
+
+def render_inventory_bars(metrics: dict[str, Any]) -> str:
+    latest = metrics["latest"]
+    if latest is None:
+        return '<p class="empty-state">No current coverage data.</p>'
+    inventory = (
+        ("Covered lines", latest["covered_lines"]),
+        ("Missing lines", latest["missing_lines"]),
+        ("Covered branches", latest["covered_branches"]),
+        ("Missing branches", latest["missing_branches"]),
+    )
+    maximum = max((int(value) for _, value in inventory), default=0)
+    rows: list[str] = []
+    for label, raw_value in inventory:
+        value = int(raw_value)
+        width = value * 100 / maximum if maximum else 0.0
+        rows.append(
+            '<div class="bar-row inventory">'
+            f'<span class="bar-label">{html.escape(label)}</span>'
+            f'<div class="bar-track"><span style="width:{width:.2f}%"></span></div>'
+            f'<span class="bar-value">{value:,}</span>'
+            "</div>"
+        )
+    return "\n".join(rows)
+
+
 def render_dashboard(
     metrics: dict[str, Any],
     *,
     root_prefix: str,
     quality_url: str,
-    periods: list[tuple[int, str]],
 ) -> str:
     latest = metrics["latest"]
+    files = metrics["files"]
+    generated_at = parse_datetime(metrics["generated_at"])
+
     if latest is None:
         header_meta = '<span class="muted">No coverage reports published yet.</span>'
-        actions = f'<a class="button" href="{html.escape(quality_url)}">Back to QA metrics</a>'
-        stats = (
-            '<article class="card"><span class="muted">Line coverage</span>'
-            '<strong class="stat-value">—</strong></article>'
+        original_link = ""
+        cards = render_donut_card(
+            "Line Coverage",
+            None,
+            numerator=0,
+            denominator=0,
+            tone="tone-blue",
+            subject="coverage.py totals",
         )
+        progress = ""
     else:
+        measurement_time = html.escape(metrics["latest_context"]["label"])
         header_meta = (
-            f'<span class="badge">{html.escape(latest["source"])}</span>'
+            f'<span class="badge">Current snapshot</span>'
+            f'<span class="badge">{measurement_time}</span>'
             f"<span>Run {latest['run_id']}</span>"
             f"<span>{html.escape(latest['branch'])}</span>"
             f"<span>{html.escape(latest['sha'][:8])}</span>"
         )
-        actions = (
-            f'<a class="button" href="{html.escape(quality_url)}">Back to QA metrics</a>'
-            f'<a class="button" href="{html.escape(root_prefix + latest["html_url"])}">'
-            "Open standard HTML report</a>"
+        original_link = (
+            f'<a class="button button-primary" '
+            f'href="{html.escape(root_prefix + latest["html_url"])}">'
+            "Open original coverage.py page</a>"
         )
-        stats = f"""
-        <article class="card">
-          <span class="muted">Line coverage</span>
-          <strong class="stat-value">{format_percent(latest["line_rate"])}</strong>
-          <span>{html.escape(format_delta(metrics["delta"]["line_rate"]))}</span>
-        </article>
-        <article class="card">
-          <span class="muted">Branch coverage</span>
-          <strong class="stat-value">{format_percent(latest["branch_rate"])}</strong>
-          <span>{latest["covered_branches"]} of {latest["num_branches"]} branches</span>
-        </article>
-        <article class="card">
-          <span class="muted">Covered lines</span>
-          <strong class="stat-value">{latest["covered_lines"]:,}</strong>
-          <span>{latest["missing_lines"]:,} lines missing</span>
-        </article>
-        <article class="card">
-          <span class="muted">Measured files</span>
-          <strong class="stat-value">{len(metrics["modules"])}</strong>
-          <span>{latest["num_statements"]:,} statements</span>
-        </article>
-        """
+        cards = "".join(
+            (
+                render_donut_card(
+                    "Line Coverage",
+                    latest["line_rate"],
+                    numerator=latest["covered_lines"],
+                    denominator=latest["num_statements"],
+                    tone="tone-blue",
+                    subject="statements",
+                ),
+                render_donut_card(
+                    "Branch Coverage",
+                    latest["branch_rate"],
+                    numerator=latest["covered_branches"],
+                    denominator=latest["num_branches"],
+                    tone="tone-purple",
+                    subject="branches",
+                ),
+                render_donut_card(
+                    "Full Coverage",
+                    files["full_rate"],
+                    numerator=files["full"],
+                    denominator=files["total"],
+                    tone="tone-green",
+                    subject="measured files",
+                ),
+                render_donut_card(
+                    "Partial Coverage",
+                    files["partial_rate"],
+                    numerator=files["partial"],
+                    denominator=files["total"],
+                    tone="tone-amber",
+                    subject="measured files",
+                ),
+                render_donut_card(
+                    "Empty Coverage",
+                    files["empty_rate"],
+                    numerator=files["empty"],
+                    denominator=files["total"],
+                    tone="tone-red",
+                    subject="measured files",
+                ),
+            )
+        )
+        progress = "".join(
+            (
+                render_progress_card(
+                    "Statements Coverage",
+                    latest["line_rate"],
+                    covered=latest["covered_lines"],
+                    total=latest["num_statements"],
+                ),
+                render_progress_card(
+                    "Files With Coverage",
+                    files["with_coverage_rate"],
+                    covered=files["with_coverage"],
+                    total=files["total"],
+                    css_class="files",
+                ),
+            )
+        )
 
     return f"""<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>API test framework coverage</title>
-    <style>{COVERAGE_CSS}</style>
+    <title>API framework code coverage</title>
+    <style>{SNAPSHOT_CSS}</style>
   </head>
   <body>
     <main class="page">
       <header class="topbar">
         <div>
-          <span class="muted">QA metrics / Coverage</span>
-          <h1>API test framework coverage</h1>
+          <span class="muted">QA metrics / Code coverage</span>
+          <h1>⚙ API Coverage Analysis</h1>
           <div class="meta">{header_meta}</div>
         </div>
-        <div>
-          <div class="actions">{actions}</div>
-          <div class="period-links" aria-label="Saved coverage periods">
-            {render_period_links(periods, current_days=metrics["window"]["days"])}
-          </div>
+        <div class="actions">
+          <a class="button" href="{html.escape(quality_url)}">Open QA metrics</a>
+          {original_link}
         </div>
       </header>
 
-      <section class="stats" aria-label="Coverage summary">{stats}</section>
+      <div class="snapshot-note">
+        <strong>Current state only.</strong>
+        This page uses the latest published coverage measurement and does not
+        average or aggregate coverage over a 7-, 14-, or any other day window.
+      </div>
+
+      <section class="donut-grid" aria-label="Current coverage summary">{cards}</section>
+      <section class="progress-grid" aria-label="Current coverage progress">{progress}</section>
 
       <section class="section">
-        <div class="section-head">
-          <h2>{metrics["window"]["days"]}-day trend</h2>
-          <span class="section-note">Latest API regression report per UTC day</span>
-        </div>
-        <div class="coverage-chart-wrap">
-          {render_coverage_trend(metrics)}
+        <div class="chart-grid">
+          <article class="chart-panel">
+            <h2>Lowest Line Coverage by File</h2>
+            <div class="bar-list">{render_lowest_file_bars(metrics)}</div>
+          </article>
+          <article class="chart-panel">
+            <h2>Current Coverage Inventory</h2>
+            <div class="bar-list">{render_inventory_bars(metrics)}</div>
+          </article>
         </div>
       </section>
 
       <section class="section">
         <div class="section-head">
-          <h2>Coverage report history</h2>
-          <span class="section-note">Every published API coverage report in this period</span>
+          <h2>Coverage by File</h2>
+          <span class="section-note">Current measurement · lowest line coverage first</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Generated</th>
-                <th>Run</th>
-                <th>Branch</th>
+                <th>File</th>
                 <th class="number">Lines</th>
                 <th class="number">Branches</th>
-                <th>Data</th>
-              </tr>
-            </thead>
-            <tbody>{render_history_rows(metrics, root_prefix=root_prefix)}</tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Coverage by module</h2>
-          <span class="section-note">Lowest line coverage first</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Module</th>
-                <th class="number">Lines</th>
-                <th class="number">Branches</th>
-                <th class="number">Covered</th>
+                <th class="number">Covered lines</th>
                 <th>Missing lines</th>
                 <th>Coverage</th>
               </tr>
@@ -644,7 +1052,8 @@ def render_dashboard(
       </section>
 
       <footer class="footer">
-        Source: coverage.py JSON · {metrics["reports"]} reports in this window
+        <span>Snapshot generated {generated_at.strftime("%d %b %Y %H:%M UTC")}</span>
+        <span>Source: latest coverage.py JSON · {metrics["reports"]} archived measurements available</span>
       </footer>
     </main>
   </body>
@@ -700,7 +1109,6 @@ def saved_period_links(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--site-dir", required=True, type=Path)
-    parser.add_argument("--days", type=int, default=7)
     parser.add_argument("--destination", default="quality/coverage")
     parser.add_argument("--quality-url", default="../")
     parser.add_argument("--now", help="ISO-8601 UTC timestamp used as window end")
@@ -709,15 +1117,13 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    if args.days < 1:
-        raise ValueError("--days must be a positive integer")
     now = parse_datetime(args.now) if args.now else datetime.now(UTC)
     reports = load_coverage_reports(
         args.site_dir,
-        window_start_at=window_start(now, args.days),
+        window_start_at=datetime(1970, 1, 1, tzinfo=UTC),
         window_end=now,
     )
-    metrics = build_metrics(reports, now=now, days=args.days)
+    metrics = build_metrics(reports, now=now)
     destination, destination_relative = resolve_site_path(
         args.site_dir,
         args.destination,
@@ -732,16 +1138,13 @@ def main() -> None:
             metrics,
             root_prefix="../" * len(destination_relative.parts),
             quality_url=args.quality_url,
-            periods=saved_period_links(
-                args.site_dir,
-                destination_relative,
-                args.days,
-            ),
         ),
         encoding="utf-8",
     )
     append_github_output(metrics)
-    print(f"Built coverage dashboard from {len(reports)} reports.")
+    print(
+        f"Built current coverage snapshot from {metrics['reports']} archived reports."
+    )
 
 
 if __name__ == "__main__":

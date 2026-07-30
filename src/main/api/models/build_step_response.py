@@ -1,3 +1,5 @@
+from pydantic import Field
+
 from src.main.api.models.base_model import BaseModel
 from src.main.api.models.create_build_step_request import BuildStepProperties
 
@@ -12,4 +14,4 @@ class BuildStepResponse(BaseModel):
 
 class BuildStepsResponse(BaseModel):
     count: int
-    step: list[BuildStepResponse]
+    step: list[BuildStepResponse] = Field(default_factory=list)

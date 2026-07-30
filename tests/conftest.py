@@ -92,15 +92,15 @@ ALLURE_HIERARCHY_BY_PATH = {
         "Identity & Access",
         "Permissions",
     ),
-    ("unit", "api", "utils", "test_cleanup_helper.py"): (
-        "Unit",
-        "API Utilities",
-        "Cleanup",
-    ),
     ("ui", "auth", "test_login.py"): ("UI", "Authentication", "Login"),
     ("ui", "projects", "test_project_creation.py"): (
         "UI",
         "Projects",
+        "Creation",
+    ),
+    ("ui", "build_steps", "test_build_step_creation.py"): (
+        "UI",
+        "Build Steps",
         "Creation",
     ),
     ("ui", "identity_access", "test_user_creation.py"): (
