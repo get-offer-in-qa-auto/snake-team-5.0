@@ -3,7 +3,7 @@
     "branch_rate": 0.0,
     "line_rate": -0.02
   },
-  "generated_at": "2026-07-29T23:24:47+00:00",
+  "generated_at": "2026-07-30T06:03:42+00:00",
   "history": [
     {
       "attempt": 1,
@@ -704,13 +704,6 @@
   "trend": [
     {
       "branch_rate": null,
-      "date": "2026-07-23",
-      "label": "23 Jul",
-      "line_rate": null,
-      "report_id": null
-    },
-    {
-      "branch_rate": null,
       "date": "2026-07-24",
       "label": "24 Jul",
       "line_rate": null,
@@ -750,11 +743,18 @@
       "label": "29 Jul",
       "line_rate": 89.6,
       "report_id": "30499117530-attempt-1"
+    },
+    {
+      "branch_rate": null,
+      "date": "2026-07-30",
+      "label": "30 Jul",
+      "line_rate": null,
+      "report_id": null
     }
   ],
   "window": {
     "days": 7,
-    "end": "2026-07-29T23:24:47+00:00",
-    "start": "2026-07-23T00:00:00+00:00"
+    "end": "2026-07-30T06:03:42+00:00",
+    "start": "2026-07-24T00:00:00+00:00"
   }
 }
