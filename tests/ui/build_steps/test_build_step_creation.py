@@ -23,9 +23,12 @@ def test_admin_can_create_command_line_build_step(
     build_step_request: CreateBuildStepRequest,
 ):
 
-    CreateCommandLineBuildStepPage(
-        page, build_configuration.id
-    ).open().create_build_step(build_step_request)
+    (
+        CreateCommandLineBuildStepPage(page, build_configuration.id)
+        .open()
+        .create_build_step(build_step_request)
+        .should_be_opened()
+    )
     stored_steps = api_manager.admin_steps.get_build_steps(build_configuration.id)
     created_step = next(
         step for step in stored_steps.step if step.name == build_step_request.name

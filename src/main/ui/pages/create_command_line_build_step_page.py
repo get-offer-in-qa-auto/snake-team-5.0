@@ -5,6 +5,7 @@ from src.main.api.models.create_build_step_request import (
     CreateBuildStepRequest,
 )
 from src.main.ui.pages.base_page import BasePage
+from src.main.ui.pages.build_steps_page import BuildStepsPage
 from src.main.ui.routes.teamcity_routes import TeamCityRoutes
 
 
@@ -45,7 +46,7 @@ class CreateCommandLineBuildStepPage(BasePage):
     @allure.step("Create Command Line build step")
     def create_build_step(
         self, build_step_request: CreateBuildStepRequest
-    ) -> "CreateCommandLineBuildStepPage":
+    ) -> BuildStepsPage:
         self.command_line_runner.click()
         self.step_name_input.wait_for(state="visible")
 
@@ -54,7 +55,7 @@ class CreateCommandLineBuildStepPage(BasePage):
         self._fill_script(self._get_script(build_step_request))
 
         self.save_button.click()
-        return self
+        return BuildStepsPage(self.page, self.build_configuration_id)
 
     def _fill_script(self, script: str) -> None:
         self.script_editor.evaluate(
