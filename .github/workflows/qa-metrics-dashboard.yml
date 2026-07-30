@@ -57,6 +57,51 @@ jobs:
             --jq '.workflow_runs[]' |
             jq --slurp '.' > workflow-runs.json
 
+      - name: Read regression test-stage durations
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          while IFS= read -r run_id; do
+            duration="$(
+              gh api --paginate \
+                "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" \
+                --jq '.jobs[]' |
+                jq --slurp '
+                  [
+                    .[]
+                    | select(
+                        .name == "TeamCity API regression"
+                        or (.name | startswith("TeamCity UI"))
+                      )
+                    | select(.started_at != null and .completed_at != null)
+                  ]
+                  | if length == 0 then null
+                    else
+                      (
+                        (map(.completed_at | fromdateiso8601) | max)
+                        - (map(.started_at | fromdateiso8601) | min)
+                      )
+                    end
+                '
+            )"
+            if [ "$duration" = "null" ]; then
+              continue
+            fi
+            updated_file="$(mktemp)"
+            jq \
+              --argjson run_id "$run_id" \
+              --argjson duration "$duration" \
+              'map(
+                if .id == $run_id
+                then . + {test_duration_seconds: $duration}
+                else .
+                end
+              )' \
+              workflow-runs.json > "$updated_file"
+            mv "$updated_file" workflow-runs.json
+          done < <(jq -r '.[].id' workflow-runs.json)
+
       - name: Prepare persistent Pages site
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -80,17 +125,10 @@ jobs:
         id: dashboard
         shell: bash
         run: |
-          coverage_snapshot="quality/coverage/periods/${METRICS_DAYS}"
           quality_snapshot="quality/periods/${METRICS_DAYS}"
 
           python3 scripts/build_coverage_dashboard.py \
             --site-dir pages-site \
-            --days "${METRICS_DAYS}" \
-            --destination "$coverage_snapshot" \
-            --quality-url "../../../periods/${METRICS_DAYS}/"
-          python3 scripts/build_coverage_dashboard.py \
-            --site-dir pages-site \
-            --days "${METRICS_DAYS}" \
             --destination quality/coverage \
             --quality-url "../"
           python3 scripts/build_quality_dashboard.py \
@@ -98,8 +136,8 @@ jobs:
             --runs-json workflow-runs.json \
             --days "${METRICS_DAYS}" \
             --destination "$quality_snapshot" \
-            --coverage-metrics "$coverage_snapshot/metrics.json" \
-            --coverage-url "../../coverage/periods/${METRICS_DAYS}/"
+            --coverage-metrics quality/coverage/metrics.json \
+            --coverage-url "../../coverage/"
           python3 scripts/build_quality_dashboard.py \
             --site-dir pages-site \
             --runs-json workflow-runs.json \
@@ -139,15 +177,11 @@ jobs:
         shell: bash
         run: |
           {
-            echo "## QA metrics dashboard"
+            cat pages-site/quality/report.md
             echo
-            echo "[Open current QA metrics dashboard](${{ steps.deployment.outputs.page_url }}quality/)"
+            echo "## Full published report"
             echo
-            echo "[Open saved ${METRICS_DAYS}-day snapshot](${{ steps.deployment.outputs.page_url }}quality/periods/${METRICS_DAYS}/)"
-            echo
-            echo "Completed regression runs: ${{ steps.dashboard.outputs.completed_runs }}"
-            echo
-            echo "Published Allure reports: ${{ steps.dashboard.outputs.published_reports }}"
-            echo
-            echo "API line coverage: ${{ steps.dashboard.outputs.line_coverage || 'No coverage reports' }}"
+            echo "- [Open current QA metrics report](${{ steps.deployment.outputs.page_url }}quality/)"
+            echo "- [Open saved ${METRICS_DAYS}-day snapshot](${{ steps.deployment.outputs.page_url }}quality/periods/${METRICS_DAYS}/)"
+            echo "- [Open API framework coverage](${{ steps.deployment.outputs.page_url }}quality/coverage/)"
           } >> "$GITHUB_STEP_SUMMARY"

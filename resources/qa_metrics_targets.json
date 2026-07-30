@@ -1,18 +1,62 @@
 {
-  "test_pass_rate": {
+  "pass_rate": {
     "direction": "minimum",
-    "value": 99.0
+    "value": 98.0,
+    "name": "Average Pass Rate",
+    "recommendation": "Review failing tests and fix frequent assertions."
   },
-  "pipeline_success_rate": {
+  "fail_rate": {
+    "direction": "maximum",
+    "value": 2.0,
+    "name": "Average Fail Rate",
+    "recommendation": "Prioritize top failing suites and stabilize environments."
+  },
+  "broken_rate": {
+    "direction": "maximum",
+    "value": 1.0,
+    "name": "Average Broken Rate",
+    "recommendation": "Fix infrastructure and test setup errors first."
+  },
+  "flaky_rate": {
+    "direction": "maximum",
+    "value": 2.0,
+    "name": "Flaky Rate",
+    "recommendation": "Quarantine flaky tests and remove unstable waits."
+  },
+  "stability_rate": {
     "direction": "minimum",
-    "value": 95.0
+    "value": 95.0,
+    "name": "Test Stability",
+    "recommendation": "Track unstable runs and fix recurring root causes."
   },
-  "workflow_duration_seconds": {
+  "avg_duration_sec": {
     "direction": "maximum",
-    "value": 480.0
+    "value": 3.0,
+    "name": "Average Test Duration",
+    "recommendation": "Optimize slow tests and reduce external dependencies."
   },
-  "flaky_results": {
+  "avg_api_duration_sec": {
     "direction": "maximum",
-    "value": 0.0
+    "value": 0.2,
+    "name": "Average API Test Duration",
+    "recommendation": "Optimize slow API tests and reduce network or database overhead."
+  },
+  "ui_run_duration_sec": {
+    "direction": "maximum",
+    "value": 240.0,
+    "name": "Average UI Test Run Duration",
+    "recommendation": "Reduce UI runtime with better parallelization and setup reuse."
+  },
+  "api_run_duration_sec": {
+    "direction": "maximum",
+    "value": 20.0,
+    "name": "Average API Test Run Duration",
+    "recommendation": "Optimize API request and database paths and trim heavy setup."
+  },
+  "suite_duration_sec": {
+    "direction": "maximum",
+    "value": 240.0,
+    "name": "Average Pipeline Duration",
+    "recommendation": "Increase parallelism and remove long serial bottlenecks."
   }
 }

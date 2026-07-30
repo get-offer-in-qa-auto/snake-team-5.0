@@ -236,42 +236,46 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/quality/
 По умолчанию окно включает текущий и шесть предыдущих календарных дней UTC.
 При ручном запуске поле `days` принимает любое положительное целое число.
 Для scheduled запуска окно можно изменить repository variable
-`QA_METRICS_DAYS`, не меняя YAML. Dashboard пересобирается из двух независимых
+`QA_METRICS_DAYS`, не меняя YAML. Отчет пересобирается из двух независимых
 источников:
 
 - GitHub Actions API — все завершенные workflow runs, включая runs без
-  опубликованного Allure report;
+  опубликованного Allure report, и границы выполнения API/UI test jobs;
 - постоянная история `reports/regression/...` в ветке `gh-pages` — финальные
-  результаты тестов, retries, browser scope и длительности.
+  результаты тестов, flaky-признак, scope и длительности.
 
 Повторные попытки одного workflow run не суммируются: для pipeline и Allure
 используется только максимальный `run_attempt`. Поэтому rerun не раздувает
 число запусков и тестовых результатов.
 
-Основные показатели:
+Расчеты повторяют модель референсного отчета
+`pipe_team_open_msr_auto/script-to-collect-data`:
 
-- **Pipeline stability** — успешные завершенные regression runs / все
-  завершенные regression runs;
-- **Test reliability** — финальные passed results / все финальные test results;
-- **Flaky tests** — уникальные тесты с retry/flaky-признаком Allure либо со
-  смешанными passed и failed/broken результатами внутри окна;
-- **Retry rate** — retries / (финальные результаты + retries);
-- **p95 duration** — 95-й перцентиль длительности workflow или теста.
+- для каждого опубликованного run считаются `pass rate`, `fail rate` и
+  `broken rate`; итог каждой метрики — обычное, невзвешенное среднее процентов
+  по runs;
+- **Flaky rate** — количество финальных API/UI результатов с явным
+  `flaky=true` в Allure / все финальные test results;
+- **Average UI/API flaky rate** — невзвешенное среднее соответствующего flaky
+  rate по runs;
+- **Test stability** — runs, где есть тесты и каждый финальный результат
+  `passed`, / все опубликованные runs;
+- средние длительности считаются сначала внутри каждого run, затем усредняются
+  по runs; UI/API run duration — сумма длительностей тестов соответствующего
+  scope;
+- **Average pipeline duration** — среднее времени тестовой стадии: от самого
+  раннего старта API/UI job до самого позднего завершения этих jobs;
+- в списках slow tests показываются четыре самых долгих UI и API результата.
 
-В блоке `Metric history` каждая точка соответствует отдельному завершенному
-workflow run: test pass rate, результат pipeline, длительность workflow и число
-flaky-результатов. Точка ведет на исходный GitHub Actions run. Если для запуска
-нет Allure report, тестовые графики оставляют разрыв и не подменяют данные
-нулями.
-
-На графиках показаны целевые линии и статус последней точки. Пороговые значения
-не зашиты в генератор или HTML и задаются в
+В HTML нет скрытых графических агрегаций: это линейный отчет с полными таблицами
+по каждому run. Рядом с каждой итоговой метрикой указаны значение, target,
+статус, точная формула и рекомендация. Пороговые значения задаются в
 `resources/qa_metrics_targets.json`.
 
-Отдельно показываются API, Chromium, Firefox и WebKit, проблемные/нестабильные
-тесты и последние workflow runs. Если запуск завершился без опубликованного
-Allure report, он влияет на pipeline stability и явно отмечается как
-`No report`, но не подмешивается в тестовую статистику.
+Тот же отчет сохраняется в `report.md` и целиком добавляется в GitHub Actions
+workflow summary. Если у завершенного workflow run нет Allure report, он явно
+показывается как `No report` в разделе полноты данных, но не подмешивается в
+тестовую статистику.
 
 Покрытие API-контракта по endpoint-ам в dashboard не вычисляется: в репозитории
 пока нет эталонного OpenAPI/Swagger inventory, поэтому такой процент был бы
@@ -282,14 +286,13 @@ Allure report, он влияет на pipeline stability и явно отмеч�
 
 ```text
 quality/periods/<days>/
-quality/coverage/periods/<days>/
 ```
 
-На обеих страницах отображаются ссылки на все ранее сохраненные периоды.
-Переход `Open coverage` ведет из QA snapshot в coverage snapshot того же окна,
-а `Back to QA metrics` — обратно. Пути `quality/` и `quality/coverage/` всегда
-указывают на результат последнего запуска. Machine-readable данные сохраняются
-рядом с каждой страницей в `metrics.json`.
+QA-страница отображает ссылки на все ранее сохраненные периоды. Code coverage
+не привязан к этому окну: любой QA snapshot ведет на текущее состояние
+`quality/coverage/`. На coverage-странице есть обратная ссылка на текущие
+QA metrics. Machine-readable данные сохраняются рядом с каждой страницей в
+`metrics.json`, а текстовая версия QA-отчета — в `report.md`.
 
 ### API test framework coverage
 
@@ -326,24 +329,25 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/coverage/<run_id>-attempt-
 https://get-offer-in-qa-auto.github.io/snake-team-5.0/quality/coverage/
 ```
 
-На ней отображаются текущие line coverage и branch coverage: используется
-последнее измерение текущего UTC-дня, а если сегодня отчёта ещё нет — последнее
-доступное значение из всей Pages-history с явной датой. Карточки показывают
-изменение относительно предыдущего запуска. График обеих метрик и таблица
-истории остаются внутри выбранного окна и строятся по последнему
-измерению каждого UTC-дня, без усреднения. График показывает изменение от первого
-измеренного дня периода. Также доступны история всех coverage-отчетов внутри
-окна и модули с минимальным покрытием. Из строки истории или точки графика можно
-открыть стандартный построчный HTML-report либо исходные JSON/XML.
-Окно по умолчанию — 7 UTC-дней; ручной workflow принимает любое положительное
-целое число дней.
+Страница всегда показывает только текущее состояние: самое новое доступное
+измерение из Pages-history с явной датой и run. Никакого окна в 7, 14 или другое
+число дней, усреднения и агрегации по времени для code coverage нет.
+
+В верхних карточках показываются line coverage, branch coverage и доли файлов
+с полным, частичным и нулевым покрытием. Ниже доступны coverage statements,
+доля файлов хотя бы с одной покрытой строкой, файлы с минимальным покрытием,
+состав covered/missing lines и branches и полная таблица по файлам. Кнопка
+`Open original coverage.py page` ведет на штатный построчный HTML-report
+последнего запуска. Кнопка `Open QA metrics` и ссылка `Code coverage` в
+QA-отчете обеспечивают двустороннюю навигацию.
+
 Pages artifact получает имя с `github.run_attempt`, поэтому rerun одного
 workflow не создаёт несколько конфликтующих artifacts с именем `github-pages`.
 
 Line coverage вычисляется как `covered_lines / num_statements`, branch coverage
 — как `covered_branches / num_branches`. Повторные попытки одного workflow run
-дедуплицируются по максимальному `run_attempt`, а в дневном тренде используется
-последний опубликованный report каждого UTC-дня.
+дедуплицируются по максимальному `run_attempt`; для snapshot выбирается самый
+новый опубликованный report.
 
 Coverage gate намеренно не задан: сначала собирается baseline на реальной API
 regression. После стабилизации метрики можно либо запретить снижение относительно
