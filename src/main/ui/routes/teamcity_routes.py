@@ -11,7 +11,6 @@ class TeamCityRoutes:
     ) -> str:
         query = urlencode(
             {
-                "init": "1",
                 "id": f"buildType:{build_configuration_id}",
             },
             safe=":",
