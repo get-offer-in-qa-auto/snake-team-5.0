@@ -98,6 +98,11 @@ ALLURE_HIERARCHY_BY_PATH = {
         "Projects",
         "Creation",
     ),
+    ("ui", "build_steps", "test_build_step_creation.py"): (
+        "UI",
+        "Build Steps",
+        "Creation",
+    ),
     ("ui", "identity_access", "test_user_creation.py"): (
         "UI",
         "Identity & Access",

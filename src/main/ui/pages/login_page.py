@@ -1,5 +1,5 @@
 import allure
-from playwright.sync_api import Locator
+from playwright.sync_api import Locator, expect
 
 from src.main.api.models.create_user_request import CreateUserRequest
 from src.main.ui.pages.base_page import BasePage
@@ -11,6 +11,7 @@ class LoginPage(BasePage):
     USERNAME_INPUT_NAME = "Username"
     PASSWORD_INPUT_NAME = "Password"
     LOGIN_BUTTON_NAME = "Log in"
+    LOGIN_ERROR_TEXT = "Incorrect username or password."
 
     @property
     def username_input(self) -> Locator:
@@ -35,6 +36,24 @@ class LoginPage(BasePage):
             name=self.LOGIN_BUTTON_NAME,
             exact=True,
         )
+
+    @property
+    def login_error(self) -> Locator:
+        return self.page.get_by_text(
+            self.LOGIN_ERROR_TEXT,
+            exact=True,
+        )
+
+    @allure.step("Verify login page is opened")
+    def should_be_opened(self) -> "LoginPage":
+        expect(self.page).to_have_url(f"{self.base_url}{self.path}")
+        expect(self.login_button).to_be_visible()
+        return self
+
+    @allure.step("Verify login error is displayed")
+    def should_show_login_error(self) -> "LoginPage":
+        expect(self.login_error).to_be_visible()
+        return self
 
     @allure.step("Log in")
     def login(self, user_request: CreateUserRequest) -> "LoginPage":
