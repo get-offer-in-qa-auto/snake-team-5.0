@@ -225,9 +225,20 @@ class QualityDashboardTemplateTest(unittest.TestCase):
             page,
         )
         self.assertIn('class="run-report-link"', page)
+        self.assertIn(
+            'target="_blank" rel="noopener noreferrer">Allure Reports</a>',
+            page,
+        )
         self.assertIn("Open Allure report for", page)
         self.assertIn("function enablePointLinks(canvas, points)", page)
-        self.assertIn("window.location.assign(point.d.report_url)", page)
+        self.assertIn(
+            "window.open(point.d.report_url, '_blank', 'noopener,noreferrer')",
+            page,
+        )
+        self.assertIn(
+            'target="_blank" rel="noopener noreferrer"',
+            page,
+        )
         self.assertEqual(
             page.count('"report_url": "../reports/regression/1-attempt-1/"'),
             4,

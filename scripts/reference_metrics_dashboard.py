@@ -1495,7 +1495,7 @@ def build_html(
       canvas.qaReportPoints = points.filter(point => point.d.report_url);
       canvas.setAttribute(
         'aria-label',
-        'Trend chart. Click a data point to open its Allure report.'
+        'Trend chart. Click a data point to open its Allure report in a new tab.'
       );
       if (canvas.qaPointLinksBound) return;
 
@@ -1511,7 +1511,7 @@ def build_html(
         const point = findPoint(event);
         canvas.style.cursor = point ? 'pointer' : 'default';
         canvas.title = point
-          ? `Open Allure report for ${{point.d.run_label}}`
+          ? `Open Allure report for ${{point.d.run_label}} in a new tab`
           : '';
       }});
       canvas.addEventListener('mouseleave', () => {{
@@ -1520,7 +1520,7 @@ def build_html(
       }});
       canvas.addEventListener('click', event => {{
         const point = findPoint(event);
-        if (point) window.location.assign(point.d.report_url);
+        if (point) window.open(point.d.report_url, '_blank', 'noopener,noreferrer');
       }});
       canvas.qaPointLinksBound = true;
     }}
@@ -1730,7 +1730,8 @@ def build_html(
         const runLabel = escapeHtml(d.run_label);
         const runCell = d.report_url
           ? `<a class="run-report-link" href="${{escapeHtml(d.report_url)}}"
-                title="Open Allure report for ${{runLabel}}">${{runLabel}}</a>`
+                target="_blank" rel="noopener noreferrer"
+                title="Open Allure report for ${{runLabel}} in a new tab">${{runLabel}}</a>`
           : runLabel;
         return `
           <tr>

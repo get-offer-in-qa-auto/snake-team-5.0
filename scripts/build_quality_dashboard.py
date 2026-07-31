@@ -2410,7 +2410,8 @@ def render_dashboard(
     navigation = (
         '<nav class="qa-report-links" aria-label="QA report navigation">'
         f'<a href="{html.escape(coverage_url)}">Code Coverage</a>'
-        f'<a href="{html.escape(root_prefix + "reports/")}">Allure Reports</a>'
+        f'<a href="{html.escape(root_prefix + "reports/")}" '
+        'target="_blank" rel="noopener noreferrer">Allure Reports</a>'
         "</nav>"
     )
     page = page.replace("</style>", f"{navigation_css}</style>", 1)
