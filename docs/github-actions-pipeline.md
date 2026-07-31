@@ -294,6 +294,13 @@ QA-страница отображает ссылки на все ранее с�
 QA metrics. Machine-readable данные сохраняются рядом с каждой страницей в
 `metrics.json`, а текстовая версия QA-отчета — в `report.md`.
 
+Из QA-таблиц можно открыть каждый конкретный Allure report. В правом нижнем
+углу опубликованных Allure-страниц доступны возврат к QA metrics и переход к
+общей истории отчетов. Та же навигация добавляется на каждую HTML-страницу
+архивного coverage.py report: обратно к coverage summary и к QA metrics.
+Workflow обновляет эти ссылки не только в новом отчете, но и во всей ранее
+опубликованной Pages history.
+
 ### API test framework coverage
 
 API smoke gate и оставшаяся API regression собирают стандартный branch coverage

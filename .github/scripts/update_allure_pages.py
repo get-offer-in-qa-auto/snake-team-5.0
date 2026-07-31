@@ -12,6 +12,8 @@ import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
+from pages_navigation import decorate_published_reports
+
 KNOWN_SUITES = ("smoke", "regression")
 
 
@@ -369,8 +371,13 @@ def main() -> None:
     }
     write_metadata(destination, metadata)
     write_indexes(site_dir, load_reports(site_dir))
+    allure_pages, coverage_pages = decorate_published_reports(site_dir)
     append_github_output(report_path)
     print(f"Report path: {report_path}")
+    print(
+        "Return navigation refreshed: "
+        f"{allure_pages} Allure pages, {coverage_pages} coverage pages."
+    )
 
 
 if __name__ == "__main__":
