@@ -913,10 +913,17 @@ def slowest_tests(
                 duration_seconds = round(test_duration_ms(test) / 1000, 2)
                 if duration_seconds <= 0:
                     continue
+                scope = test_scope(test)
+                browser = (
+                    scope.split("·", maxsplit=1)[1].strip()
+                    if scope.startswith("UI ·")
+                    else scope
+                )
                 records.append(
                     {
                         "run_id": report.run_id,
                         "run_label": report.generated_at.strftime("%Y-%m-%d %H:%M"),
+                        "browser": browser,
                         "test_name": str(
                             test.get("fullName")
                             or test.get("name")
@@ -2098,6 +2105,7 @@ def render_dashboard(
         return [
             {
                 "run_label": str(test["run_label"]),
+                "browser": str(test.get("browser") or ""),
                 "test_name": str(test["test_name"]),
                 "duration_sec": float(test["duration_sec"]),
                 "status": str(test["status"]),

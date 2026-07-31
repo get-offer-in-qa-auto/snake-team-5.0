@@ -89,6 +89,7 @@ class QualityDashboardTemplateTest(unittest.TestCase):
             "slowest_ui_tests": [
                 {
                     "run_label": "2026-07-31 09:00",
+                    "browser": "Chromium",
                     "test_name": "tests.ui.test_page",
                     "duration_sec": 2.0,
                     "status": "passed",
@@ -136,6 +137,8 @@ class QualityDashboardTemplateTest(unittest.TestCase):
         self.assertIn("2️⃣ Speed Metrics", page)
         self.assertIn("Average Pass Rate Trend", page)
         self.assertIn("Slowest tests API", page)
+        self.assertIn("<th>Browser</th>", page)
+        self.assertIn('"browser": "Chromium"', page)
         self.assertIn("31 Jul 2026 — 31 Jul 2026", page)
         self.assertEqual(page.count('<details class="panel calculation-details">'), 2)
         self.assertEqual(page.count("<summary>How Metrics Are Calculated</summary>"), 2)

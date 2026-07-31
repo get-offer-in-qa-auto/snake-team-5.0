@@ -950,7 +950,7 @@ def build_html(
     th {{ background: #f9f6f0; font-weight: 600; color: #3f4a57; }}
     tr:hover td {{ background: #fffbf4; }}
     .slow-tests-table {{ table-layout: fixed; }}
-    .slow-tests-table th:nth-child(2), .slow-tests-table td:nth-child(2) {{
+    .slow-test-name {{
       width: 58%;
       white-space: normal;
       overflow-wrap: anywhere;
@@ -1262,7 +1262,8 @@ def build_html(
           <thead>
             <tr>
               <th>Run</th>
-              <th>Test</th>
+              <th>Browser</th>
+              <th class=\"slow-test-name\">Test</th>
               <th>Duration (s)</th>
               <th>Target (s)</th>
               <th>Status</th>
@@ -1277,7 +1278,7 @@ def build_html(
           <thead>
             <tr>
               <th>Run</th>
-              <th>Test</th>
+              <th class=\"slow-test-name\">Test</th>
               <th>Duration (s)</th>
               <th>Target (s)</th>
               <th>Status</th>
@@ -1497,18 +1498,19 @@ def build_html(
       const speedPipelineBody = document.getElementById('speed-pipeline-duration-rows');
       speedPipelineBody.innerHTML = renderTargetRows('suite_duration_sec', pipelineTargetSec, 's', false);
 
-      const renderSlowestRows = (rows, targetSec) => {{
+      const renderSlowestRows = (rows, targetSec, includeBrowser = false) => {{
         if (!rows.length) {{
           return `
             <tr>
-              <td colspan="5">No data</td>
+              <td colspan="${{includeBrowser ? 6 : 5}}">No data</td>
             </tr>
           `;
         }}
         return rows.map(t => `
           <tr>
             <td>${{t.run_label}}</td>
-            <td>${{t.test_name}}</td>
+            ${{includeBrowser ? `<td>${{t.browser || 'Unknown'}}</td>` : ''}}
+            <td class="slow-test-name">${{t.test_name}}</td>
             <td>${{t.duration_sec.toFixed(2)}}</td>
             <td>${{targetSec.toFixed(2)}}</td>
             <td><span class="status-badge ${{t.duration_sec <= targetSec ? 'metric-ok' : 'metric-fail'}}">${{t.duration_sec <= targetSec ? 'OK' : 'Failed'}}</span></td>
@@ -1517,10 +1519,10 @@ def build_html(
       }};
 
       const slowestUiBody = document.getElementById('slowest-ui-rows');
-      slowestUiBody.innerHTML = renderSlowestRows(slowestUiTests, slowUiTargetSec);
+      slowestUiBody.innerHTML = renderSlowestRows(slowestUiTests, slowUiTargetSec, true);
 
       const slowestApiBody = document.getElementById('slowest-api-rows');
-      slowestApiBody.innerHTML = renderSlowestRows(slowestApiTests, slowApiTargetSec);
+      slowestApiBody.innerHTML = renderSlowestRows(slowestApiTests, slowApiTargetSec, false);
     }}
 
     function render() {{
