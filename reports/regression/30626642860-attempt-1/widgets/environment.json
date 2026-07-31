@@ -1,0 +1,1 @@
+[{"values":["HSQLDB"],"name":"TeamCity database"},{"values":["Chromium, Firefox, WebKit"],"name":"UI browsers"},{"values":["2"],"name":"Pytest workers"},{"values":["API and separate browser jobs"],"name":"Execution topology"},{"values":["true"],"name":"Allure shards complete"}]
