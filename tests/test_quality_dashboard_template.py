@@ -281,6 +281,8 @@ class QualityDashboardTemplateTest(unittest.TestCase):
         self.assertIn('Complete-run stability</div><div class="value">100.00%', page)
         self.assertIn('Successful complete runs</div><div class="value">1', page)
         self.assertIn('Latest complete workflow</div><div class="value">Success', page)
+        self.assertIn("Excluded incomplete regression runs (0)", page)
+        self.assertIn("No incomplete runs in this period.", page)
         self.assertIn(
             'href="../quality/postgresql/">PostgreSQL Nightly</a>',
             page,

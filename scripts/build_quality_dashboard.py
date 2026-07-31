@@ -2543,19 +2543,20 @@ def render_dashboard(
                 f"<td>{html.escape(str(run['conclusion']).title())}</td>"
                 "</tr>"
             )
-        incomplete_panel = ""
-        if incomplete_rows:
-            incomplete_label = (
-                "nightly" if dashboard_kind == "postgresql" else "regression"
-            )
-            incomplete_panel = (
-                '<details class="qa-incomplete-runs">'
-                f"<summary>Excluded incomplete {incomplete_label} runs "
-                f"({len(incomplete_rows)})</summary>"
-                "<table><thead><tr><th>Run</th><th>Number</th>"
-                "<th>Test data</th><th>Workflow</th></tr></thead>"
-                f"<tbody>{''.join(incomplete_rows)}</tbody></table></details>"
-            )
+        incomplete_label = "nightly" if dashboard_kind == "postgresql" else "regression"
+        incomplete_content = (
+            "<table><thead><tr><th>Run</th><th>Number</th>"
+            "<th>Test data</th><th>Workflow</th></tr></thead>"
+            f"<tbody>{''.join(incomplete_rows)}</tbody></table>"
+            if incomplete_rows
+            else '<p class="muted">No incomplete runs in this period.</p>'
+        )
+        incomplete_panel = (
+            '<details class="qa-incomplete-runs">'
+            f"<summary>Excluded incomplete {incomplete_label} runs "
+            f"({len(incomplete_rows)})</summary>"
+            f"{incomplete_content}</details>"
+        )
         context_title = (
             "PostgreSQL nightly execution status"
             if dashboard_kind == "postgresql"
