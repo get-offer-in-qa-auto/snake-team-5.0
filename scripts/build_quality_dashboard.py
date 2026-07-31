@@ -16,6 +16,23 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.allure_flaky_stats import RunStats
+    from scripts.reference_metrics_dashboard import (
+        DEFAULT_GATES as REFERENCE_DEFAULT_GATES,
+    )
+    from scripts.reference_metrics_dashboard import (
+        build_html as build_reference_dashboard_html,
+    )
+except ModuleNotFoundError:
+    from allure_flaky_stats import RunStats  # type: ignore[import-not-found, no-redef]
+    from reference_metrics_dashboard import (
+        DEFAULT_GATES as REFERENCE_DEFAULT_GATES,
+    )  # type: ignore[import-not-found, no-redef]
+    from reference_metrics_dashboard import (
+        build_html as build_reference_dashboard_html,
+    )  # type: ignore[import-not-found, no-redef]
+
 REPORT_ID_PATTERN = re.compile(r"^(?P<run_id>\d+)-attempt-(?P<attempt>\d+)$")
 FAILED_STATUSES = {"failed", "broken"}
 COMPLETED_TEST_STATUSES = {"passed", "failed", "broken", "skipped", "unknown"}
@@ -2051,149 +2068,105 @@ def render_dashboard(
     coverage_url: str,
     periods: list[tuple[int, str]],
 ) -> str:
-    pipeline = metrics["pipeline"]
-    tests = metrics["tests"]
-    quality = metrics["data_quality"]
-    coverage = metrics.get("coverage")
-    generated_at = parse_datetime(metrics["generated_at"])
-    window_start_at = parse_datetime(metrics["window"]["start"])
-    window_end = parse_datetime(metrics["window"]["end"])
-    return f"""<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TeamCity QA metrics</title>
-    <style>{GRAPH_DASHBOARD_CSS}</style>
-  </head>
-  <body>
-    <main class="page">
-      <header class="topbar">
-        <div>
-          <h1>TeamCity QA metrics</h1>
-          <p class="muted">Rolling quality health for TeamCity Regression</p>
-        </div>
-        <div class="top-actions">
-          <div class="period-links" aria-label="Saved metric periods">
-            {render_period_links(periods, current_days=metrics["window"]["days"])}
-          </div>
-          <a class="period-link" href="{html.escape(coverage_url)}">Code coverage</a>
-          <a class="period-link" href="{html.escape(root_prefix + "reports/")}">All reports</a>
-          <div class="period">
-            <span class="period-dot" aria-hidden="true"></span>
-            <strong>{metrics["window"]["days"]} days</strong>
-            <span>{window_start_at.strftime("%d %b")}–{window_end.strftime("%d %b %Y")}</span>
-          </div>
-        </div>
-      </header>
+    del periods
+    reference_rows: list[RunStats] = []
+    for run in metrics["metric_runs"]:
+        generated_at = parse_datetime(str(run["generated_at"]))
+        total_tests = int(run["total_tests"])
+        api_tests = int(run["api_tests"])
+        ui_tests = int(run["ui_tests"])
+        reference_rows.append(
+            RunStats(
+                run_name=(
+                    f"{generated_at.strftime('%Y%m%d_%H%M%S')}_"
+                    f"{run['run_id']}_allure-results.zip"
+                ),
+                total_tests=total_tests,
+                api_tests=api_tests,
+                ui_tests=ui_tests,
+                flaky_tests=int(run["flaky_tests"]),
+                api_flaky_tests=int(run["api_flaky_tests"]),
+                ui_flaky_tests=int(run["ui_flaky_tests"]),
+                passed_tests=int(run["passed_tests"]),
+                failed_tests=int(run["failed_tests"]),
+                broken_tests=int(run["broken_tests"]),
+                total_duration_ms=round(
+                    float(run["avg_duration_sec"]) * total_tests * 1000
+                ),
+                api_duration_ms=round(float(run["api_run_duration_sec"]) * 1000),
+                ui_duration_ms=round(float(run["ui_run_duration_sec"]) * 1000),
+                suite_duration_ms=round(float(run["suite_duration_sec"]) * 1000),
+            )
+        )
 
-      <section class="stats" aria-label="Quality summary">
-        <article class="card">
-          <span class="stat-label">Pipeline stability</span>
-          <strong class="stat-value">{format_percent(pipeline["success_rate"])}</strong>
-          <div class="stat-context">
-            <span>{pipeline["successful"]} of {pipeline["completed"]} successful</span>
-            <span class="badge">p95 {format_duration(pipeline["p95_duration_seconds"])}</span>
-          </div>
-        </article>
-        <article class="card">
-          <span class="stat-label">Test reliability</span>
-          <strong class="stat-value">{format_percent(tests["pass_rate"])}</strong>
-          <div class="stat-context">
-            <span>{tests["total"]:,} final results</span>
-            <span class="badge">{tests["failed"]} failed</span>
-          </div>
-        </article>
-        <article class="card">
-          <span class="stat-label">Flaky tests</span>
-          <strong class="stat-value">{tests["flaky"]}</strong>
-          <div class="stat-context">
-            <span>{format_percent(tests["retry_rate"])} retry rate</span>
-            <span class="badge">{tests["retries"]} retries</span>
-          </div>
-        </article>
-        <article class="card">
-          <span class="stat-label">API framework coverage</span>
-          <strong class="stat-value">{format_percent(coverage["latest"]["line_rate"]) if coverage and coverage.get("latest") else "—"}</strong>
-          <div class="stat-context">
-            <span>{format_percent(coverage["latest"]["branch_rate"]) + " branches" if coverage and coverage.get("latest") else "No reports yet"}</span>
-            <a class="badge" href="{html.escape(coverage_url)}">Open coverage</a>
-          </div>
-        </article>
-      </section>
+    def reference_slowest(key: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "run_label": str(test["run_label"]),
+                "test_name": str(test["test_name"]),
+                "duration_sec": float(test["duration_sec"]),
+                "status": str(test["status"]),
+            }
+            for test in metrics[key]
+        ]
 
-      <section class="section">
-        <div class="section-head">
-          <h2>Metric history</h2>
-          <span class="section-note">Every completed workflow run · targets from configuration</span>
-        </div>
-        <div class="chart-grid-layout">
-          {render_metric_charts(metrics)}
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Where instability is</h2>
-          <span class="section-note">Final pass rate · flaky tests · p95 test duration</span>
-        </div>
-        <div class="card suites">
-          {render_suite_cards(metrics)}
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Needs attention</h2>
-          <span class="section-note">Final failures and flakiness first, then slow tests</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Test</th>
-                <th>Signal</th>
-                <th class="number">Failed runs</th>
-                <th class="number">Retries</th>
-                <th>Scope</th>
-                <th class="number">p95</th>
-              </tr>
-            </thead>
-            <tbody>{render_attention_rows(metrics, root_prefix=root_prefix)}</tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Recent regression runs</h2>
-          <span class="section-note">{quality["published_reports"]} published reports · {quality["runs_without_report"]} runs without report</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Run</th>
-                <th>Conclusion</th>
-                <th>Event</th>
-                <th>Branch</th>
-                <th class="number">Duration</th>
-                <th>Report</th>
-              </tr>
-            </thead>
-            <tbody>{render_run_rows(metrics, root_prefix=root_prefix)}</tbody>
-          </table>
-        </div>
-      </section>
-
-      <footer class="footer">
-        <span>Updated {generated_at.strftime("%d %b %Y %H:%M UTC")}</span>
-        <span>Sources: GitHub Actions API and persistent Allure reports</span>
-      </footer>
-    </main>
-  </body>
-</html>
-"""
+    gates_config = {
+        key: {
+            **REFERENCE_DEFAULT_GATES[key],
+            "name": str(target.get("name") or REFERENCE_DEFAULT_GATES[key]["name"]),
+            "good_threshold": float(target["value"]),
+            "warn_threshold": float(target["value"]),
+            "higher_is_better": target["direction"] == "minimum",
+            "recommendation": str(
+                target.get("recommendation")
+                or REFERENCE_DEFAULT_GATES[key]["recommendation"]
+            ),
+        }
+        for key, target in metrics["quality_targets"].items()
+    }
+    page = build_reference_dashboard_html(
+        "TeamCity QA Metrics Dashboard",
+        reference_rows,
+        reference_slowest("slowest_ui_tests"),
+        reference_slowest("slowest_api_tests"),
+        gates_config,
+    )
+    navigation_css = """
+    .qa-report-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .qa-report-links a {
+      display: inline-block;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ink);
+      background: #fffefb;
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+    .qa-report-links a:hover { border-color: #8a8174; background: #fff; }
+    """
+    navigation = (
+        '<nav class="qa-report-links" aria-label="QA report navigation">'
+        f'<a href="{html.escape(coverage_url)}">Code Coverage</a>'
+        f'<a href="{html.escape(root_prefix + "reports/")}">Allure Reports</a>'
+        "</nav>"
+    )
+    page = page.replace("</style>", f"{navigation_css}</style>", 1)
+    return page.replace(
+        '<p class="subtitle">Quality metrics across GitHub runs (Allure artifacts)</p>',
+        (
+            '<p class="subtitle">Quality metrics across GitHub runs '
+            "(Allure artifacts)</p>"
+            f"{navigation}"
+        ),
+        1,
+    )
 
 
 def markdown_cell(value: Any) -> str:

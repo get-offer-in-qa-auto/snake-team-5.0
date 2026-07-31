@@ -10,7 +10,7 @@ from scripts.build_quality_dashboard import render_dashboard  # noqa: E402
 
 
 class QualityDashboardTemplateTest(unittest.TestCase):
-    def test_graphical_template_keeps_four_metric_charts_and_navigation(
+    def test_reference_template_keeps_ten_metric_charts_and_navigation(
         self,
     ) -> None:
         metrics = {
@@ -40,12 +40,67 @@ class QualityDashboardTemplateTest(unittest.TestCase):
             },
             "quality_targets": {
                 "pass_rate": {"direction": "minimum", "value": 98.0},
+                "fail_rate": {"direction": "maximum", "value": 2.0},
+                "broken_rate": {"direction": "maximum", "value": 1.0},
+                "flaky_rate": {"direction": "maximum", "value": 2.0},
                 "stability_rate": {"direction": "minimum", "value": 95.0},
+                "avg_duration_sec": {
+                    "direction": "maximum",
+                    "value": 3.0,
+                },
+                "avg_api_duration_sec": {
+                    "direction": "maximum",
+                    "value": 0.2,
+                },
+                "ui_run_duration_sec": {
+                    "direction": "maximum",
+                    "value": 240.0,
+                },
+                "api_run_duration_sec": {
+                    "direction": "maximum",
+                    "value": 20.0,
+                },
                 "suite_duration_sec": {
                     "direction": "maximum",
                     "value": 240.0,
                 },
             },
+            "metric_runs": [
+                {
+                    "run_id": 1,
+                    "generated_at": "2026-07-31T09:00:00+00:00",
+                    "total_tests": 10,
+                    "api_tests": 5,
+                    "ui_tests": 5,
+                    "passed_tests": 10,
+                    "failed_tests": 0,
+                    "broken_tests": 0,
+                    "flaky_tests": 0,
+                    "api_flaky_tests": 0,
+                    "ui_flaky_tests": 0,
+                    "avg_duration_sec": 1.0,
+                    "avg_api_duration_sec": 0.1,
+                    "ui_run_duration_sec": 8.0,
+                    "api_run_duration_sec": 0.5,
+                    "suite_duration_sec": 200.0,
+                }
+            ],
+            "slowest_ui_tests": [
+                {
+                    "run_label": "2026-07-31 09:00",
+                    "test_name": "tests.ui.test_page",
+                    "duration_sec": 2.0,
+                    "status": "passed",
+                }
+            ],
+            "slowest_api_tests": [
+                {
+                    "run_label": "2026-07-31 09:00",
+                    "test_name": "tests.api.test_endpoint",
+                    "duration_sec": 0.1,
+                    "status": "passed",
+                }
+            ],
             "run_trends": [
                 {
                     "run_number": 1,
@@ -75,11 +130,11 @@ class QualityDashboardTemplateTest(unittest.TestCase):
             periods=[(7, "periods/7/"), (14, "periods/14/")],
         )
 
-        self.assertEqual(page.count('<svg class="line-chart"'), 4)
-        self.assertIn("Metric history", page)
-        self.assertIn("Where instability is", page)
-        self.assertIn("Needs attention", page)
-        self.assertIn("Recent regression runs", page)
+        self.assertEqual(page.count("<canvas id="), 10)
+        self.assertIn("1️⃣ Test Result Distribution", page)
+        self.assertIn("2️⃣ Speed Metrics", page)
+        self.assertIn("Average Pass Rate Trend", page)
+        self.assertIn("Slowest tests API", page)
         self.assertIn('href="coverage/"', page)
         self.assertIn('href="../reports/"', page)
 

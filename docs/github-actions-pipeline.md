@@ -267,12 +267,13 @@ https://get-offer-in-qa-auto.github.io/snake-team-5.0/quality/
   раннего старта API/UI job до самого позднего завершения этих jobs;
 - в списках slow tests показываются четыре самых долгих UI и API результата.
 
-HTML использует графический шаблон из PR #68: четыре SVG-графика показывают
-pass rate, результат pipeline, длительность workflow и flaky-результаты по
-каждому запуску. Точки ведут на соответствующие GitHub Actions runs, а линия
-target и цвет точки сразу показывают прохождение порога. Ниже остаются карточки
-по suite, таблица проблемных тестов и ссылки на каждый опубликованный Allure
-report. Пороговые значения задаются в `resources/qa_metrics_targets.json`.
+HTML использует тот же self-contained шаблон, что и отчет
+`pipe_team_open_msr_auto`: Quality Gates, карточки метрик, десять
+canvas-графиков с target-линиями, таблицы значений по каждому запуску и списки
+четырех самых долгих UI/API тестов. Внешних JavaScript-зависимостей у страницы
+нет. Над отчетом добавлены только переходы в актуальный Code Coverage и общий
+архив Allure Reports. Пороговые значения задаются в
+`resources/qa_metrics_targets.json`.
 
 Подробная текстовая расшифровка метрик сохраняется в `report.md` и целиком
 добавляется в GitHub Actions workflow summary. Если у завершенного workflow run
@@ -290,17 +291,16 @@ report. Пороговые значения задаются в `resources/qa_me
 quality/periods/<days>/
 ```
 
-QA-страница отображает ссылки на все ранее сохраненные периоды. Code coverage
-не привязан к этому окну: любой QA snapshot ведет на текущее состояние
-`quality/coverage/`. На coverage-странице есть обратная ссылка на текущие
-QA metrics. Machine-readable данные сохраняются рядом с каждой страницей в
-`metrics.json`, а текстовая версия QA-отчета — в `report.md`.
+Code coverage не привязан к окну QA-метрик: любой QA snapshot ведет на текущее
+состояние `quality/coverage/`. На coverage-странице есть обратная ссылка на
+текущие QA metrics. Machine-readable данные сохраняются рядом с каждой
+страницей в `metrics.json`, а текстовая версия QA-отчета — в `report.md`.
 
-Из QA-таблиц можно открыть каждый конкретный Allure report. В правом нижнем
-углу опубликованных Allure-страниц доступны возврат к QA metrics и переход к
-общей истории отчетов. Та же навигация добавляется на каждую HTML-страницу
-архивного coverage.py report: обратно к coverage summary и к QA metrics.
-Workflow обновляет эти ссылки не только в новом отчете, но и во всей ранее
+С QA dashboard можно открыть общий архив Allure Reports. В правом нижнем углу
+опубликованных Allure-страниц доступны возврат к QA metrics и переход к общей
+истории отчетов. Та же навигация добавляется на каждую HTML-страницу архивного
+coverage.py report: обратно к coverage summary и к QA metrics. Workflow
+обновляет эти ссылки не только в новом отчете, но и во всей ранее
 опубликованной Pages history.
 
 ### API test framework coverage
