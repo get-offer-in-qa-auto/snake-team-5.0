@@ -646,6 +646,7 @@ def aggregate_browser_metrics(
                     "run_id": report.run_id,
                     "run_label": report.generated_at.strftime("%d %b %H:%M"),
                     "generated_at": report.generated_at.isoformat(timespec="seconds"),
+                    "report_url": f"{report.path}/",
                     "browser": browser,
                     "total_tests": total,
                     "passed_tests": counts["passed"],
@@ -2305,17 +2306,22 @@ def render_dashboard(
 ) -> str:
     del periods
     reference_rows: list[RunStats] = []
+    run_report_urls: dict[str, str] = {}
     for run in metrics["metric_runs"]:
         generated_at = parse_datetime(str(run["generated_at"]))
         total_tests = int(run["total_tests"])
         api_tests = int(run["api_tests"])
         ui_tests = int(run["ui_tests"])
+        run_name = (
+            f"{generated_at.strftime('%Y%m%d_%H%M%S')}_"
+            f"{run['run_id']}_allure-results.zip"
+        )
+        report_url = run.get("report_url")
+        if report_url:
+            run_report_urls[run_name] = root_prefix + str(report_url)
         reference_rows.append(
             RunStats(
-                run_name=(
-                    f"{generated_at.strftime('%Y%m%d_%H%M%S')}_"
-                    f"{run['run_id']}_allure-results.zip"
-                ),
+                run_name=run_name,
                 total_tests=total_tests,
                 api_tests=api_tests,
                 ui_tests=ui_tests,
@@ -2360,16 +2366,26 @@ def render_dashboard(
         }
         for key, target in metrics["quality_targets"].items()
     }
+    browser_runs = [
+        {
+            **run,
+            "report_url": (
+                root_prefix + str(run["report_url"]) if run.get("report_url") else None
+            ),
+        }
+        for run in metrics.get("browser_runs", [])
+    ]
     page = build_reference_dashboard_html(
         "TeamCity QA Metrics Dashboard",
         reference_rows,
         reference_slowest("slowest_ui_tests"),
         reference_slowest("slowest_api_tests"),
         gates_config,
-        browser_runs=metrics.get("browser_runs", []),
+        browser_runs=browser_runs,
         browser_summary=metrics.get("browser_summary", []),
         browser_coverage=metrics.get("browser_coverage", {}),
         browser_failures=metrics.get("browser_failures", []),
+        run_report_urls=run_report_urls,
     )
     navigation_css = """
     .qa-report-links {

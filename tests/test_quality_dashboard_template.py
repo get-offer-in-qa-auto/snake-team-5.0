@@ -70,6 +70,7 @@ class QualityDashboardTemplateTest(unittest.TestCase):
                 {
                     "run_id": 1,
                     "generated_at": "2026-07-31T09:00:00+00:00",
+                    "report_url": "reports/regression/1-attempt-1/",
                     "total_tests": 10,
                     "api_tests": 5,
                     "ui_tests": 5,
@@ -107,6 +108,7 @@ class QualityDashboardTemplateTest(unittest.TestCase):
                 {
                     "run_id": 1,
                     "run_label": "31 Jul 09:00",
+                    "report_url": "reports/regression/1-attempt-1/",
                     "browser": "Chromium",
                     "pass_rate": 100.0,
                     "avg_duration_sec": 1.0,
@@ -114,6 +116,7 @@ class QualityDashboardTemplateTest(unittest.TestCase):
                 {
                     "run_id": 1,
                     "run_label": "31 Jul 09:00",
+                    "report_url": "reports/regression/1-attempt-1/",
                     "browser": "Firefox",
                     "pass_rate": 100.0,
                     "avg_duration_sec": 1.2,
@@ -121,6 +124,7 @@ class QualityDashboardTemplateTest(unittest.TestCase):
                 {
                     "run_id": 1,
                     "run_label": "31 Jul 09:00",
+                    "report_url": "reports/regression/1-attempt-1/",
                     "browser": "WebKit",
                     "pass_rate": 100.0,
                     "avg_duration_sec": 1.4,
@@ -216,6 +220,29 @@ class QualityDashboardTemplateTest(unittest.TestCase):
         self.assertIn("<= 360.00s", page)
         self.assertIn('href="coverage/"', page)
         self.assertIn('href="../reports/"', page)
+        self.assertIn(
+            '"report_url": "../reports/regression/1-attempt-1/"',
+            page,
+        )
+        self.assertIn('class="run-report-link"', page)
+        self.assertIn("Open Allure report for", page)
+        self.assertIn("function enablePointLinks(canvas, points)", page)
+        self.assertIn("window.location.assign(point.d.report_url)", page)
+        self.assertEqual(
+            page.count('"report_url": "../reports/regression/1-attempt-1/"'),
+            4,
+        )
+
+        archived_page = render_dashboard(
+            metrics,
+            root_prefix="../../../",
+            coverage_url="../../coverage/",
+            periods=[],
+        )
+        self.assertIn(
+            '"report_url": "../../../reports/regression/1-attempt-1/"',
+            archived_page,
+        )
 
     def test_ui_average_uses_only_ui_tests(self) -> None:
         row = RunStats(

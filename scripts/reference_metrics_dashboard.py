@@ -405,9 +405,11 @@ def build_html(
     browser_summary: list[dict[str, Any]] | None = None,
     browser_coverage: dict[str, Any] | None = None,
     browser_failures: list[dict[str, Any]] | None = None,
+    run_report_urls: dict[str, str] | None = None,
 ) -> str:
     browser_runs = browser_runs or []
     browser_summary = browser_summary or []
+    run_report_urls = run_report_urls or {}
     browser_coverage = browser_coverage or {
         "common_tests": 0,
         "unique_tests": 0,
@@ -447,6 +449,7 @@ def build_html(
             {
                 "run_name": row.run_name,
                 "run_label": fmt_datetime(run_dt, row.run_name),
+                "report_url": run_report_urls.get(row.run_name),
                 "total_tests": row.total_tests,
                 "passed_tests": row.passed_tests,
                 "pass_percent": round(row.pass_percent, 2),
@@ -978,6 +981,14 @@ def build_html(
       box-shadow: 0 14px 30px rgba(24, 33, 47, 0.08);
     }}
     .panel h3 {{ margin: 0 0 10px; font-size: 18px; }}
+    .run-report-link {{
+      color: #195f89;
+      font-weight: 650;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }}
+    .run-report-link:hover {{ color: #103f5b; }}
     .calculation-details summary {{
       display: flex;
       align-items: center;
@@ -1480,6 +1491,40 @@ def build_html(
       return {{ pad, innerW, innerH }};
     }}
 
+    function enablePointLinks(canvas, points) {{
+      canvas.qaReportPoints = points.filter(point => point.d.report_url);
+      canvas.setAttribute(
+        'aria-label',
+        'Trend chart. Click a data point to open its Allure report.'
+      );
+      if (canvas.qaPointLinksBound) return;
+
+      const findPoint = event => {{
+        const bounds = canvas.getBoundingClientRect();
+        const x = event.clientX - bounds.left;
+        const y = event.clientY - bounds.top;
+        return canvas.qaReportPoints.find(
+          point => Math.hypot(point.x - x, point.y - y) <= 11
+        );
+      }};
+      canvas.addEventListener('mousemove', event => {{
+        const point = findPoint(event);
+        canvas.style.cursor = point ? 'pointer' : 'default';
+        canvas.title = point
+          ? `Open Allure report for ${{point.d.run_label}}`
+          : '';
+      }});
+      canvas.addEventListener('mouseleave', () => {{
+        canvas.style.cursor = 'default';
+        canvas.title = '';
+      }});
+      canvas.addEventListener('click', event => {{
+        const point = findPoint(event);
+        if (point) window.location.assign(point.d.report_url);
+      }});
+      canvas.qaPointLinksBound = true;
+    }}
+
     function drawLineChart(canvasId, valueKey, maxY, lineColor, pointColor, unit, targetValue = null, targetColor = '#6d7886') {{
       const canvas = document.getElementById(canvasId);
       const ctx = canvas.getContext('2d');
@@ -1550,6 +1595,7 @@ def build_html(
           ctx.restore();
         }}
       }});
+      enablePointLinks(canvas, points);
     }}
 
     function drawBrowserChart(canvasId, valueKey, unit, minimumMax = 1) {{
@@ -1573,18 +1619,22 @@ def build_html(
       const axis = drawAxis(ctx, w, h, maxY, unit);
       const stepX = runLabels.length === 1 ? 0 : axis.innerW / (runLabels.length - 1);
       const colors = {{ Chromium: '#2f7fc3', Firefox: '#a36a28', WebKit: '#9b4eb2' }};
+      const reportPoints = [];
       Object.entries(colors).forEach(([browser, color]) => {{
         const values = new Map(
           browserRuns
             .filter(row => row.browser === browser)
-            .map(row => [row.run_label, Number(row[valueKey]) || 0])
+            .map(row => [row.run_label, row])
         );
         const points = runLabels
           .map((label, index) => values.has(label) ? {{
             x: axis.pad.left + index * stepX,
-            y: axis.pad.top + axis.innerH - (values.get(label) / maxY) * axis.innerH
+            y: axis.pad.top + axis.innerH -
+              ((Number(values.get(label)[valueKey]) || 0) / maxY) * axis.innerH,
+            d: values.get(label)
           }} : null)
           .filter(Boolean);
+        reportPoints.push(...points);
         ctx.strokeStyle = color;
         ctx.lineWidth = 2.5;
         ctx.beginPath();
@@ -1611,6 +1661,7 @@ def build_html(
           ctx.restore();
         }}
       }});
+      enablePointLinks(canvas, reportPoints);
     }}
 
     function drawStabilityChart() {{
@@ -1664,14 +1715,26 @@ def build_html(
     }}
 
     function fillTables() {{
+      const escapeHtml = value => String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
       const renderTargetRows = (valueKey, target, unit, higherIsBetter = false) => data.map(d => {{
         const value = d[valueKey] || 0;
         const isOk = higherIsBetter ? value >= target : value <= target;
         const css = isOk ? 'metric-ok' : 'metric-fail';
         const label = isOk ? 'OK' : 'Failed';
+        const runLabel = escapeHtml(d.run_label);
+        const runCell = d.report_url
+          ? `<a class="run-report-link" href="${{escapeHtml(d.report_url)}}"
+                title="Open Allure report for ${{runLabel}}">${{runLabel}}</a>`
+          : runLabel;
         return `
           <tr>
-            <td>${{d.run_label}}</td>
+            <td>${{runCell}}</td>
             <td>${{value.toFixed(2)}}${{unit}}</td>
             <td>${{higherIsBetter ? '>=' : '<='}} ${{target.toFixed(2)}}${{unit}}</td>
             <td><span class="status-badge ${{css}}">${{label}}</span></td>
