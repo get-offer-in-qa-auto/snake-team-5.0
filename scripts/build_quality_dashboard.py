@@ -2545,12 +2545,12 @@ def render_dashboard(
             '<section class="qa-run-context" aria-label="PostgreSQL nightly status">'
             "<h2>PostgreSQL nightly execution status</h2>"
             '<div class="qa-context-cards">'
-            '<div class="qa-context-card"><div class="label">Nightly executions</div>'
-            f'<div class="value">{int(pipeline["completed"])}</div></div>'
-            '<div class="qa-context-card"><div class="label">Workflow stability</div>'
-            f'<div class="value">{success_rate_text}</div></div>'
-            '<div class="qa-context-card"><div class="label">Complete reports used</div>'
+            '<div class="qa-context-card"><div class="label">Runs with Allure reports</div>'
             f'<div class="value">{int(data_quality["metric_reports"])}</div></div>'
+            '<div class="qa-context-card"><div class="label">Workflow stability (all attempts)</div>'
+            f'<div class="value">{success_rate_text}</div></div>'
+            '<div class="qa-context-card"><div class="label">All workflow attempts</div>'
+            f'<div class="value">{int(pipeline["completed"])}</div></div>'
             '<div class="qa-context-card"><div class="label">Latest workflow</div>'
             f'<div class="value">{html.escape(latest_status)}</div></div>'
             "</div>"

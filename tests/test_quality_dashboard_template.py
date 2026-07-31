@@ -341,9 +341,15 @@ class QualityDashboardTemplateTest(unittest.TestCase):
         self.assertIn("TeamCity PostgreSQL Nightly Metrics", postgresql_page)
         self.assertIn("PostgreSQL nightly execution status", postgresql_page)
         self.assertIn("Complete Runs Used", postgresql_page)
-        self.assertIn('Nightly executions</div><div class="value">2', postgresql_page)
         self.assertIn(
-            'Workflow stability</div><div class="value">50.00%', postgresql_page
+            'Runs with Allure reports</div><div class="value">1', postgresql_page
+        )
+        self.assertIn(
+            'Workflow stability (all attempts)</div><div class="value">50.00%',
+            postgresql_page,
+        )
+        self.assertIn(
+            'All workflow attempts</div><div class="value">2', postgresql_page
         )
         self.assertIn("Incomplete nightly runs (1)", postgresql_page)
         self.assertIn(
