@@ -1,0 +1,10 @@
+{
+  "branch": "main",
+  "event": "workflow_dispatch",
+  "generated_at": "2026-07-31T12:52:04+00:00",
+  "report_id": "30631704406-attempt-1",
+  "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30631704406",
+  "sha": "062f9b1e332b01117b262ef74b0d19c17962d914",
+  "suite": "postgresql-regression",
+  "workflow": "TeamCity PostgreSQL Regression"
+}
