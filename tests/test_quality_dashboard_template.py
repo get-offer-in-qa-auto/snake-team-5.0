@@ -325,7 +325,20 @@ class QualityDashboardTemplateTest(unittest.TestCase):
                 "run_url": "https://example.test/actions/runs/2",
                 "report_url": "reports/postgresql-regression/2-attempt-1/",
                 "test_suite_complete": False,
-            }
+            },
+            {
+                "id": 1,
+                "number": 1,
+                "attempt": 1,
+                "conclusion": "success",
+                "event": "schedule",
+                "branch": "main",
+                "created_at": "2026-07-31T09:00:00+00:00",
+                "duration_seconds": 160.0,
+                "run_url": "https://example.test/actions/runs/1",
+                "report_url": "reports/postgresql-regression/1-attempt-1/",
+                "test_suite_complete": True,
+            },
         ]
         postgresql_page = render_dashboard(
             metrics,
@@ -341,17 +354,21 @@ class QualityDashboardTemplateTest(unittest.TestCase):
         self.assertIn("TeamCity PostgreSQL Nightly Metrics", postgresql_page)
         self.assertIn("PostgreSQL nightly execution status", postgresql_page)
         self.assertIn("Complete Runs Used", postgresql_page)
+        self.assertIn('Complete runs used</div><div class="value">1', postgresql_page)
         self.assertIn(
-            'Runs with Allure reports</div><div class="value">1', postgresql_page
-        )
-        self.assertIn(
-            'Workflow stability (all attempts)</div><div class="value">50.00%',
+            'Complete-run stability</div><div class="value">100.00%',
             postgresql_page,
         )
         self.assertIn(
-            'All workflow attempts</div><div class="value">2', postgresql_page
+            'Successful complete runs</div><div class="value">1', postgresql_page
         )
-        self.assertIn("Incomplete nightly runs (1)", postgresql_page)
+        self.assertIn(
+            'Latest complete workflow</div><div class="value">Success',
+            postgresql_page,
+        )
+        self.assertIn("Excluded incomplete nightly runs (1)", postgresql_page)
+        self.assertNotIn("Workflow stability (all attempts)", postgresql_page)
+        self.assertNotIn("All workflow attempts", postgresql_page)
         self.assertIn(
             'href="../../reports/postgresql-regression/2-attempt-1/" '
             'target="_blank" rel="noopener noreferrer"',
