@@ -3,24 +3,25 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>TeamCity QA metrics report</title>
+    <title>TeamCity QA metrics</title>
     <style>
 :root {
   color-scheme: light;
   --background: #f6f8fa;
   --surface: #ffffff;
   --text: #1f2328;
-  --muted: #59636e;
+  --muted: #636c76;
   --border: #d0d7de;
   --primary: #0969da;
-  --ok: #1a7f37;
-  --ok-soft: #dafbe1;
-  --fail: #cf222e;
-  --fail-soft: #ffebe9;
-  --neutral-soft: #eaeef2;
+  --healthy: #1a7f37;
+  --healthy-soft: #dafbe1;
+  --warning: #bf8700;
+  --warning-soft: #fff8c5;
+  --danger: #cf222e;
+  --danger-soft: #ffebe9;
+  --track: #eaeef2;
 }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
 body {
   margin: 0;
   background: var(--background);
@@ -29,89 +30,164 @@ body {
 }
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
-.page { width: min(1320px, 100%); margin: 0 auto; padding: 28px 20px 56px; }
+.page { width: min(1180px, 100%); margin: 0 auto; padding: 28px 20px 48px; }
 .topbar {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  gap: 20px; flex-wrap: wrap;
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap; margin-bottom: 20px;
 }
-h1 { margin: 0 0 4px; font-size: 30px; }
-h2 { margin: 0; font-size: 21px; }
-h3 { margin: 18px 0 8px; font-size: 16px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 0; }
+h3 { font-size: 15px; margin: 0; }
 p { margin: 0; }
-.muted, .section-note { color: var(--muted); }
-.top-actions, .period-links, .contents { display: flex; gap: 8px; flex-wrap: wrap; }
-.period-link, .contents a {
-  display: inline-block; padding: 6px 10px; border: 1px solid var(--border);
-  border-radius: 6px; background: var(--surface); color: var(--text);
+.muted, .section-note, .suite p { color: var(--muted); }
+.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.period {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
 }
-.period-link.active { border-color: var(--primary); color: var(--primary); font-weight: 600; }
-.window {
-  margin-top: 14px; padding: 12px 14px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 8px;
+.period-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--healthy); }
+.period-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.period-link {
+  display: inline-block; padding: 5px 9px; border: 1px solid var(--border);
+  border-radius: 999px; background: var(--surface); color: var(--text);
 }
-.contents { margin-top: 14px; }
-.section { margin-top: 28px; scroll-margin-top: 12px; }
+.period-link.active {
+  border-color: var(--primary); color: var(--primary); font-weight: 600;
+}
+.stats {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
+}
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px;
+}
+.stat-label { color: var(--muted); }
+.stat-value {
+  display: block; font-size: 30px; line-height: 1.2; margin: 4px 0;
+}
+.stat-context {
+  display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.badge {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  background: var(--track); color: var(--text); white-space: nowrap;
+}
+.section { margin-top: 22px; }
 .section-head {
-  display: flex; justify-content: space-between; gap: 12px;
-  align-items: baseline; flex-wrap: wrap; margin-bottom: 10px;
+  display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+  flex-wrap: wrap; margin-bottom: 10px;
 }
+.chart-grid-layout {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.chart-card {
+  min-width: 0; padding: 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+}
+.chart-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 8px;
+}
+.chart-head strong { font-size: 18px; }
+.chart-head > div:first-child { display: grid; gap: 3px; }
+.target-badge { color: var(--muted); font-size: 12px; }
+.chart-latest {
+  display: flex; align-items: flex-end; flex-direction: column; gap: 3px;
+  text-align: right;
+}
+.target-status {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.target-status-ok { color: var(--healthy); background: var(--healthy-soft); }
+.target-status-fail { color: var(--danger); background: var(--danger-soft); }
+.line-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-axis { fill: var(--muted); font-size: 11px; }
+.chart-axis-y, .chart-axis-x { text-anchor: end; }
+.target-line {
+  stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 5;
+}
+.target-label { fill: var(--muted); font-size: 11px; font-weight: 600; }
+.chart-line {
+  fill: none; stroke: currentColor; stroke-width: 3;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.chart-point { fill: var(--surface); stroke-width: 2.5; }
+.chart-point-ok { stroke: var(--healthy); }
+.chart-point-fail { stroke: var(--danger); }
+.chart-green { color: var(--healthy); }
+.chart-blue { color: var(--primary); }
+.chart-purple { color: #8250df; }
+.chart-orange { color: #bc4c00; }
+.healthy { background: var(--healthy); }
+.warning { background: var(--warning); }
+.danger { background: var(--danger); }
+.empty { background: var(--track); }
+.trend-label { font-weight: 600; white-space: nowrap; }
+.trend-detail { font-size: 12px; white-space: nowrap; }
+.suites {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0;
+}
+.suite { padding: 4px 16px 6px 0; }
+.suite + .suite {
+  border-left: 1px solid var(--border); padding-left: 16px;
+}
+.suite-value { display: block; font-size: 22px; margin: 3px 0; }
+.progress {
+  height: 7px; border-radius: 999px; overflow: hidden;
+  background: var(--track); margin: 7px 0;
+}
+.progress span { display: block; height: 100%; border-radius: inherit; }
 .table-wrap {
   overflow-x: auto; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 8px;
+  border: 1px solid var(--border); border-radius: 12px;
 }
 table { width: 100%; border-collapse: collapse; }
 th, td {
-  padding: 9px 11px; text-align: left; vertical-align: top;
-  border-bottom: 1px solid var(--border);
+  padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border);
 }
-th { background: var(--background); color: var(--muted); font-size: 13px; }
+th { color: var(--muted); font-size: 13px; font-weight: 600; }
 tr:last-child td { border-bottom: 0; }
-.number { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.formula {
-  min-width: 320px; color: var(--muted);
-  font: 12px/1.45 ui-monospace, SFMono-Regular, Consolas, monospace;
-  overflow-wrap: anywhere;
+.number {
+  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
 }
-.description { min-width: 240px; }
 .status {
-  display: inline-block; padding: 2px 7px; border-radius: 999px;
-  font-weight: 700; white-space: nowrap;
+  display: inline-block; padding: 2px 7px; border-radius: 999px; font-weight: 600;
 }
-.status-ok, .status-success { color: var(--ok); background: var(--ok-soft); }
-.status-fail, .status-failure, .status-broken, .status-timed_out {
-  color: var(--fail); background: var(--fail-soft);
+.status-success { color: var(--healthy); background: var(--healthy-soft); }
+.status-failure, .status-timed_out, .status-action_required {
+  color: var(--danger); background: var(--danger-soft);
 }
 .status-cancelled, .status-skipped, .status-neutral, .status-unknown {
-  color: var(--muted); background: var(--neutral-soft);
+  color: var(--warning); background: var(--warning-soft);
 }
-.summary {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px; margin-top: 16px;
-}
-.summary article {
-  padding: 14px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 8px;
-}
-.summary strong { display: block; margin-top: 3px; font-size: 25px; }
-.empty-state { padding: 14px; color: var(--muted); }
+.empty-state { color: var(--muted); padding: 14px; }
 .footer {
   display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-  margin-top: 28px; color: var(--muted); font-size: 13px;
+  color: var(--muted); margin-top: 24px; font-size: 13px;
 }
-@media (max-width: 860px) {
-  .summary { grid-template-columns: 1fr 1fr; }
+@media (max-width: 760px) {
+  .stats { grid-template-columns: 1fr; }
+  .suites { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .suite + .suite { border-left: 0; padding-left: 0; }
+  .chart-grid-layout { grid-template-columns: 1fr; }
 }
-@media (max-width: 520px) {
-  .page { padding: 20px 12px 40px; }
-  .summary { grid-template-columns: 1fr; }
+@media (min-width: 761px) and (max-width: 980px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .page { padding: 20px 12px 36px; }
+  .suites { grid-template-columns: 1fr; }
 }
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
     --background: #0d1117; --surface: #161b22; --text: #e6edf3;
     --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
-    --ok: #3fb950; --ok-soft: #12261a;
-    --fail: #f85149; --fail-soft: #32191c; --neutral-soft: #21262d;
+    --healthy: #3fb950; --healthy-soft: #12261a;
+    --warning: #d29922; --warning-soft: #2d250d;
+    --danger: #f85149; --danger-soft: #32191c; --track: #30363d;
   }
 }
 </style>
@@ -120,8 +196,8 @@ tr:last-child td { border-bottom: 0; }
     <main class="page">
       <header class="topbar">
         <div>
-          <h1>TeamCity QA metrics report</h1>
-          <p class="muted">Every metric, target and calculation for TeamCity Regression</p>
+          <h1>TeamCity QA metrics</h1>
+          <p class="muted">Rolling quality health for TeamCity Regression</p>
         </div>
         <div class="top-actions">
           <div class="period-links" aria-label="Saved metric periods">
@@ -129,286 +205,224 @@ tr:last-child td { border-bottom: 0; }
           </div>
           <a class="period-link" href="coverage/">Code coverage</a>
           <a class="period-link" href="../reports/">All reports</a>
+          <div class="period">
+            <span class="period-dot" aria-hidden="true"></span>
+            <strong>7 days</strong>
+            <span>25 Jul–31 Jul 2026</span>
+          </div>
         </div>
       </header>
 
-      <div class="window">
-        <strong>Period:</strong> 7 UTC calendar days,
-        25 Jul 2026 00:00–31 Jul 2026 08:59.
-        Metrics use published Allure reports; workflow runs without a report are listed separately
-        and do not enter test calculations.
+      <section class="stats" aria-label="Quality summary">
+        <article class="card">
+          <span class="stat-label">Pipeline stability</span>
+          <strong class="stat-value">75.0%</strong>
+          <div class="stat-context">
+            <span>12 of 16 successful</span>
+            <span class="badge">p95 13m 00s</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="stat-label">Test reliability</span>
+          <strong class="stat-value">99.6%</strong>
+          <div class="stat-context">
+            <span>1,166 final results</span>
+            <span class="badge">5 failed</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="stat-label">Flaky tests</span>
+          <strong class="stat-value">3</strong>
+          <div class="stat-context">
+            <span>0.0% retry rate</span>
+            <span class="badge">0 retries</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="stat-label">API framework coverage</span>
+          <strong class="stat-value">89.6%</strong>
+          <div class="stat-context">
+            <span>55.7% branches</span>
+            <a class="badge" href="coverage/">Open coverage</a>
+          </div>
+        </article>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Metric history</h2>
+          <span class="section-note">Every completed workflow run · targets from configuration</span>
+        </div>
+        <div class="chart-grid-layout">
+          
+    <article class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h3>Test pass rate</h3>
+          <span class="target-badge">Target ≥ 98.0%</span>
+        </div>
+        <div class="chart-latest">
+          <strong>100.0%</strong>
+          <span class="target-status target-status-ok">
+            On target
+          </span>
+        </div>
       </div>
+      <svg class="line-chart" viewBox="0 0 720 250" role="img"
+           aria-label="Test pass rate by workflow run over 7 days">
+        <line class="chart-grid" x1="54.0" y1="24.0" x2="702.0" y2="24.0"/><text class="chart-axis chart-axis-y" x="46.0" y="28.0">100.0%</text><line class="chart-grid" x1="54.0" y1="65.0" x2="702.0" y2="65.0"/><text class="chart-axis chart-axis-y" x="46.0" y="69.0">75.0%</text><line class="chart-grid" x1="54.0" y1="106.0" x2="702.0" y2="106.0"/><text class="chart-axis chart-axis-y" x="46.0" y="110.0">50.0%</text><line class="chart-grid" x1="54.0" y1="147.0" x2="702.0" y2="147.0"/><text class="chart-axis chart-axis-y" x="46.0" y="151.0">25.0%</text><line class="chart-grid" x1="54.0" y1="188.0" x2="702.0" y2="188.0"/><text class="chart-axis chart-axis-y" x="46.0" y="192.0">0.0%</text>
+        <line class="target-line" x1="54.0" y1="27.3"
+              x2="702.0" y2="27.3"/>
+        <text class="target-label" x="60.0" y="20.3">
+          Target ≥ 98.0%
+        </text>
+        <polyline class="chart-line chart-green" points="54.0,24.0 97.2,24.0 140.4,24.0 183.6,24.0 226.8,24.0 270.0,24.0 313.2,24.0 356.4,24.0 399.6,24.0 442.8,24.0 486.0,26.1 529.2,24.0 572.4,26.1 615.6,30.4 658.8,24.0 702.0,24.0"/>
+        <a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30333648380"><circle class="chart-point chart-point-ok" cx="54.0" cy="24.0" r="4"><title>Run #62 · 28 Jul 06:05: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30342026504"><circle class="chart-point chart-point-ok" cx="97.2" cy="24.0" r="4"><title>Run #63 · 28 Jul 08:20: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30344609760"><circle class="chart-point chart-point-ok" cx="140.4" cy="24.0" r="4"><title>Run #64 · 28 Jul 08:58: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30352655198"><circle class="chart-point chart-point-ok" cx="183.6" cy="24.0" r="4"><title>Run #65 · 28 Jul 10:54: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30353623965"><circle class="chart-point chart-point-ok" cx="226.8" cy="24.0" r="4"><title>Run #66 · 28 Jul 11:09: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30354410022"><circle class="chart-point chart-point-ok" cx="270.0" cy="24.0" r="4"><title>Run #67 · 28 Jul 11:20: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30356644067"><circle class="chart-point chart-point-ok" cx="313.2" cy="24.0" r="4"><title>Run #68 · 28 Jul 11:53: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450"><circle class="chart-point chart-point-ok" cx="356.4" cy="24.0" r="4"><title>Run #69 · 28 Jul 12:36: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861"><circle class="chart-point chart-point-ok" cx="399.6" cy="24.0" r="4"><title>Run #70 · 28 Jul 13:05: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30458351141"><circle class="chart-point chart-point-ok" cx="442.8" cy="24.0" r="4"><title>Run #71 · 29 Jul 13:56: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30499117530"><circle class="chart-point chart-point-ok" cx="486.0" cy="26.1" r="4"><title>Run #72 · 29 Jul 23:18: 98.7% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30554436296"><circle class="chart-point chart-point-ok" cx="529.2" cy="24.0" r="4"><title>Run #73 · 30 Jul 14:59: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30555853101"><circle class="chart-point chart-point-ok" cx="572.4" cy="26.1" r="4"><title>Run #74 · 30 Jul 15:16: 98.7% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557103597"><circle class="chart-point chart-point-fail" cx="615.6" cy="30.4" r="4"><title>Run #75 · 30 Jul 15:31: 96.1% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557720656"><circle class="chart-point chart-point-ok" cx="658.8" cy="24.0" r="4"><title>Run #76 · 30 Jul 15:39: 100.0% · target ≥ 98.0%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30559182881"><circle class="chart-point chart-point-ok" cx="702.0" cy="24.0" r="4"><title>Run #77 · 30 Jul 15:57: 100.0% · target ≥ 98.0%</title></circle></a>
+        <text class="chart-axis chart-axis-x" transform="translate(54.0 220.0) rotate(-22)">28 Jul 06:05</text><text class="chart-axis chart-axis-x" transform="translate(183.6 220.0) rotate(-22)">28 Jul 10:54</text><text class="chart-axis chart-axis-x" transform="translate(313.2 220.0) rotate(-22)">28 Jul 11:53</text><text class="chart-axis chart-axis-x" transform="translate(442.8 220.0) rotate(-22)">29 Jul 13:56</text><text class="chart-axis chart-axis-x" transform="translate(572.4 220.0) rotate(-22)">30 Jul 15:16</text><text class="chart-axis chart-axis-x" transform="translate(702.0 220.0) rotate(-22)">30 Jul 15:57</text>
+      </svg>
+    </article>
+    
 
-      <nav class="contents" aria-label="Report sections">
-        <a href="#distribution">Test distribution</a>
-        <a href="#reliability">Flaky tests</a>
-        <a href="#stability">Stability</a>
-        <a href="#speed">Speed</a>
-        <a href="#coverage">Coverage</a>
-        <a href="#workflow-runs">Workflow runs</a>
-      </nav>
+    <article class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h3>Pipeline result</h3>
+          <span class="target-badge">Target ≥ 95%</span>
+        </div>
+        <div class="chart-latest">
+          <strong>100%</strong>
+          <span class="target-status target-status-ok">
+            On target
+          </span>
+        </div>
+      </div>
+      <svg class="line-chart" viewBox="0 0 720 250" role="img"
+           aria-label="Pipeline result by workflow run over 7 days">
+        <line class="chart-grid" x1="54.0" y1="24.0" x2="702.0" y2="24.0"/><text class="chart-axis chart-axis-y" x="46.0" y="28.0">100%</text><line class="chart-grid" x1="54.0" y1="65.0" x2="702.0" y2="65.0"/><text class="chart-axis chart-axis-y" x="46.0" y="69.0">75%</text><line class="chart-grid" x1="54.0" y1="106.0" x2="702.0" y2="106.0"/><text class="chart-axis chart-axis-y" x="46.0" y="110.0">50%</text><line class="chart-grid" x1="54.0" y1="147.0" x2="702.0" y2="147.0"/><text class="chart-axis chart-axis-y" x="46.0" y="151.0">25%</text><line class="chart-grid" x1="54.0" y1="188.0" x2="702.0" y2="188.0"/><text class="chart-axis chart-axis-y" x="46.0" y="192.0">0%</text>
+        <line class="target-line" x1="54.0" y1="32.2"
+              x2="702.0" y2="32.2"/>
+        <text class="target-label" x="60.0" y="25.2">
+          Target ≥ 95%
+        </text>
+        <polyline class="chart-line chart-blue" points="54.0,24.0 97.2,24.0 140.4,24.0 183.6,188.0 226.8,24.0 270.0,24.0 313.2,24.0 356.4,24.0 399.6,24.0 442.8,24.0 486.0,188.0 529.2,24.0 572.4,188.0 615.6,188.0 658.8,24.0 702.0,24.0"/>
+        <a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30333648380"><circle class="chart-point chart-point-ok" cx="54.0" cy="24.0" r="4"><title>Run #62 · 28 Jul 06:05: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30342026504"><circle class="chart-point chart-point-ok" cx="97.2" cy="24.0" r="4"><title>Run #63 · 28 Jul 08:20: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30344609760"><circle class="chart-point chart-point-ok" cx="140.4" cy="24.0" r="4"><title>Run #64 · 28 Jul 08:58: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30352655198"><circle class="chart-point chart-point-fail" cx="183.6" cy="188.0" r="4"><title>Run #65 · 28 Jul 10:54: 0% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30353623965"><circle class="chart-point chart-point-ok" cx="226.8" cy="24.0" r="4"><title>Run #66 · 28 Jul 11:09: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30354410022"><circle class="chart-point chart-point-ok" cx="270.0" cy="24.0" r="4"><title>Run #67 · 28 Jul 11:20: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30356644067"><circle class="chart-point chart-point-ok" cx="313.2" cy="24.0" r="4"><title>Run #68 · 28 Jul 11:53: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450"><circle class="chart-point chart-point-ok" cx="356.4" cy="24.0" r="4"><title>Run #69 · 28 Jul 12:36: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861"><circle class="chart-point chart-point-ok" cx="399.6" cy="24.0" r="4"><title>Run #70 · 28 Jul 13:05: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30458351141"><circle class="chart-point chart-point-ok" cx="442.8" cy="24.0" r="4"><title>Run #71 · 29 Jul 13:56: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30499117530"><circle class="chart-point chart-point-fail" cx="486.0" cy="188.0" r="4"><title>Run #72 · 29 Jul 23:18: 0% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30554436296"><circle class="chart-point chart-point-ok" cx="529.2" cy="24.0" r="4"><title>Run #73 · 30 Jul 14:59: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30555853101"><circle class="chart-point chart-point-fail" cx="572.4" cy="188.0" r="4"><title>Run #74 · 30 Jul 15:16: 0% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557103597"><circle class="chart-point chart-point-fail" cx="615.6" cy="188.0" r="4"><title>Run #75 · 30 Jul 15:31: 0% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557720656"><circle class="chart-point chart-point-ok" cx="658.8" cy="24.0" r="4"><title>Run #76 · 30 Jul 15:39: 100% · target ≥ 95%</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30559182881"><circle class="chart-point chart-point-ok" cx="702.0" cy="24.0" r="4"><title>Run #77 · 30 Jul 15:57: 100% · target ≥ 95%</title></circle></a>
+        <text class="chart-axis chart-axis-x" transform="translate(54.0 220.0) rotate(-22)">28 Jul 06:05</text><text class="chart-axis chart-axis-x" transform="translate(183.6 220.0) rotate(-22)">28 Jul 10:54</text><text class="chart-axis chart-axis-x" transform="translate(313.2 220.0) rotate(-22)">28 Jul 11:53</text><text class="chart-axis chart-axis-x" transform="translate(442.8 220.0) rotate(-22)">29 Jul 13:56</text><text class="chart-axis chart-axis-x" transform="translate(572.4 220.0) rotate(-22)">30 Jul 15:16</text><text class="chart-axis chart-axis-x" transform="translate(702.0 220.0) rotate(-22)">30 Jul 15:57</text>
+      </svg>
+    </article>
+    
 
-      <section class="summary" aria-label="Report totals">
-        <article>
-          <span class="muted">Published runs</span>
-          <strong>16</strong>
-          <span>13 fully passed</span>
-        </article>
-        <article>
-          <span class="muted">Final test results</span>
-          <strong>1,166</strong>
-          <span>one final result per test and run</span>
-        </article>
-        <article>
-          <span class="muted">Average pass rate</span>
-          <strong>99.59%</strong>
-          <span>unweighted average across runs</span>
-        </article>
-        <article>
-          <span class="muted">Flaky rate</span>
-          <strong>0.00%</strong>
-          <span>0 flaky results</span>
-        </article>
-      </section>
+    <article class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h3>Workflow duration</h3>
+          <span class="target-badge">Target ≤ 4m 00s</span>
+        </div>
+        <div class="chart-latest">
+          <strong>4m 41s</strong>
+          <span class="target-status target-status-fail">
+            Off target
+          </span>
+        </div>
+      </div>
+      <svg class="line-chart" viewBox="0 0 720 250" role="img"
+           aria-label="Workflow duration by workflow run over 7 days">
+        <line class="chart-grid" x1="54.0" y1="24.0" x2="702.0" y2="24.0"/><text class="chart-axis chart-axis-y" x="46.0" y="28.0">23m 36s</text><line class="chart-grid" x1="54.0" y1="65.0" x2="702.0" y2="65.0"/><text class="chart-axis chart-axis-y" x="46.0" y="69.0">17m 42s</text><line class="chart-grid" x1="54.0" y1="106.0" x2="702.0" y2="106.0"/><text class="chart-axis chart-axis-y" x="46.0" y="110.0">11m 48s</text><line class="chart-grid" x1="54.0" y1="147.0" x2="702.0" y2="147.0"/><text class="chart-axis chart-axis-y" x="46.0" y="151.0">5m 54s</text><line class="chart-grid" x1="54.0" y1="188.0" x2="702.0" y2="188.0"/><text class="chart-axis chart-axis-y" x="46.0" y="192.0">0s</text>
+        <line class="target-line" x1="54.0" y1="160.2"
+              x2="702.0" y2="160.2"/>
+        <text class="target-label" x="60.0" y="153.2">
+          Target ≤ 4m 00s
+        </text>
+        <polyline class="chart-line chart-purple" points="54.0,158.3 97.2,156.0 140.4,153.0 183.6,115.4 226.8,155.9 270.0,154.9 313.2,115.1 356.4,156.7 399.6,45.4 442.8,151.0 486.0,155.6 529.2,154.1 572.4,157.1 615.6,153.2 658.8,150.1 702.0,155.4"/>
+        <a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30333648380"><circle class="chart-point chart-point-fail" cx="54.0" cy="158.3" r="4"><title>Run #62 · 28 Jul 06:05: 4m 16s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30342026504"><circle class="chart-point chart-point-fail" cx="97.2" cy="156.0" r="4"><title>Run #63 · 28 Jul 08:20: 4m 36s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30344609760"><circle class="chart-point chart-point-fail" cx="140.4" cy="153.0" r="4"><title>Run #64 · 28 Jul 08:58: 5m 02s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30352655198"><circle class="chart-point chart-point-fail" cx="183.6" cy="115.4" r="4"><title>Run #65 · 28 Jul 10:54: 10m 27s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30353623965"><circle class="chart-point chart-point-fail" cx="226.8" cy="155.9" r="4"><title>Run #66 · 28 Jul 11:09: 4m 37s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30354410022"><circle class="chart-point chart-point-fail" cx="270.0" cy="154.9" r="4"><title>Run #67 · 28 Jul 11:20: 4m 46s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30356644067"><circle class="chart-point chart-point-fail" cx="313.2" cy="115.1" r="4"><title>Run #68 · 28 Jul 11:53: 10m 29s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450"><circle class="chart-point chart-point-fail" cx="356.4" cy="156.7" r="4"><title>Run #69 · 28 Jul 12:36: 4m 30s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861"><circle class="chart-point chart-point-fail" cx="399.6" cy="45.4" r="4"><title>Run #70 · 28 Jul 13:05: 20m 31s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30458351141"><circle class="chart-point chart-point-fail" cx="442.8" cy="151.0" r="4"><title>Run #71 · 29 Jul 13:56: 5m 19s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30499117530"><circle class="chart-point chart-point-fail" cx="486.0" cy="155.6" r="4"><title>Run #72 · 29 Jul 23:18: 4m 40s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30554436296"><circle class="chart-point chart-point-fail" cx="529.2" cy="154.1" r="4"><title>Run #73 · 30 Jul 14:59: 4m 53s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30555853101"><circle class="chart-point chart-point-fail" cx="572.4" cy="157.1" r="4"><title>Run #74 · 30 Jul 15:16: 4m 27s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557103597"><circle class="chart-point chart-point-fail" cx="615.6" cy="153.2" r="4"><title>Run #75 · 30 Jul 15:31: 5m 00s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557720656"><circle class="chart-point chart-point-fail" cx="658.8" cy="150.1" r="4"><title>Run #76 · 30 Jul 15:39: 5m 27s · target ≤ 4m 00s</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30559182881"><circle class="chart-point chart-point-fail" cx="702.0" cy="155.4" r="4"><title>Run #77 · 30 Jul 15:57: 4m 41s · target ≤ 4m 00s</title></circle></a>
+        <text class="chart-axis chart-axis-x" transform="translate(54.0 220.0) rotate(-22)">28 Jul 06:05</text><text class="chart-axis chart-axis-x" transform="translate(183.6 220.0) rotate(-22)">28 Jul 10:54</text><text class="chart-axis chart-axis-x" transform="translate(313.2 220.0) rotate(-22)">28 Jul 11:53</text><text class="chart-axis chart-axis-x" transform="translate(442.8 220.0) rotate(-22)">29 Jul 13:56</text><text class="chart-axis chart-axis-x" transform="translate(572.4 220.0) rotate(-22)">30 Jul 15:16</text><text class="chart-axis chart-axis-x" transform="translate(702.0 220.0) rotate(-22)">30 Jul 15:57</text>
+      </svg>
+    </article>
+    
 
-      <section class="section" id="distribution">
-        <div class="section-head">
-          <h2>1. Test result distribution</h2>
-          <span class="section-note">Rates are calculated per run, then averaged without weighting</span>
+    <article class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h3>Flaky test results</h3>
+          <span class="target-badge">Target ≤ 0</span>
         </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Metric</th><th class="number">Value</th><th class="number">Target</th>
-                <th>Status</th><th>Exact calculation</th><th>Meaning and action</th>
-              </tr>
-            </thead>
-            <tbody><tr><td><strong>Average Pass Rate</strong></td><td class="number">99.59%</td><td class="number">&gt;= 98.00%</td><td><span class="status status-ok">OK</span></td><td class="formula">average pass rate = (100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 98.70 + 100.00 + 98.70 + 96.10 + 100.00 + 100.00) / 16 = 99.59%</td><td class="description">Unweighted average of the final pass rate of every published run.<br><span class="muted">Action: Review failing tests and fix frequent assertions.</span></td></tr>
-<tr><td><strong>Average Fail Rate</strong></td><td class="number">0.24%</td><td class="number">&lt;= 2.00%</td><td><span class="status status-ok">OK</span></td><td class="formula">average fail rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 3.90 + 0.00 + 0.00) / 16 = 0.24%</td><td class="description">Unweighted average of the final failed-test rate of every published run.<br><span class="muted">Action: Prioritize top failing suites and stabilize environments.</span></td></tr>
-<tr><td><strong>Average Broken Rate</strong></td><td class="number">0.16%</td><td class="number">&lt;= 1.00%</td><td><span class="status status-ok">OK</span></td><td class="formula">average broken rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 1.30 + 0.00 + 1.30 + 0.00 + 0.00 + 0.00) / 16 = 0.16%</td><td class="description">Unweighted average of the final broken-test rate of every published run.<br><span class="muted">Action: Fix infrastructure and test setup errors first.</span></td></tr></tbody>
-          </table>
+        <div class="chart-latest">
+          <strong>0</strong>
+          <span class="target-status target-status-ok">
+            On target
+          </span>
         </div>
-        <h3>Every published run</h3>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Run</th><th class="number">Total</th><th class="number">Passed / rate</th>
-                <th class="number">Failed / rate</th><th class="number">Broken / rate</th>
-                <th>3 distribution gates</th>
-              </tr>
-            </thead>
-            <tbody><tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30333648380">2026-07-28 06:10</a><br><a class="muted" href="../reports/regression/30333648380-attempt-1/">Allure · run #62</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30342026504">2026-07-28 08:26</a><br><a class="muted" href="../reports/regression/30342026504-attempt-1/">Allure · run #63</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30344609760">2026-07-28 09:05</a><br><a class="muted" href="../reports/regression/30344609760-attempt-1/">Allure · run #64</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30352655198">2026-07-28 11:06</a><br><a class="muted" href="../reports/regression/30352655198-attempt-2/">Allure · run #65</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30353623965">2026-07-28 11:14</a><br><a class="muted" href="../reports/regression/30353623965-attempt-1/">Allure · run #66</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30354410022">2026-07-28 11:26</a><br><a class="muted" href="../reports/regression/30354410022-attempt-1/">Allure · run #67</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30356644067">2026-07-28 12:05</a><br><a class="muted" href="../reports/regression/30356644067-attempt-2/">Allure · run #68</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450">2026-07-28 12:42</a><br><a class="muted" href="../reports/regression/30359694450-attempt-1/">Allure · run #69</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861">2026-07-28 13:27</a><br><a class="muted" href="../reports/regression/30361897861-attempt-2/">Allure · run #70</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30458351141">2026-07-29 14:02</a><br><a class="muted" href="../reports/regression/30458351141-attempt-1/">Allure · run #71</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30499117530">2026-07-29 23:24</a><br><a class="muted" href="../reports/regression/30499117530-attempt-1/">Allure · run #72</a></td><td class="number">77</td><td class="number">76 / 98.70%</td><td class="number">0 / 0.00%</td><td class="number">1 / 1.30%</td><td><span class="status status-fail">Failed</span><br><span class="muted">2 passed / 1 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30554436296">2026-07-30 15:05</a><br><a class="muted" href="../reports/regression/30554436296-attempt-1/">Allure · run #73</a></td><td class="number">71</td><td class="number">71 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30555853101">2026-07-30 15:22</a><br><a class="muted" href="../reports/regression/30555853101-attempt-1/">Allure · run #74</a></td><td class="number">77</td><td class="number">76 / 98.70%</td><td class="number">0 / 0.00%</td><td class="number">1 / 1.30%</td><td><span class="status status-fail">Failed</span><br><span class="muted">2 passed / 1 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557103597">2026-07-30 15:37</a><br><a class="muted" href="../reports/regression/30557103597-attempt-1/">Allure · run #75</a></td><td class="number">77</td><td class="number">74 / 96.10%</td><td class="number">3 / 3.90%</td><td class="number">0 / 0.00%</td><td><span class="status status-fail">Failed</span><br><span class="muted">1 passed / 2 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557720656">2026-07-30 15:45</a><br><a class="muted" href="../reports/regression/30557720656-attempt-1/">Allure · run #76</a></td><td class="number">77</td><td class="number">77 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30559182881">2026-07-30 16:02</a><br><a class="muted" href="../reports/regression/30559182881-attempt-1/">Allure · run #77</a></td><td class="number">77</td><td class="number">77 / 100.00%</td><td class="number">0 / 0.00%</td><td class="number">0 / 0.00%</td><td><span class="status status-ok">OK</span><br><span class="muted">3 passed / 0 failed</span></td></tr></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section" id="reliability">
-        <div class="section-head">
-          <h2>2. Flaky-test reliability</h2>
-          <span class="section-note">Only Allure results explicitly marked flaky are counted</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Metric</th><th class="number">Value</th><th class="number">Target</th>
-                <th>Status</th><th>Exact calculation</th><th>Meaning and action</th>
-              </tr>
-            </thead>
-            <tbody><tr><td><strong>Flaky Rate</strong></td><td class="number">0.00%</td><td class="number">&lt;= 2.00%</td><td><span class="status status-ok">OK</span></td><td class="formula">flaky rate = 0 / 1166 = 0.00%</td><td class="description">All flaky API and UI results divided by all final test results.<br><span class="muted">Action: Quarantine flaky tests and remove unstable waits.</span></td></tr>
-<tr><td><strong>Average UI Flaky Rate</strong></td><td class="number">0.00%</td><td class="number">&lt;= 2.00%</td><td><span class="status status-ok">OK</span></td><td class="formula">average UI flaky rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00) / 16 = 0.00%</td><td class="description">Unweighted average of the UI flaky rate of every published run.<br><span class="muted">Action: Quarantine flaky tests and remove unstable waits.</span></td></tr>
-<tr><td><strong>Average API Flaky Rate</strong></td><td class="number">0.00%</td><td class="number">&lt;= 2.00%</td><td><span class="status status-ok">OK</span></td><td class="formula">average API flaky rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00) / 16 = 0.00%</td><td class="description">Unweighted average of the API flaky rate of every published run.<br><span class="muted">Action: Quarantine flaky tests and remove unstable waits.</span></td></tr></tbody>
-          </table>
-        </div>
-        <h3>Every published run</h3>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Run</th><th class="number">All flaky / rate</th>
-                <th class="number">UI flaky / UI total / rate</th>
-                <th class="number">API flaky / API total / rate</th>
-              </tr>
-            </thead>
-            <tbody><tr><td><a href="../reports/regression/30333648380-attempt-1/">2026-07-28 06:10</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30342026504-attempt-1/">2026-07-28 08:26</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30344609760-attempt-1/">2026-07-28 09:05</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30352655198-attempt-2/">2026-07-28 11:06</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30353623965-attempt-1/">2026-07-28 11:14</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30354410022-attempt-1/">2026-07-28 11:26</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30356644067-attempt-2/">2026-07-28 12:05</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30359694450-attempt-1/">2026-07-28 12:42</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30361897861-attempt-2/">2026-07-28 13:27</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30458351141-attempt-1/">2026-07-29 14:02</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30499117530-attempt-1/">2026-07-29 23:24</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 27 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30554436296-attempt-1/">2026-07-30 15:05</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 21 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30555853101-attempt-1/">2026-07-30 15:22</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 27 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30557103597-attempt-1/">2026-07-30 15:37</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 27 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30557720656-attempt-1/">2026-07-30 15:45</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 27 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr>
-<tr><td><a href="../reports/regression/30559182881-attempt-1/">2026-07-30 16:02</a></td><td class="number">0 / 0.00%</td><td class="number">0 / 27 / 0.00%</td><td class="number">0 / 50 / 0.00%</td></tr></tbody>
-          </table>
+      </div>
+      <svg class="line-chart" viewBox="0 0 720 250" role="img"
+           aria-label="Flaky test results by workflow run over 7 days">
+        <line class="chart-grid" x1="54.0" y1="24.0" x2="702.0" y2="24.0"/><text class="chart-axis chart-axis-y" x="46.0" y="28.0">1</text><line class="chart-grid" x1="54.0" y1="65.0" x2="702.0" y2="65.0"/><text class="chart-axis chart-axis-y" x="46.0" y="69.0">1</text><line class="chart-grid" x1="54.0" y1="106.0" x2="702.0" y2="106.0"/><text class="chart-axis chart-axis-y" x="46.0" y="110.0">0</text><line class="chart-grid" x1="54.0" y1="147.0" x2="702.0" y2="147.0"/><text class="chart-axis chart-axis-y" x="46.0" y="151.0">0</text><line class="chart-grid" x1="54.0" y1="188.0" x2="702.0" y2="188.0"/><text class="chart-axis chart-axis-y" x="46.0" y="192.0">0</text>
+        <line class="target-line" x1="54.0" y1="188.0"
+              x2="702.0" y2="188.0"/>
+        <text class="target-label" x="60.0" y="181.0">
+          Target ≤ 0
+        </text>
+        <polyline class="chart-line chart-orange" points="54.0,188.0 97.2,188.0 140.4,188.0 183.6,188.0 226.8,188.0 270.0,188.0 313.2,188.0 356.4,188.0 399.6,188.0 442.8,188.0 486.0,188.0 529.2,188.0 572.4,188.0 615.6,188.0 658.8,188.0 702.0,188.0"/>
+        <a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30333648380"><circle class="chart-point chart-point-ok" cx="54.0" cy="188.0" r="4"><title>Run #62 · 28 Jul 06:05: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30342026504"><circle class="chart-point chart-point-ok" cx="97.2" cy="188.0" r="4"><title>Run #63 · 28 Jul 08:20: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30344609760"><circle class="chart-point chart-point-ok" cx="140.4" cy="188.0" r="4"><title>Run #64 · 28 Jul 08:58: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30352655198"><circle class="chart-point chart-point-ok" cx="183.6" cy="188.0" r="4"><title>Run #65 · 28 Jul 10:54: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30353623965"><circle class="chart-point chart-point-ok" cx="226.8" cy="188.0" r="4"><title>Run #66 · 28 Jul 11:09: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30354410022"><circle class="chart-point chart-point-ok" cx="270.0" cy="188.0" r="4"><title>Run #67 · 28 Jul 11:20: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30356644067"><circle class="chart-point chart-point-ok" cx="313.2" cy="188.0" r="4"><title>Run #68 · 28 Jul 11:53: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450"><circle class="chart-point chart-point-ok" cx="356.4" cy="188.0" r="4"><title>Run #69 · 28 Jul 12:36: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861"><circle class="chart-point chart-point-ok" cx="399.6" cy="188.0" r="4"><title>Run #70 · 28 Jul 13:05: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30458351141"><circle class="chart-point chart-point-ok" cx="442.8" cy="188.0" r="4"><title>Run #71 · 29 Jul 13:56: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30499117530"><circle class="chart-point chart-point-ok" cx="486.0" cy="188.0" r="4"><title>Run #72 · 29 Jul 23:18: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30554436296"><circle class="chart-point chart-point-ok" cx="529.2" cy="188.0" r="4"><title>Run #73 · 30 Jul 14:59: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30555853101"><circle class="chart-point chart-point-ok" cx="572.4" cy="188.0" r="4"><title>Run #74 · 30 Jul 15:16: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557103597"><circle class="chart-point chart-point-ok" cx="615.6" cy="188.0" r="4"><title>Run #75 · 30 Jul 15:31: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557720656"><circle class="chart-point chart-point-ok" cx="658.8" cy="188.0" r="4"><title>Run #76 · 30 Jul 15:39: 0 · target ≤ 0</title></circle></a><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30559182881"><circle class="chart-point chart-point-ok" cx="702.0" cy="188.0" r="4"><title>Run #77 · 30 Jul 15:57: 0 · target ≤ 0</title></circle></a>
+        <text class="chart-axis chart-axis-x" transform="translate(54.0 220.0) rotate(-22)">28 Jul 06:05</text><text class="chart-axis chart-axis-x" transform="translate(183.6 220.0) rotate(-22)">28 Jul 10:54</text><text class="chart-axis chart-axis-x" transform="translate(313.2 220.0) rotate(-22)">28 Jul 11:53</text><text class="chart-axis chart-axis-x" transform="translate(442.8 220.0) rotate(-22)">29 Jul 13:56</text><text class="chart-axis chart-axis-x" transform="translate(572.4 220.0) rotate(-22)">30 Jul 15:16</text><text class="chart-axis chart-axis-x" transform="translate(702.0 220.0) rotate(-22)">30 Jul 15:57</text>
+      </svg>
+    </article>
+    
         </div>
       </section>
 
-      <section class="section" id="stability">
+      <section class="section">
         <div class="section-head">
-          <h2>3. Test-run stability</h2>
-          <span class="section-note">A run is successful only when it has tests and every final result passed</span>
+          <h2>Where instability is</h2>
+          <span class="section-note">Final pass rate · flaky tests · p95 test duration</span>
+        </div>
+        <div class="card suites">
+          <article class="suite"><h3>API</h3><strong class="suite-value">100.0%</strong><div class="progress"><span class="healthy" style="width: 100.0%"></span></div><p>0 flaky · p95 12s</p></article>
+<article class="suite"><h3>UI · Chromium</h3><strong class="suite-value">99.2%</strong><div class="progress"><span class="healthy" style="width: 99.2%"></span></div><p>0 flaky · p95 16s</p></article>
+<article class="suite"><h3>UI · Firefox</h3><strong class="suite-value">97.5%</strong><div class="progress"><span class="warning" style="width: 97.5%"></span></div><p>0 flaky · p95 20s</p></article>
+<article class="suite"><h3>UI · WebKit</h3><strong class="suite-value">99.2%</strong><div class="progress"><span class="healthy" style="width: 99.2%"></span></div><p>0 flaky · p95 21s</p></article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Needs attention</h2>
+          <span class="section-note">Final failures and flakiness first, then slow tests</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Metric</th><th class="number">Value</th><th class="number">Target</th>
-                <th>Status</th><th>Exact calculation</th><th>Meaning and action</th>
+                <th>Test</th>
+                <th>Signal</th>
+                <th class="number">Failed runs</th>
+                <th class="number">Retries</th>
+                <th>Scope</th>
+                <th class="number">p95</th>
               </tr>
             </thead>
-            <tbody><tr><td><strong>Test Stability</strong></td><td class="number">81.25%</td><td class="number">&gt;= 95.00%</td><td><span class="status status-fail">Failed</span></td><td class="formula">stability = 13 / 16 = 81.25%</td><td class="description">Published runs where every final test result passed, divided by all published runs.<br><span class="muted">Action: Track unstable runs and fix recurring root causes.</span></td></tr></tbody>
-          </table>
-        </div>
-        <h3>Every published run</h3>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Run</th><th class="number">Passed / total</th><th>Result</th></tr>
-            </thead>
-            <tbody><tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30333648380">2026-07-28 06:10</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30342026504">2026-07-28 08:26</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30344609760">2026-07-28 09:05</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30352655198">2026-07-28 11:06</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30353623965">2026-07-28 11:14</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30354410022">2026-07-28 11:26</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30356644067">2026-07-28 12:05</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450">2026-07-28 12:42</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861">2026-07-28 13:27</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30458351141">2026-07-29 14:02</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30499117530">2026-07-29 23:24</a></td><td class="number">76 / 77</td><td><span class="status status-fail">Unstable</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30554436296">2026-07-30 15:05</a></td><td class="number">71 / 71</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30555853101">2026-07-30 15:22</a></td><td class="number">76 / 77</td><td><span class="status status-fail">Unstable</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557103597">2026-07-30 15:37</a></td><td class="number">74 / 77</td><td><span class="status status-fail">Unstable</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557720656">2026-07-30 15:45</a></td><td class="number">77 / 77</td><td><span class="status status-ok">Successful</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30559182881">2026-07-30 16:02</a></td><td class="number">77 / 77</td><td><span class="status status-ok">Successful</span></td></tr></tbody>
+            <tbody><tr><td><a href="../reports/regression/30559182881-attempt-1/#testresult/ad6aeab2e360e683">Create Command Line build step</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">3 / 5</td><td class="number">0</td><td>UI · Firefox</td><td class="number">30s</td></tr>
+<tr><td><a href="../reports/regression/30559182881-attempt-1/#testresult/89846aeb73beaf78">Create Command Line build step</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">1 / 5</td><td class="number">0</td><td>UI · WebKit</td><td class="number">45s</td></tr>
+<tr><td><a href="../reports/regression/30559182881-attempt-1/#testresult/2a781bfdf1cb7ce8">Create Command Line build step</a></td><td><span class="badge">Intermittent failure</span></td><td class="number">1 / 5</td><td class="number">0</td><td>UI · Chromium</td><td class="number">33s</td></tr>
+<tr><td><a href="../reports/regression/30559182881-attempt-1/#testresult/f5ddbb19f40d304f">Running build can be cancelled</a></td><td><span class="badge">Slow</span></td><td class="number">0 / 16</td><td class="number">0</td><td>API</td><td class="number">29s</td></tr>
+<tr><td><a href="../reports/regression/30559182881-attempt-1/#testresult/34f75f67d20f1571">test_admin_can_create_access_token_for_user[webkit]</a></td><td><span class="badge">Slow</span></td><td class="number">0 / 16</td><td class="number">0</td><td>UI · WebKit</td><td class="number">22s</td></tr></tbody>
           </table>
         </div>
       </section>
 
-      <section class="section" id="speed">
+      <section class="section">
         <div class="section-head">
-          <h2>4. Test and pipeline speed</h2>
-          <span class="section-note">The report shows every average explicitly; no percentile is hidden behind a card</span>
+          <h2>Recent regression runs</h2>
+          <span class="section-note">16 published reports · 0 runs without report</span>
         </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Metric</th><th class="number">Value</th><th class="number">Target</th>
-                <th>Status</th><th>Exact calculation</th><th>Meaning and action</th>
-              </tr>
-            </thead>
-            <tbody><tr><td><strong>Average Test Duration</strong></td><td class="number">4.44s</td><td class="number">&lt;= 3.00s</td><td><span class="status status-fail">Failed</span></td><td class="formula">average test duration = (3.94 + 4.51 + 4.56 + 4.17 + 4.21 + 3.87 + 4.36 + 4.16 + 4.38 + 4.06 + 5.02 + 4.35 + 4.72 + 4.90 + 4.81 + 5.04) / 16 = 4.44s</td><td class="description">Unweighted average of each run&#x27;s mean final-test duration.<br><span class="muted">Action: Optimize slow tests and reduce external dependencies.</span></td></tr>
-<tr><td><strong>Average API Test Duration</strong></td><td class="number">1.45s</td><td class="number">&lt;= 0.20s</td><td><span class="status status-fail">Failed</span></td><td class="formula">average API test duration = (1.49 + 1.48 + 1.43 + 1.41 + 1.41 + 1.43 + 1.54 + 1.41 + 1.48 + 1.38 + 1.49 + 1.42 + 1.54 + 1.46 + 1.38 + 1.48) / 16 = 1.45s</td><td class="description">Unweighted average of each run&#x27;s mean API-test duration.<br><span class="muted">Action: Optimize slow API tests and reduce network or database overhead.</span></td></tr>
-<tr><td><strong>Average UI Test Run Duration</strong></td><td class="number">252.01s</td><td class="number">&lt;= 240.00s</td><td><span class="status status-fail">Failed</span></td><td class="formula">average UI run duration = (205.58 + 246.47 + 252.21 + 225.95 + 227.99 + 202.72 + 232.93 + 225.22 + 237.24 + 218.97 + 312.16 + 238.19 + 286.68 + 304.65 + 301.31 + 313.94) / 16 = 252.01s</td><td class="description">Unweighted average of the summed UI test duration in each run.<br><span class="muted">Action: Reduce UI runtime with better parallelization and setup reuse.</span></td></tr>
-<tr><td><strong>Average API Test Run Duration</strong></td><td class="number">72.57s</td><td class="number">&lt;= 20.00s</td><td><span class="status status-fail">Failed</span></td><td class="formula">average API run duration = (74.30 + 74.02 + 71.61 + 70.38 + 70.64 + 71.72 + 76.87 + 70.37 + 73.91 + 69.11 + 74.29 + 70.97 + 76.82 + 73.01 + 69.21 + 73.92) / 16 = 72.57s</td><td class="description">Unweighted average of the summed API test duration in each run.<br><span class="muted">Action: Optimize API request and database paths and trim heavy setup.</span></td></tr>
-<tr><td><strong>Average Pipeline Duration</strong></td><td class="number">388.81s</td><td class="number">&lt;= 240.00s</td><td><span class="status status-fail">Failed</span></td><td class="formula">average pipeline duration = (256.00 + 276.00 + 302.00 + 627.00 + 277.00 + 286.00 + 629.00 + 270.00 + 1231.00 + 319.00 + 280.00 + 293.00 + 267.00 + 300.00 + 327.00 + 281.00) / 16 = 388.81s</td><td class="description">Unweighted average of the GitHub Actions test-stage duration.<br><span class="muted">Action: Increase parallelism and remove long serial bottlenecks.</span></td></tr></tbody>
-          </table>
-        </div>
-        <h3>Every published run</h3>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Run</th><th class="number">Avg test</th><th class="number">Avg API test</th>
-                <th class="number">UI run</th><th class="number">API run</th>
-                <th class="number">Pipeline</th>
-              </tr>
-            </thead>
-            <tbody><tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30333648380">2026-07-28 06:10</a></td><td class="number">3.94s <span class="status status-fail">Failed</span></td><td class="number">1.49s <span class="status status-fail">Failed</span></td><td class="number">205.58s <span class="status status-ok">OK</span></td><td class="number">74.30s <span class="status status-fail">Failed</span></td><td class="number">256.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30342026504">2026-07-28 08:26</a></td><td class="number">4.51s <span class="status status-fail">Failed</span></td><td class="number">1.48s <span class="status status-fail">Failed</span></td><td class="number">246.47s <span class="status status-fail">Failed</span></td><td class="number">74.02s <span class="status status-fail">Failed</span></td><td class="number">276.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30344609760">2026-07-28 09:05</a></td><td class="number">4.56s <span class="status status-fail">Failed</span></td><td class="number">1.43s <span class="status status-fail">Failed</span></td><td class="number">252.21s <span class="status status-fail">Failed</span></td><td class="number">71.61s <span class="status status-fail">Failed</span></td><td class="number">302.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30352655198">2026-07-28 11:06</a></td><td class="number">4.17s <span class="status status-fail">Failed</span></td><td class="number">1.41s <span class="status status-fail">Failed</span></td><td class="number">225.95s <span class="status status-ok">OK</span></td><td class="number">70.38s <span class="status status-fail">Failed</span></td><td class="number">627.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30353623965">2026-07-28 11:14</a></td><td class="number">4.21s <span class="status status-fail">Failed</span></td><td class="number">1.41s <span class="status status-fail">Failed</span></td><td class="number">227.99s <span class="status status-ok">OK</span></td><td class="number">70.64s <span class="status status-fail">Failed</span></td><td class="number">277.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30354410022">2026-07-28 11:26</a></td><td class="number">3.87s <span class="status status-fail">Failed</span></td><td class="number">1.43s <span class="status status-fail">Failed</span></td><td class="number">202.72s <span class="status status-ok">OK</span></td><td class="number">71.72s <span class="status status-fail">Failed</span></td><td class="number">286.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30356644067">2026-07-28 12:05</a></td><td class="number">4.36s <span class="status status-fail">Failed</span></td><td class="number">1.54s <span class="status status-fail">Failed</span></td><td class="number">232.93s <span class="status status-ok">OK</span></td><td class="number">76.87s <span class="status status-fail">Failed</span></td><td class="number">629.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30359694450">2026-07-28 12:42</a></td><td class="number">4.16s <span class="status status-fail">Failed</span></td><td class="number">1.41s <span class="status status-fail">Failed</span></td><td class="number">225.22s <span class="status status-ok">OK</span></td><td class="number">70.37s <span class="status status-fail">Failed</span></td><td class="number">270.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30361897861">2026-07-28 13:27</a></td><td class="number">4.38s <span class="status status-fail">Failed</span></td><td class="number">1.48s <span class="status status-fail">Failed</span></td><td class="number">237.24s <span class="status status-ok">OK</span></td><td class="number">73.91s <span class="status status-fail">Failed</span></td><td class="number">1231.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30458351141">2026-07-29 14:02</a></td><td class="number">4.06s <span class="status status-fail">Failed</span></td><td class="number">1.38s <span class="status status-fail">Failed</span></td><td class="number">218.97s <span class="status status-ok">OK</span></td><td class="number">69.11s <span class="status status-fail">Failed</span></td><td class="number">319.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30499117530">2026-07-29 23:24</a></td><td class="number">5.02s <span class="status status-fail">Failed</span></td><td class="number">1.49s <span class="status status-fail">Failed</span></td><td class="number">312.16s <span class="status status-fail">Failed</span></td><td class="number">74.29s <span class="status status-fail">Failed</span></td><td class="number">280.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30554436296">2026-07-30 15:05</a></td><td class="number">4.35s <span class="status status-fail">Failed</span></td><td class="number">1.42s <span class="status status-fail">Failed</span></td><td class="number">238.19s <span class="status status-ok">OK</span></td><td class="number">70.97s <span class="status status-fail">Failed</span></td><td class="number">293.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30555853101">2026-07-30 15:22</a></td><td class="number">4.72s <span class="status status-fail">Failed</span></td><td class="number">1.54s <span class="status status-fail">Failed</span></td><td class="number">286.68s <span class="status status-fail">Failed</span></td><td class="number">76.82s <span class="status status-fail">Failed</span></td><td class="number">267.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557103597">2026-07-30 15:37</a></td><td class="number">4.90s <span class="status status-fail">Failed</span></td><td class="number">1.46s <span class="status status-fail">Failed</span></td><td class="number">304.65s <span class="status status-fail">Failed</span></td><td class="number">73.01s <span class="status status-fail">Failed</span></td><td class="number">300.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30557720656">2026-07-30 15:45</a></td><td class="number">4.81s <span class="status status-fail">Failed</span></td><td class="number">1.38s <span class="status status-fail">Failed</span></td><td class="number">301.31s <span class="status status-fail">Failed</span></td><td class="number">69.21s <span class="status status-fail">Failed</span></td><td class="number">327.00s <span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30559182881">2026-07-30 16:02</a></td><td class="number">5.04s <span class="status status-fail">Failed</span></td><td class="number">1.48s <span class="status status-fail">Failed</span></td><td class="number">313.94s <span class="status status-fail">Failed</span></td><td class="number">73.92s <span class="status status-fail">Failed</span></td><td class="number">281.00s <span class="status status-fail">Failed</span></td></tr></tbody>
-          </table>
-        </div>
-        <h3>Slowest UI tests</h3>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Run</th><th>Test</th><th class="number">Duration</th><th class="number">Target</th><th>Status</th></tr></thead>
-            <tbody><tr><td><a href="../reports/regression/30557103597-attempt-1/#testresult/73840148350c261e">2026-07-30 15:37</a></td><td>tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step</td><td class="number">47.06s</td><td class="number">&lt;= 3.00s</td><td><span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="../reports/regression/30557103597-attempt-1/#testresult/99a2432cfea686c4">2026-07-30 15:37</a></td><td>tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step</td><td class="number">34.74s</td><td class="number">&lt;= 3.00s</td><td><span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="../reports/regression/30557720656-attempt-1/#testresult/42fd49f6df42dd71">2026-07-30 15:45</a></td><td>tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step</td><td class="number">34.71s</td><td class="number">&lt;= 3.00s</td><td><span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="../reports/regression/30559182881-attempt-1/#testresult/89846aeb73beaf78">2026-07-30 16:02</a></td><td>tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step</td><td class="number">34.04s</td><td class="number">&lt;= 3.00s</td><td><span class="status status-fail">Failed</span></td></tr></tbody>
-          </table>
-        </div>
-        <h3>Slowest API tests</h3>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Run</th><th>Test</th><th class="number">Duration</th><th class="number">Target</th><th>Status</th></tr></thead>
-            <tbody><tr><td><a href="../reports/regression/30555853101-attempt-1/#testresult/dd1242f9fb6523cc">2026-07-30 15:22</a></td><td>tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled</td><td class="number">30.20s</td><td class="number">&lt;= 0.20s</td><td><span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="../reports/regression/30356644067-attempt-2/#testresult/22cc82d69627a2aa">2026-07-28 12:05</a></td><td>tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled</td><td class="number">28.98s</td><td class="number">&lt;= 0.20s</td><td><span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="../reports/regression/30342026504-attempt-1/#testresult/b66088f6dd3f4af4">2026-07-28 08:26</a></td><td>tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled</td><td class="number">28.09s</td><td class="number">&lt;= 0.20s</td><td><span class="status status-fail">Failed</span></td></tr>
-<tr><td><a href="../reports/regression/30361897861-attempt-2/#testresult/5cac28f0225528ca">2026-07-28 13:27</a></td><td>tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled</td><td class="number">27.53s</td><td class="number">&lt;= 0.20s</td><td><span class="status status-fail">Failed</span></td></tr></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section" id="coverage">
-        <div class="section-head">
-          <h2>5. API framework code coverage</h2>
-          <span class="section-note">Latest coverage.py measurement; kept separate from test quality formulas</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Line coverage</th><th>Branch coverage</th><th>Source report</th></tr></thead>
-            <tbody>
-              <tr>
-                <td>89.6%</td>
-                <td>55.7%</td>
-                <td><a href="coverage/">Open complete coverage report</a></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="section" id="workflow-runs">
-        <div class="section-head">
-          <h2>6. All workflow runs in the period</h2>
-          <span class="section-note">16 reports · 0 runs without report</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Run</th><th>Conclusion</th><th>Event</th><th>Branch</th>
-                <th class="number">Test-stage duration</th><th>Report</th>
+                <th>Run</th>
+                <th>Conclusion</th>
+                <th>Event</th>
+                <th>Branch</th>
+                <th class="number">Duration</th>
+                <th>Report</th>
               </tr>
             </thead>
             <tbody><tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30559182881">#77</a></td><td><span class="status status-success">success</span></td><td>pull_request</td><td>api-check</td><td class="number">4m 41s</td><td><a href="../reports/regression/30559182881-attempt-1/">Allure</a></td></tr>
@@ -432,8 +446,8 @@ tr:last-child td { border-bottom: 0; }
       </section>
 
       <footer class="footer">
-        <span>Updated 31 Jul 2026 08:59 UTC</span>
-        <span>Sources: GitHub Actions jobs and persistent Allure final test cases</span>
+        <span>Updated 31 Jul 2026 09:11 UTC</span>
+        <span>Sources: GitHub Actions API and persistent Allure reports</span>
       </footer>
     </main>
   </body>
