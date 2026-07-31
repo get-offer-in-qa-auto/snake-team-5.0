@@ -918,6 +918,25 @@ def build_html(
       box-shadow: 0 14px 30px rgba(24, 33, 47, 0.08);
     }}
     .panel h3 {{ margin: 0 0 10px; font-size: 18px; }}
+    .calculation-details summary {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 700;
+      list-style: none;
+    }}
+    .calculation-details summary::-webkit-details-marker {{ display: none; }}
+    .calculation-details summary::after {{
+      content: "Show";
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }}
+    .calculation-details[open] summary::after {{ content: "Hide"; }}
+    .calculation-details[open] summary {{ margin-bottom: 10px; }}
     .charts-2 {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }}
     .metric-pair {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }}
     .chart-single {{ margin-top: 16px; }}
@@ -985,8 +1004,8 @@ def build_html(
         <div class=\"card {api_flaky_rate_class}\"><div class=\"label\">average API flaky rate</div><div class=\"value\">{avg_api_flaky_rate:.2f}%</div></div>
       </div>
 
-      <div class=\"panel\">
-        <h3>How Metrics Are Calculated</h3>
+      <details class=\"panel calculation-details\">
+        <summary>How Metrics Are Calculated</summary>
         <div class=\"formulas\">
           {avg_pass_formula}<br/>
           {avg_fail_formula}<br/>
@@ -994,7 +1013,7 @@ def build_html(
           {avg_ui_flaky_formula}<br/>
           {avg_api_flaky_formula}
         </div>
-      </div>
+      </details>
 
       <div class=\"metric-pair\">
         <div class=\"panel\">
@@ -1122,12 +1141,12 @@ def build_html(
           </tbody>
         </table>
       </div>
-      <div class=\"panel\">
-        <h3>How Metrics Are Calculated</h3>
+      <details class=\"panel calculation-details\">
+        <summary>How Metrics Are Calculated</summary>
         <div class=\"formulas\">
           {speed_formulas_html}
         </div>
-      </div>
+      </details>
       <div class=\"metric-cards\">
         <div class=\"card {avg_duration_class}\"><div class=\"label\">Average Test Duration UI tests</div><div class=\"value\">{avg_duration_sec:.2f}s</div></div>
         <div class=\"card {avg_api_duration_class}\"><div class=\"label\">Average Test Duration API tests</div><div class=\"value\">{avg_api_duration_sec:.2f}s</div></div>

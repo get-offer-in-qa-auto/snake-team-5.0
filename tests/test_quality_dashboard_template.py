@@ -136,6 +136,8 @@ class QualityDashboardTemplateTest(unittest.TestCase):
         self.assertIn("Average Pass Rate Trend", page)
         self.assertIn("Slowest tests API", page)
         self.assertIn("31 Jul 2026 — 31 Jul 2026", page)
+        self.assertEqual(page.count('<details class="panel calculation-details">'), 2)
+        self.assertEqual(page.count("<summary>How Metrics Are Calculated</summary>"), 2)
         self.assertIn('href="coverage/"', page)
         self.assertIn('href="../reports/"', page)
 
