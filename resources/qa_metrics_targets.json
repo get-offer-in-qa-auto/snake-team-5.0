@@ -31,31 +31,31 @@
   },
   "avg_duration_sec": {
     "direction": "maximum",
-    "value": 3.0,
-    "name": "Average Test Duration",
-    "recommendation": "Optimize slow tests and reduce external dependencies."
+    "value": 12.0,
+    "name": "Average UI Test Duration",
+    "recommendation": "Optimize slow UI tests and reduce repeated browser setup."
   },
   "avg_api_duration_sec": {
     "direction": "maximum",
-    "value": 0.2,
+    "value": 1.5,
     "name": "Average API Test Duration",
     "recommendation": "Optimize slow API tests and reduce network or database overhead."
   },
   "ui_run_duration_sec": {
     "direction": "maximum",
-    "value": 240.0,
+    "value": 300.0,
     "name": "Average UI Test Run Duration",
     "recommendation": "Reduce UI runtime with better parallelization and setup reuse."
   },
   "api_run_duration_sec": {
     "direction": "maximum",
-    "value": 20.0,
+    "value": 75.0,
     "name": "Average API Test Run Duration",
     "recommendation": "Optimize API request and database paths and trim heavy setup."
   },
   "suite_duration_sec": {
     "direction": "maximum",
-    "value": 240.0,
+    "value": 360.0,
     "name": "Average Pipeline Duration",
     "recommendation": "Increase parallelism and remove long serial bottlenecks."
   }

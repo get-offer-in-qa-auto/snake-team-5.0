@@ -6,6 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
+from scripts.allure_flaky_stats import RunStats  # noqa: E402
 from scripts.build_quality_dashboard import render_dashboard  # noqa: E402
 
 
@@ -46,23 +47,23 @@ class QualityDashboardTemplateTest(unittest.TestCase):
                 "stability_rate": {"direction": "minimum", "value": 95.0},
                 "avg_duration_sec": {
                     "direction": "maximum",
-                    "value": 3.0,
+                    "value": 12.0,
                 },
                 "avg_api_duration_sec": {
                     "direction": "maximum",
-                    "value": 0.2,
+                    "value": 1.5,
                 },
                 "ui_run_duration_sec": {
                     "direction": "maximum",
-                    "value": 240.0,
+                    "value": 300.0,
                 },
                 "api_run_duration_sec": {
                     "direction": "maximum",
-                    "value": 20.0,
+                    "value": 75.0,
                 },
                 "suite_duration_sec": {
                     "direction": "maximum",
-                    "value": 240.0,
+                    "value": 360.0,
                 },
             },
             "metric_runs": [
@@ -138,8 +139,30 @@ class QualityDashboardTemplateTest(unittest.TestCase):
         self.assertIn("31 Jul 2026 — 31 Jul 2026", page)
         self.assertEqual(page.count('<details class="panel calculation-details">'), 2)
         self.assertEqual(page.count("<summary>How Metrics Are Calculated</summary>"), 2)
+        self.assertIn("<= 12.00s", page)
+        self.assertIn("<= 360.00s", page)
         self.assertIn('href="coverage/"', page)
         self.assertIn('href="../reports/"', page)
+
+    def test_ui_average_uses_only_ui_tests(self) -> None:
+        row = RunStats(
+            run_name="20260731_090000_1_allure-results.zip",
+            total_tests=3,
+            api_tests=1,
+            ui_tests=2,
+            flaky_tests=0,
+            api_flaky_tests=0,
+            ui_flaky_tests=0,
+            passed_tests=3,
+            failed_tests=0,
+            broken_tests=0,
+            total_duration_ms=25_000,
+            api_duration_ms=1_000,
+            ui_duration_ms=24_000,
+            suite_duration_ms=30_000,
+        )
+
+        self.assertEqual(row.avg_duration_seconds, 12.0)
 
 
 if __name__ == "__main__":

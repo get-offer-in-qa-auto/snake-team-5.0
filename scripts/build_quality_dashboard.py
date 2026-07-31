@@ -672,7 +672,6 @@ def reference_run_metrics(
 
     for report in sorted(reports, key=lambda item: item.generated_at):
         counts: Counter[str] = Counter()
-        total_duration_ms = 0.0
         api_duration_ms = 0.0
         ui_duration_ms = 0.0
         api_tests = 0
@@ -684,7 +683,6 @@ def reference_run_metrics(
             status = str(test.get("status") or "unknown").lower()
             counts[status] += 1
             duration_ms = test_duration_ms(test)
-            total_duration_ms += duration_ms
             flaky = bool(test.get("flaky"))
             if is_api_test(test):
                 api_tests += 1
@@ -731,10 +729,7 @@ def reference_run_metrics(
             "api_flaky_tests": api_flaky_tests,
             "api_flaky_rate": ratio_percent(api_flaky_tests, api_tests),
             "run_success": total_tests > 0 and passed_tests == total_tests,
-            # The reference averages each run's average over all final test results.
-            "avg_duration_sec": total_duration_ms / total_tests / 1000
-            if total_tests
-            else 0.0,
+            "avg_duration_sec": ui_duration_ms / ui_tests / 1000 if ui_tests else 0.0,
             "avg_api_duration_sec": api_duration_ms / api_tests / 1000
             if api_tests
             else 0.0,
@@ -811,7 +806,7 @@ def build_quality_gates(
             f"{values['stability_rate']:.2f}%"
         ),
         "avg_duration_sec": average_formula(
-            "average test duration", rows, "avg_duration_sec", "s"
+            "average UI test duration", rows, "avg_duration_sec", "s"
         ),
         "avg_api_duration_sec": average_formula(
             "average API test duration", rows, "avg_api_duration_sec", "s"
@@ -838,7 +833,7 @@ def build_quality_gates(
         "broken_rate": "Unweighted average of the final broken-test rate of every published run.",
         "flaky_rate": "All flaky API and UI results divided by all final test results.",
         "stability_rate": "Published runs where every final test result passed, divided by all published runs.",
-        "avg_duration_sec": "Unweighted average of each run's mean final-test duration.",
+        "avg_duration_sec": "Unweighted average of each run's mean UI-test duration.",
         "avg_api_duration_sec": "Unweighted average of each run's mean API-test duration.",
         "ui_run_duration_sec": "Unweighted average of the summed UI test duration in each run.",
         "api_run_duration_sec": "Unweighted average of the summed API test duration in each run.",

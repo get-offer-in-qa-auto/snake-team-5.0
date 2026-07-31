@@ -64,9 +64,9 @@ class RunStats:
 
     @property
     def avg_duration_seconds(self) -> float:
-        if self.total_tests == 0:
+        if self.ui_tests == 0:
             return 0.0
-        return self.total_duration_ms / self.total_tests / 1000.0
+        return self.ui_duration_ms / self.ui_tests / 1000.0
 
     @property
     def avg_api_duration_seconds(self) -> float:
