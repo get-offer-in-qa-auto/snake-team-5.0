@@ -28,6 +28,8 @@ jobs:
     timeout-minutes: 60
     permissions:
       contents: read
+    outputs:
+      allure_pages_ready: ${{ steps.teamcity-report.outputs.allure_pages_ready }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -97,3 +99,52 @@ jobs:
           logs_artifact_name: teamcity-postgresql-regression-logs
           results_artifact_name: teamcity-postgresql-regression-test-results
           page_artifact_name: teamcity-postgresql-login-page
+
+  deploy-allure-pages:
+    name: Publish PostgreSQL Allure report page
+    if: ${{ always() && needs.postgresql-regression.outputs.allure_pages_ready == 'true' }}
+    needs: postgresql-regression
+    runs-on: ubuntu-latest
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: write
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}${{ steps.pages.outputs.report_path }}/
+    env:
+      PAGES_ARTIFACT_NAME: github-pages-${{ github.run_attempt }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare persistent PostgreSQL Allure report page
+        id: pages
+        uses: ./.github/actions/publish-allure-pages
+        with:
+          report_artifact_name: teamcity-postgresql-regression-allure-report
+          suite_name: postgresql-regression
+          pages_artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
+
+      - name: Deploy PostgreSQL Allure report to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+        with:
+          artifact_name: ${{ env.PAGES_ARTIFACT_NAME }}
+
+      - name: Add PostgreSQL Allure report page to summary
+        shell: bash
+        run: |
+          {
+            echo "## PostgreSQL Allure report"
+            echo
+            echo "[Open this PostgreSQL Allure report](${{ steps.deployment.outputs.page_url }}${{ steps.pages.outputs.report_path }}/)"
+            echo
+            echo "[Open PostgreSQL nightly metrics](${{ steps.deployment.outputs.page_url }}quality/postgresql/)"
+            echo
+            echo "[Open all reports index](${{ steps.deployment.outputs.page_url }}reports/)"
+          } >> "$GITHUB_STEP_SUMMARY"

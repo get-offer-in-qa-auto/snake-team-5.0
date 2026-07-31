@@ -1781,7 +1781,13 @@ def build_html(
         }}
         return rows.map(t => `
           <tr>
-            <td>${{t.run_label}}</td>
+            <td>${{
+              t.report_url
+                ? `<a class="run-report-link" href="${{escapeHtml(t.report_url)}}"
+                      target="_blank" rel="noopener noreferrer"
+                      title="Open Allure report for ${{escapeHtml(t.run_label)}} in a new tab">${{escapeHtml(t.run_label)}}</a>`
+                : escapeHtml(t.run_label)
+            }}</td>
             ${{includeBrowser ? `<td>${{t.browser || 'Unknown'}}</td>` : ''}}
             <td class="slow-test-name">${{t.test_name}}</td>
             <td>${{t.duration_sec.toFixed(2)}}</td>

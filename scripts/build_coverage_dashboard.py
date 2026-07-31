@@ -883,6 +883,7 @@ def render_dashboard(
     *,
     root_prefix: str,
     quality_url: str,
+    postgresql_url: str = "../postgresql/",
 ) -> str:
     latest = metrics["latest"]
     files = metrics["files"]
@@ -1003,7 +1004,8 @@ def render_dashboard(
           <div class="meta">{header_meta}</div>
         </div>
         <div class="actions">
-          <a class="button" href="{html.escape(quality_url)}">Open QA metrics</a>
+          <a class="button" href="{html.escape(quality_url)}">PR Regression</a>
+          <a class="button" href="{html.escape(postgresql_url)}">PostgreSQL Nightly</a>
           {original_link}
         </div>
       </header>
@@ -1111,6 +1113,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--site-dir", required=True, type=Path)
     parser.add_argument("--destination", default="quality/coverage")
     parser.add_argument("--quality-url", default="../")
+    parser.add_argument("--postgresql-url", default="../postgresql/")
     parser.add_argument("--now", help="ISO-8601 UTC timestamp used as window end")
     return parser.parse_args()
 
@@ -1138,6 +1141,7 @@ def main() -> None:
             metrics,
             root_prefix="../" * len(destination_relative.parts),
             quality_url=args.quality_url,
+            postgresql_url=args.postgresql_url,
         ),
         encoding="utf-8",
     )

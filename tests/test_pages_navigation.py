@@ -26,6 +26,11 @@ class PagesNavigationTest(unittest.TestCase):
             allure_dir = site_dir / "reports" / "regression" / "123-attempt-1"
             write_html(allure_dir / "index.html")
             (allure_dir / "metadata.json").write_text("{}", encoding="utf-8")
+            postgresql_dir = (
+                site_dir / "reports" / "postgresql-regression" / "124-attempt-1"
+            )
+            write_html(postgresql_dir / "index.html")
+            (postgresql_dir / "metadata.json").write_text("{}", encoding="utf-8")
 
             coverage_dir = site_dir / "coverage" / "123-attempt-1"
             write_html(coverage_dir / "html" / "index.html")
@@ -34,8 +39,11 @@ class PagesNavigationTest(unittest.TestCase):
 
             allure_pages, coverage_pages = decorate_published_reports(site_dir)
 
-            self.assertEqual((allure_pages, coverage_pages), (1, 2))
+            self.assertEqual((allure_pages, coverage_pages), (2, 2))
             allure_html = (allure_dir / "index.html").read_text(encoding="utf-8")
+            postgresql_html = (postgresql_dir / "index.html").read_text(
+                encoding="utf-8"
+            )
             coverage_index = (coverage_dir / "html" / "index.html").read_text(
                 encoding="utf-8"
             )
@@ -44,7 +52,16 @@ class PagesNavigationTest(unittest.TestCase):
             )
 
             self.assertIn('href="../../../quality/"', allure_html)
+            self.assertIn(
+                'href="../../../quality/postgresql/"',
+                allure_html,
+            )
             self.assertIn('href="../../"', allure_html)
+            self.assertIn(
+                'href="../../../quality/postgresql/"',
+                postgresql_html,
+            )
+            self.assertIn('href="../../../quality/"', postgresql_html)
             self.assertIn('href="../../../quality/coverage/"', coverage_index)
             self.assertIn('href="../../../quality/"', coverage_index)
             self.assertIn('href="../../../../quality/coverage/"', coverage_module)
