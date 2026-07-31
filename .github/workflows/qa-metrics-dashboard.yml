@@ -135,26 +135,48 @@ jobs:
             )"
             duration="$(
               jq '
-                [
-                  .[]
-                  | select(.name == "Run TeamCity PostgreSQL regression")
-                  | select(.started_at != null and .completed_at != null)
-                  | (
-                      (.completed_at | fromdateiso8601)
-                      - (.started_at | fromdateiso8601)
+                . as $all_jobs
+                | [
+                  $all_jobs[]
+                  | select(
+                      .name == "TeamCity PostgreSQL API regression"
+                      or (.name | startswith("TeamCity PostgreSQL UI ·"))
                     )
+                  | select(.started_at != null and .completed_at != null)
                 ]
-                | first // null
+                | if length > 0 then
+                    (
+                      (map(.completed_at | fromdateiso8601) | max)
+                      - (map(.started_at | fromdateiso8601) | min)
+                  )
+                  else
+                    [
+                      $all_jobs[]
+                      | select(.name == "Run TeamCity PostgreSQL regression")
+                      | select(.started_at != null and .completed_at != null)
+                      | (
+                          (.completed_at | fromdateiso8601)
+                          - (.started_at | fromdateiso8601)
+                        )
+                    ]
+                    | first // null
+                  end
               ' <<< "$jobs"
             )"
             regression_outcome="$(
               jq -r '
-                [
-                  .[]
+                . as $all_jobs
+                | [
+                  ($all_jobs[]
+                  | select(.name == "TeamCity PostgreSQL regression")
+                  | .steps[]?
+                  | select(.name == "Verify PostgreSQL API and browser jobs")
+                  | .conclusion),
+                  ($all_jobs[]
                   | select(.name == "Run TeamCity PostgreSQL regression")
                   | .steps[]?
                   | select(.name == "Run remaining TeamCity PostgreSQL regression tests")
-                  | .conclusion
+                  | .conclusion)
                 ]
                 | first // "missing"
               ' <<< "$jobs"
