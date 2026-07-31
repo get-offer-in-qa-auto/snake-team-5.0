@@ -81,6 +81,7 @@ class CoverageDashboardTemplateTest(unittest.TestCase):
         self.assertNotIn("@media (prefers-color-scheme: dark)", page)
         self.assertNotIn('class="group"', page)
         self.assertIn('href="../"', page)
+        self.assertIn('href="../postgresql/"', page)
         self.assertIn('href="../../coverage/1-attempt-1/html/"', page)
 
     def test_explains_pull_request_merge_ref(self) -> None:

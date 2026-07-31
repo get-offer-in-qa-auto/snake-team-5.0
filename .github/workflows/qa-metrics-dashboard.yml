@@ -3,6 +3,11 @@ name: QA Metrics Dashboard
 on:
   schedule:
     - cron: "30 3 * * *"
+  workflow_run:
+    workflows:
+      - TeamCity PostgreSQL Regression
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       days:
@@ -57,6 +62,20 @@ jobs:
             --jq '.workflow_runs[]' |
             jq --slurp '.' > workflow-runs.json
 
+      - name: Read completed PostgreSQL nightly runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          since="$(date -u -d "$((METRICS_DAYS - 1)) days ago" +%Y-%m-%dT00:00:00Z)"
+          gh api --paginate --method GET \
+            "/repos/${GITHUB_REPOSITORY}/actions/workflows/teamcity-postgresql-regression.yml/runs" \
+            -f status=completed \
+            -f created=">=${since}" \
+            -f per_page=100 \
+            --jq '.workflow_runs[]' |
+            jq --slurp '.' > postgresql-workflow-runs.json
+
       - name: Read regression test-stage durations
         env:
           GH_TOKEN: ${{ github.token }}
@@ -102,6 +121,67 @@ jobs:
             mv "$updated_file" workflow-runs.json
           done < <(jq -r '.[].id' workflow-runs.json)
 
+      - name: Read PostgreSQL run duration and completeness
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          while IFS= read -r run_id; do
+            jobs="$(
+              gh api --paginate \
+                "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" \
+                --jq '.jobs[]' |
+                jq --slurp '.'
+            )"
+            duration="$(
+              jq '
+                [
+                  .[]
+                  | select(.name == "Run TeamCity PostgreSQL regression")
+                  | select(.started_at != null and .completed_at != null)
+                  | (
+                      (.completed_at | fromdateiso8601)
+                      - (.started_at | fromdateiso8601)
+                    )
+                ]
+                | first // null
+              ' <<< "$jobs"
+            )"
+            regression_outcome="$(
+              jq -r '
+                [
+                  .[]
+                  | select(.name == "Run TeamCity PostgreSQL regression")
+                  | .steps[]?
+                  | select(.name == "Run remaining TeamCity PostgreSQL regression tests")
+                  | .conclusion
+                ]
+                | first // "missing"
+              ' <<< "$jobs"
+            )"
+            test_suite_complete=false
+            if [ "$regression_outcome" = "success" ] || [ "$regression_outcome" = "failure" ]; then
+              test_suite_complete=true
+            fi
+
+            updated_file="$(mktemp)"
+            jq \
+              --argjson run_id "$run_id" \
+              --argjson duration "$duration" \
+              --argjson test_suite_complete "$test_suite_complete" \
+              'map(
+                if .id == $run_id
+                then . + {
+                  test_duration_seconds: $duration,
+                  test_suite_complete: $test_suite_complete
+                }
+                else .
+                end
+              )' \
+              postgresql-workflow-runs.json > "$updated_file"
+            mv "$updated_file" postgresql-workflow-runs.json
+          done < <(jq -r '.[].id' postgresql-workflow-runs.json)
+
       - name: Prepare persistent Pages site
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -145,6 +225,30 @@ jobs:
             --destination quality \
             --coverage-metrics quality/coverage/metrics.json \
             --coverage-url "coverage/"
+          python3 scripts/build_quality_dashboard.py \
+            --site-dir pages-site \
+            --runs-json postgresql-workflow-runs.json \
+            --suite postgresql-regression \
+            --days "${METRICS_DAYS}" \
+            --destination "quality/postgresql/periods/${METRICS_DAYS}" \
+            --coverage-metrics quality/coverage/metrics.json \
+            --coverage-url "../../../coverage/" \
+            --report-title "TeamCity PostgreSQL Nightly Metrics" \
+            --report-subtitle "Nightly quality metrics on the PostgreSQL TeamCity stand" \
+            --dashboard-kind postgresql \
+            --exclude-incomplete-reports
+          python3 scripts/build_quality_dashboard.py \
+            --site-dir pages-site \
+            --runs-json postgresql-workflow-runs.json \
+            --suite postgresql-regression \
+            --days "${METRICS_DAYS}" \
+            --destination quality/postgresql \
+            --coverage-metrics quality/coverage/metrics.json \
+            --coverage-url "../coverage/" \
+            --report-title "TeamCity PostgreSQL Nightly Metrics" \
+            --report-subtitle "Nightly quality metrics on the PostgreSQL TeamCity stand" \
+            --dashboard-kind postgresql \
+            --exclude-incomplete-reports
           python3 .github/scripts/refresh_allure_indexes.py --site-dir pages-site
           touch pages-site/.nojekyll
 
@@ -183,5 +287,7 @@ jobs:
             echo
             echo "- [Open current QA metrics report](${{ steps.deployment.outputs.page_url }}quality/)"
             echo "- [Open saved ${METRICS_DAYS}-day snapshot](${{ steps.deployment.outputs.page_url }}quality/periods/${METRICS_DAYS}/)"
+            echo "- [Open PostgreSQL nightly metrics](${{ steps.deployment.outputs.page_url }}quality/postgresql/)"
+            echo "- [Open saved PostgreSQL ${METRICS_DAYS}-day snapshot](${{ steps.deployment.outputs.page_url }}quality/postgresql/periods/${METRICS_DAYS}/)"
             echo "- [Open API framework coverage](${{ steps.deployment.outputs.page_url }}quality/coverage/)"
           } >> "$GITHUB_STEP_SUMMARY"

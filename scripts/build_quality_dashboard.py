@@ -78,6 +78,7 @@ class WorkflowRun:
     started_at: datetime
     updated_at: datetime
     test_duration_seconds: float | None = None
+    test_suite_complete: bool = True
 
     @property
     def duration_seconds(self) -> float:
@@ -172,6 +173,11 @@ def load_workflow_runs(
                 float(item["test_duration_seconds"])
                 if item.get("test_duration_seconds") is not None
                 else None
+            ),
+            test_suite_complete=(
+                bool(item["test_suite_complete"])
+                if item.get("test_suite_complete") is not None
+                else True
             ),
         )
         previous = latest_attempts.get(run.id)
@@ -420,11 +426,17 @@ def report_metrics(report: PublishedReport) -> dict[str, Any]:
 def aggregate_run_trends(
     runs: list[WorkflowRun],
     reports: list[PublishedReport],
+    *,
+    published_reports: list[PublishedReport] | None = None,
 ) -> list[dict[str, Any]]:
     reports_by_run = {report.run_id: report for report in reports}
+    published_by_run = {
+        report.run_id: report for report in (published_reports or reports)
+    }
     points: list[dict[str, Any]] = []
     for run in runs:
         report = reports_by_run.get(run.id)
+        published_report = published_by_run.get(run.id)
         report_values = report_metrics(report) if report else {}
         points.append(
             {
@@ -434,8 +446,11 @@ def aggregate_run_trends(
                 "label": run.created_at.strftime("%d %b %H:%M"),
                 "created_at": run.created_at.isoformat(timespec="seconds"),
                 "run_url": run.url,
-                "report_url": f"{report.path}/" if report else None,
+                "report_url": (
+                    f"{published_report.path}/" if published_report else None
+                ),
                 "conclusion": run.conclusion,
+                "test_suite_complete": run.test_suite_complete,
                 "test_pass_rate": report_values.get("test_pass_rate"),
                 "pipeline_success_rate": (
                     100.0 if run.conclusion == "success" else 0.0
@@ -1167,9 +1182,11 @@ def build_metrics(
     quality_targets: dict[str, dict[str, Any]],
     browser_targets: dict[str, dict[str, float]] | None = None,
     coverage: dict[str, Any] | None = None,
+    published_reports: list[PublishedReport] | None = None,
 ) -> dict[str, Any]:
     if browser_targets is None:
         browser_targets = DEFAULT_BROWSER_TARGETS
+    report_inventory = published_reports if published_reports is not None else reports
     reference_rows = reference_run_metrics(runs, reports, quality_targets)
     reference_summary, quality_gates = build_quality_gates(
         reference_rows,
@@ -1198,7 +1215,8 @@ def build_metrics(
     flaky_ids = allure_flaky_ids | historical_flaky_ids
     retry_count = sum(retries_by_identity.values())
     successful_runs = sum(run.conclusion == "success" for run in runs)
-    report_by_run = {report.run_id: report for report in reports}
+    report_by_run = {report.run_id: report for report in report_inventory}
+    incomplete_run_ids = {run.id for run in runs if not run.test_suite_complete}
 
     recent_runs = []
     for run in sorted(runs, key=lambda item: item.created_at, reverse=True):
@@ -1215,6 +1233,7 @@ def build_metrics(
                 "duration_seconds": round(run.duration_seconds, 1),
                 "run_url": run.url,
                 "report_url": f"{report.path}/" if report else None,
+                "test_suite_complete": run.test_suite_complete,
             }
         )
 
@@ -1238,7 +1257,12 @@ def build_metrics(
         },
         "data_quality": {
             "completed_runs": len(runs),
-            "published_reports": len(reports),
+            "published_reports": len(report_inventory),
+            "metric_reports": len(reports),
+            "incomplete_runs": sum(not run.test_suite_complete for run in runs),
+            "incomplete_reports": sum(
+                report.run_id in incomplete_run_ids for report in report_inventory
+            ),
             "runs_without_report": sum(run.id not in report_by_run for run in runs),
         },
         "pipeline": {
@@ -1267,7 +1291,11 @@ def build_metrics(
             window_end=now,
             days=days,
         ),
-        "run_trends": aggregate_run_trends(runs, reports),
+        "run_trends": aggregate_run_trends(
+            runs,
+            reports,
+            published_reports=report_inventory,
+        ),
         "quality_targets": quality_targets,
         "reference_summary": reference_summary,
         "quality_gates": quality_gates,
@@ -2303,6 +2331,9 @@ def render_dashboard(
     root_prefix: str,
     coverage_url: str,
     periods: list[tuple[int, str]],
+    report_title: str = "TeamCity QA Metrics Dashboard",
+    report_subtitle: str = "Quality metrics across GitHub runs (Allure artifacts)",
+    dashboard_kind: str = "regression",
 ) -> str:
     del periods
     reference_rows: list[RunStats] = []
@@ -2348,6 +2379,11 @@ def render_dashboard(
                 "test_name": str(test["test_name"]),
                 "duration_sec": float(test["duration_sec"]),
                 "status": str(test["status"]),
+                "report_url": (
+                    root_prefix + str(test["report_url"])
+                    if test.get("report_url")
+                    else None
+                ),
             }
             for test in metrics[key]
         ]
@@ -2376,7 +2412,7 @@ def render_dashboard(
         for run in metrics.get("browser_runs", [])
     ]
     page = build_reference_dashboard_html(
-        "TeamCity QA Metrics Dashboard",
+        report_title,
         reference_rows,
         reference_slowest("slowest_ui_tests"),
         reference_slowest("slowest_api_tests"),
@@ -2406,24 +2442,137 @@ def render_dashboard(
       text-decoration: none;
     }
     .qa-report-links a:hover { border-color: #8a8174; background: #fff; }
+    .qa-report-links a.active {
+      border-color: #2f7fc3;
+      color: #1e5f95;
+      background: #eef7ff;
+    }
+    .qa-run-context {
+      margin-top: 16px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffefb;
+    }
+    .qa-run-context h2 { margin: 0 0 10px; font-size: 18px; }
+    .qa-context-cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .qa-context-card {
+      padding: 12px;
+      border: 1px solid #eee9df;
+      border-radius: 10px;
+      background: #fff;
+    }
+    .qa-context-card .label { color: var(--muted); font-size: 12px; }
+    .qa-context-card .value { margin-top: 3px; font-size: 22px; font-weight: 750; }
+    .qa-incomplete-runs { margin-top: 12px; }
+    .qa-incomplete-runs summary { cursor: pointer; font-weight: 700; }
+    .qa-status-fail { color: #b42318; font-weight: 700; }
+    @media (max-width: 760px) {
+      .qa-context-cards { grid-template-columns: 1fr 1fr; }
+    }
     """
+    regression_class = "active" if dashboard_kind == "regression" else ""
+    postgresql_class = "active" if dashboard_kind == "postgresql" else ""
     navigation = (
         '<nav class="qa-report-links" aria-label="QA report navigation">'
+        f'<a class="{regression_class}" '
+        f'href="{html.escape(root_prefix + "quality/")}">PR Regression</a>'
+        f'<a class="{postgresql_class}" '
+        f'href="{html.escape(root_prefix + "quality/postgresql/")}">'
+        "PostgreSQL Nightly</a>"
         f'<a href="{html.escape(coverage_url)}">Code Coverage</a>'
         f'<a href="{html.escape(root_prefix + "reports/")}" '
         'target="_blank" rel="noopener noreferrer">Allure Reports</a>'
         "</nav>"
     )
+    context = ""
+    if dashboard_kind == "postgresql":
+        data_quality = metrics["data_quality"]
+        pipeline = metrics["pipeline"]
+        incomplete_runs = [
+            run
+            for run in metrics.get("recent_runs", [])
+            if not bool(run.get("test_suite_complete", True))
+        ]
+        latest_run = metrics["recent_runs"][0] if metrics.get("recent_runs") else None
+        latest_status = (
+            str(latest_run["conclusion"]).replace("_", " ").title()
+            if latest_run is not None
+            else "No runs"
+        )
+        success_rate = pipeline.get("success_rate")
+        success_rate_text = (
+            f"{float(success_rate):.2f}%" if success_rate is not None else "—"
+        )
+        incomplete_rows: list[str] = []
+        for run in incomplete_runs:
+            created_at = parse_datetime(str(run["created_at"]))
+            report_url = run.get("report_url")
+            if report_url:
+                run_label = (
+                    f'<a href="{html.escape(root_prefix + str(report_url))}" '
+                    'target="_blank" rel="noopener noreferrer">'
+                    f"{created_at.strftime('%Y-%m-%d %H:%M')}</a>"
+                )
+            else:
+                run_label = (
+                    f'<a href="{html.escape(str(run["run_url"]))}" '
+                    'target="_blank" rel="noopener noreferrer">'
+                    f"{created_at.strftime('%Y-%m-%d %H:%M')}</a>"
+                )
+            incomplete_rows.append(
+                "<tr>"
+                f"<td>{run_label}</td>"
+                f"<td>#{int(run['number'])}</td>"
+                '<td class="qa-status-fail">Incomplete</td>'
+                f"<td>{html.escape(str(run['conclusion']).title())}</td>"
+                "</tr>"
+            )
+        incomplete_panel = ""
+        if incomplete_rows:
+            incomplete_panel = (
+                '<details class="qa-incomplete-runs">'
+                f"<summary>Incomplete nightly runs ({len(incomplete_rows)})</summary>"
+                "<table><thead><tr><th>Run</th><th>Number</th>"
+                "<th>Test data</th><th>Workflow</th></tr></thead>"
+                f"<tbody>{''.join(incomplete_rows)}</tbody></table></details>"
+            )
+        context = (
+            '<section class="qa-run-context" aria-label="PostgreSQL nightly status">'
+            "<h2>PostgreSQL nightly execution status</h2>"
+            '<div class="qa-context-cards">'
+            '<div class="qa-context-card"><div class="label">Nightly executions</div>'
+            f'<div class="value">{int(pipeline["completed"])}</div></div>'
+            '<div class="qa-context-card"><div class="label">Workflow stability</div>'
+            f'<div class="value">{success_rate_text}</div></div>'
+            '<div class="qa-context-card"><div class="label">Complete reports used</div>'
+            f'<div class="value">{int(data_quality["metric_reports"])}</div></div>'
+            '<div class="qa-context-card"><div class="label">Latest workflow</div>'
+            f'<div class="value">{html.escape(latest_status)}</div></div>'
+            "</div>"
+            f"{incomplete_panel}"
+            "</section>"
+        )
     page = page.replace("</style>", f"{navigation_css}</style>", 1)
-    return page.replace(
+    page = page.replace(
         '<p class="subtitle">Quality metrics across GitHub runs (Allure artifacts)</p>',
         (
-            '<p class="subtitle">Quality metrics across GitHub runs '
-            "(Allure artifacts)</p>"
-            f"{navigation}"
+            f'<p class="subtitle">{html.escape(report_subtitle)}</p>'
+            f"{navigation}{context}"
         ),
         1,
     )
+    if dashboard_kind == "postgresql":
+        page = page.replace(
+            '<div class="label">Total Runs</div>',
+            '<div class="label">Complete Runs Used</div>',
+            1,
+        )
+    return page
 
 
 def markdown_cell(value: Any) -> str:
@@ -2650,6 +2799,24 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--coverage-url", default="coverage/")
     parser.add_argument(
+        "--report-title",
+        default="TeamCity QA Metrics Dashboard",
+    )
+    parser.add_argument(
+        "--report-subtitle",
+        default="Quality metrics across GitHub runs (Allure artifacts)",
+    )
+    parser.add_argument(
+        "--dashboard-kind",
+        choices=("regression", "postgresql"),
+        default="regression",
+    )
+    parser.add_argument(
+        "--exclude-incomplete-reports",
+        action="store_true",
+        help="Exclude reports whose workflow metadata marks the test suite incomplete.",
+    )
+    parser.add_argument(
         "--targets-config",
         type=Path,
         default=Path("resources/qa_metrics_targets.json"),
@@ -2670,13 +2837,25 @@ def main() -> None:
         window_end=now,
     )
     latest_attempts = {run.id: run.attempt for run in runs}
-    reports = load_published_reports(
+    published_reports = load_published_reports(
         args.site_dir,
         args.suite,
         window_start=window_start_at,
         window_end=now,
         latest_attempts=latest_attempts,
     )
+    if args.exclude_incomplete_reports:
+        runs_by_id = {run.id: run for run in runs}
+        reports = [
+            report
+            for report in published_reports
+            if (
+                report.run_id in runs_by_id
+                and runs_by_id[report.run_id].test_suite_complete
+            )
+        ]
+    else:
+        reports = published_reports
     coverage_path, _ = resolve_site_path(args.site_dir, args.coverage_metrics)
     coverage = load_json(coverage_path)
     quality_targets = load_quality_targets(args.targets_config)
@@ -2689,6 +2868,7 @@ def main() -> None:
         quality_targets=quality_targets,
         browser_targets=browser_targets,
         coverage=coverage,
+        published_reports=published_reports,
     )
 
     destination, destination_relative = resolve_site_path(
@@ -2710,6 +2890,9 @@ def main() -> None:
                 destination_relative,
                 args.days,
             ),
+            report_title=args.report_title,
+            report_subtitle=args.report_subtitle,
+            dashboard_kind=args.dashboard_kind,
         ),
         encoding="utf-8",
     )
@@ -2719,8 +2902,9 @@ def main() -> None:
     )
     append_github_output(metrics)
     print(
-        f"Built {args.days}-day dashboard from {len(runs)} runs "
-        f"and {len(reports)} published reports."
+        f"Built {args.days}-day dashboard from {len(runs)} runs, "
+        f"{len(published_reports)} published reports, and "
+        f"{len(reports)} complete metric reports."
     )
 
 

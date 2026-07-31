@@ -100,11 +100,20 @@ def inject_navigation(
 def decorate_allure_reports(site_dir: Path) -> int:
     """Add QA and report-index links to every archived Allure SPA."""
     updated = 0
-    links = (
-        ("← QA metrics", site_dir / "quality"),
-        ("All reports", site_dir / "reports"),
-    )
     for metadata_path in sorted((site_dir / "reports").glob("*/*/metadata.json")):
+        suite = metadata_path.parent.parent.name
+        if suite == "postgresql-regression":
+            links = (
+                ("← PostgreSQL metrics", site_dir / "quality" / "postgresql"),
+                ("PR regression", site_dir / "quality"),
+                ("All reports", site_dir / "reports"),
+            )
+        else:
+            links = (
+                ("← QA metrics", site_dir / "quality"),
+                ("PostgreSQL nightly", site_dir / "quality" / "postgresql"),
+                ("All reports", site_dir / "reports"),
+            )
         index_path = metadata_path.parent / "index.html"
         if index_path.is_file() and inject_navigation(index_path, links):
             updated += 1
