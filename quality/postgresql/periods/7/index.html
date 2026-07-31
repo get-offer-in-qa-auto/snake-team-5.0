@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TeamCity PostgreSQL Nightly Metrics</title>
+  <style>
+    :root {
+      --bg0: #f4efe7;
+      --bg1: #fffdf8;
+      --ink: #18212f;
+      --muted: #5e6b7a;
+      --line: #d8d2c7;
+      --card: #ffffffcc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Avenir Next", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 400px at 0% 0%, #f0e3cf 10%, transparent 70%),
+        radial-gradient(900px 500px at 100% 100%, #dceeea 10%, transparent 65%),
+        var(--bg0);
+    }
+    .wrap { max-width: 1220px; margin: 0 auto; padding: 28px 20px 48px; }
+    .title { margin: 0; font-size: clamp(26px, 4vw, 42px); letter-spacing: 0.01em; }
+    .subtitle { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+    .summary { display: grid; gap: 14px; margin-top: 18px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 10px 28px rgba(24, 33, 47, 0.07);
+    }
+    .metric-ok { border-color: #1c8a56; background: #f1fbf5; }
+    .metric-fail { border-color: #b43737; background: #fff1f1; }
+    .status-badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .status-badge.metric-ok { color: #0d6e42; }
+    .status-badge.metric-fail { color: #8f2424; }
+    .label { color: var(--muted); font-size: 13px; }
+    .value { margin-top: 6px; font-size: 30px; font-weight: 700; line-height: 1; }
+
+    .group {
+      margin-top: 18px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fffefb;
+      box-shadow: 0 10px 22px rgba(24, 33, 47, 0.05);
+    }
+    .group h2 { margin: 0; font-size: 24px; }
+    .group .desc { margin: 6px 0 0; color: #465463; font-size: 14px; }
+    .formulas { margin-top: 10px; font-size: 13px; color: #4f5d6c; line-height: 1.5; }
+    .metric-cards { display: grid; gap: 14px; margin-top: 14px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+
+    .panel {
+      background: var(--bg1);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: 0 14px 30px rgba(24, 33, 47, 0.08);
+    }
+    .panel h3 { margin: 0 0 10px; font-size: 18px; }
+    .run-report-link {
+      color: #195f89;
+      font-weight: 650;
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+    .run-report-link:hover { color: #103f5b; }
+    .calculation-details summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 700;
+      list-style: none;
+    }
+    .calculation-details summary::-webkit-details-marker { display: none; }
+    .calculation-details summary::after {
+      content: "Show";
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .calculation-details[open] summary::after { content: "Hide"; }
+    .calculation-details[open] summary { margin-bottom: 10px; }
+    .charts-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .metric-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .chart-single { margin-top: 16px; }
+
+    canvas { width: 100%; height: 340px; display: block; }
+    .legend { display: flex; gap: 12px; margin-top: 8px; color: #4a5665; font-size: 13px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; transform: translateY(1px); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; border-radius: 12px; overflow: hidden; font-size: 14px; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #eee9df; }
+    th { background: #f9f6f0; font-weight: 600; color: #3f4a57; }
+    tr:hover td { background: #fffbf4; }
+    .slow-tests-table { table-layout: fixed; }
+    .slow-test-name {
+      width: 58%;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .browser-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .browser-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .browser-card h3 { margin: 0; font-size: 20px; }
+    .browser-pass { margin-top: 10px; font-size: 32px; font-weight: 750; }
+    .browser-facts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .browser-facts strong { color: var(--ink); }
+    .coverage-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .coverage-value { font-size: 28px; font-weight: 750; white-space: nowrap; }
+    .browser-legend { flex-wrap: wrap; }
+
+    @media (max-width: 960px) {
+      .charts-2 { grid-template-columns: 1fr; }
+      .metric-pair { grid-template-columns: 1fr; }
+      .browser-cards { grid-template-columns: 1fr; }
+    }
+  
+    .qa-report-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .qa-report-links a {
+      display: inline-block;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ink);
+      background: #fffefb;
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+    .qa-report-links a:hover { border-color: #8a8174; background: #fff; }
+    .qa-report-links a.active {
+      border-color: #2f7fc3;
+      color: #1e5f95;
+      background: #eef7ff;
+    }
+    .qa-run-context {
+      margin-top: 16px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fffefb;
+    }
+    .qa-run-context h2 { margin: 0 0 10px; font-size: 18px; }
+    .qa-context-cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .qa-context-card {
+      padding: 12px;
+      border: 1px solid #eee9df;
+      border-radius: 10px;
+      background: #fff;
+    }
+    .qa-context-card .label { color: var(--muted); font-size: 12px; }
+    .qa-context-card .value { margin-top: 3px; font-size: 22px; font-weight: 750; }
+    .qa-incomplete-runs { margin-top: 12px; }
+    .qa-incomplete-runs summary { cursor: pointer; font-weight: 700; }
+    .qa-status-fail { color: #b42318; font-weight: 700; }
+    @media (max-width: 760px) {
+      .qa-context-cards { grid-template-columns: 1fr 1fr; }
+    }
+    </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 class="title">TeamCity PostgreSQL Nightly Metrics</h1>
+    <p class="subtitle">Nightly quality metrics on the PostgreSQL TeamCity stand</p><nav class="qa-report-links" aria-label="QA report navigation"><a class="" href="../../../../quality/">PR Regression</a><a class="active" href="../../../../quality/postgresql/">PostgreSQL Nightly</a><a href="../../../coverage/">Code Coverage</a><a href="../../../../reports/" target="_blank" rel="noopener noreferrer">Allure Reports</a></nav><section class="qa-run-context" aria-label="PostgreSQL nightly status"><h2>PostgreSQL nightly execution status</h2><div class="qa-context-cards"><div class="qa-context-card"><div class="label">Nightly executions</div><div class="value">7</div></div><div class="qa-context-card"><div class="label">Workflow stability</div><div class="value">71.43%</div></div><div class="qa-context-card"><div class="label">Complete reports used</div><div class="value">0</div></div><div class="qa-context-card"><div class="label">Latest workflow</div><div class="value">Failure</div></div></div><details class="qa-incomplete-runs"><summary>Incomplete nightly runs (2)</summary><table><thead><tr><th>Run</th><th>Number</th><th>Test data</th><th>Workflow</th></tr></thead><tbody><tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30607222633" target="_blank" rel="noopener noreferrer">2026-07-31 05:35</a></td><td>#19</td><td class="qa-status-fail">Incomplete</td><td>Failure</td></tr><tr><td><a href="https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30331079236" target="_blank" rel="noopener noreferrer">2026-07-28 05:14</a></td><td>#16</td><td class="qa-status-fail">Incomplete</td><td>Failure</td></tr></tbody></table></details></section>
+
+    <div class="summary">
+      <div class="card">
+        <div class="label">Complete Runs Used</div>
+        <div class="value">0</div>
+        <div class="label">No runs in selected period</div>
+      </div>
+    </div>
+
+    <section class="group">
+      <h2>1️⃣ Test Result Distribution</h2>
+      <p class="desc">Distribution of test outcomes by status.</p>
+      <div class="panel">
+        <h3>🚦 Quality Gates</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Description</th>
+              <th>Current Value</th>
+              <th>Target</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Average Pass Rate</td><td>Average share of passed tests across all runs in the selected period.</td><td>0.00%</td><td>>= 98.00%</td><td><span class="status-badge metric-fail">Failed</span></td></tr>
+<tr><td>Average Fail Rate</td><td>Average share of failed tests across all runs in the selected period.</td><td>0.00%</td><td><= 2.00%</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Average Broken Rate</td><td>Average share of broken tests across all runs in the selected period.</td><td>0.00%</td><td><= 1.00%</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Average UI Flaky Rate</td><td>Average share of flaky UI tests across all runs in the selected period.</td><td>0.00%</td><td><= 2.00%</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Average API Flaky Rate</td><td>Average share of flaky API tests across all runs in the selected period.</td><td>0.00%</td><td><= 2.00%</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="metric-cards">
+        <div class="card metric-fail"><div class="label">average pass rate</div><div class="value">0.00%</div></div>
+        <div class="card metric-ok"><div class="label">average fail rate</div><div class="value">0.00%</div></div>
+        <div class="card metric-ok"><div class="label">average broken rate</div><div class="value">0.00%</div></div>
+        <div class="card metric-ok"><div class="label">average UI flaky rate</div><div class="value">0.00%</div></div>
+        <div class="card metric-ok"><div class="label">average API flaky rate</div><div class="value">0.00%</div></div>
+      </div>
+
+      <details class="panel calculation-details">
+        <summary>How Metrics Are Calculated</summary>
+        <div class="formulas">
+          average pass rate = n/a<br/>
+          average fail rate = n/a<br/>
+          average broken rate = n/a<br/>
+          average UI flaky rate = n/a<br/>
+          average API flaky rate = n/a
+        </div>
+      </details>
+
+      <div class="metric-pair">
+        <div class="panel">
+          <h3>Average Pass Rate Trend</h3>
+          <canvas id="pass-rate-trend"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Pass Rate vs Target by Run</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Pass %</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="pass-distribution-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="metric-pair">
+        <div class="panel">
+          <h3>Average Fail Rate Trend</h3>
+          <canvas id="fail-rate-trend"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Fail Rate vs Target by Run</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Fail %</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="fail-distribution-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="metric-pair">
+        <div class="panel">
+          <h3>Average Broken Rate Trend</h3>
+          <canvas id="broken-rate-trend"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Broken Rate vs Target by Run</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Broken %</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="broken-distribution-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="metric-pair">
+        <div class="panel">
+          <h3>Average UI Flaky Rate Trend</h3>
+          <canvas id="ui-flaky-rate-trend"></canvas>
+        </div>
+        <div class="panel">
+          <h3>UI Flaky Rate vs Target by Run</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>UI Flaky %</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="ui-flaky-distribution-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="metric-pair">
+        <div class="panel">
+          <h3>Average API Flaky Rate Trend</h3>
+          <canvas id="api-flaky-rate-trend"></canvas>
+        </div>
+        <div class="panel">
+          <h3>API Flaky Rate vs Target by Run</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>API Flaky %</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="api-flaky-distribution-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h2>2️⃣ Speed Metrics</h2>
+      <p class="desc">Show how fast the pipeline is. CI Pipeline Duration is currently estimated from available test runtime data.</p>
+      <div class="panel">
+        <h3>🚦 Quality Gates</h3>
+        <div class="metric-cards">
+          <div class="card metric-ok"><div class="label">OK Gates</div><div class="value">5</div></div>
+          <div class="card metric-fail"><div class="label">Failed Gates</div><div class="value">0</div></div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Description</th>
+              <th>Current Value</th>
+              <th>Target</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Average UI Test Duration</td><td>Average UI Test Duration = Average(UI duration / UI test count) across runs</td><td>0.00s</td><td><= 12.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Average API Test Duration</td><td>Average API Test Duration = Average(API duration / API test count) across runs</td><td>0.00s</td><td><= 1.50s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Total UI Test Time</td><td>Total UI Test Time = Average of summed UI test durations per run; this is test work, not wall-clock pipeline time</td><td>0.00s</td><td><= 300.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Average API Test Run Duration</td><td>Average API Test Run Duration = Sum(API run durations) / Number of runs</td><td>0.00s</td><td><= 75.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Average Pipeline Duration</td><td>Pipeline Duration = Time from the first API/UI test job start to the last completion</td><td>0.00s</td><td><= 360.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details class="panel calculation-details">
+        <summary>How Metrics Are Calculated</summary>
+        <div class="formulas">
+          Average UI Test Duration = n/a<br/>Average API Test Duration = n/a<br/>Total UI Test Time = n/a<br/>Average API Test Run Duration = n/a<br/>Average Pipeline Duration = n/a
+        </div>
+      </details>
+      <div class="metric-cards">
+        <div class="card metric-ok"><div class="label">Average Test Duration UI tests</div><div class="value">0.00s</div></div>
+        <div class="card metric-ok"><div class="label">Average Test Duration API tests</div><div class="value">0.00s</div></div>
+        <div class="card metric-ok"><div class="label">Total UI Test Time</div><div class="value">0.00s</div></div>
+        <div class="card metric-ok"><div class="label">Average API Test Run Duration</div><div class="value">0.00s</div></div>
+        <div class="card metric-ok"><div class="label">Average Pipeline Duration</div><div class="value">0.00s</div></div>
+      </div>
+
+      <div class="metric-pair">
+        <div class="panel">
+          <h3>Average Test Duration UI tests Trend</h3>
+          <canvas id="avg-duration-trend"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Average Test Duration UI tests vs Target by Run</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Value</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="speed-avg-ui-duration-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="metric-pair">
+        <div class="panel">
+          <h3>Average Test Duration API tests Trend</h3>
+          <canvas id="avg-api-duration-trend"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Average Test Duration API tests vs Target by Run</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Value</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="speed-avg-api-duration-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="metric-pair">
+        <div class="panel">
+          <h3>Total UI Test Time Trend</h3>
+          <canvas id="ui-run-duration-trend"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Total UI Test Time vs Target by Run</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Value</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="speed-ui-run-duration-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="metric-pair">
+        <div class="panel">
+          <h3>Average API Test Run Duration Trend</h3>
+          <canvas id="api-run-duration-trend"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Average API Test Run Duration vs Target by Run</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Value</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="speed-api-run-duration-rows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="metric-pair">
+        <div class="panel">
+          <h3>Average Pipeline Duration Trend</h3>
+          <canvas id="ci-pipeline-duration-trend"></canvas>
+        </div>
+        <div class="panel">
+          <h3>Average Pipeline Duration vs Target by Run</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Value</th>
+                <th>Target</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="speed-pipeline-duration-rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Slowest tests UI</h3>
+        <table class="slow-tests-table">
+          <thead>
+            <tr>
+              <th>Run</th>
+              <th>Browser</th>
+              <th class="slow-test-name">Test</th>
+              <th>Duration (s)</th>
+              <th>Target (s)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="slowest-ui-rows"></tbody>
+        </table>
+      </div>
+      <div class="panel">
+        <h3>Slowest tests API</h3>
+        <table class="slow-tests-table">
+          <thead>
+            <tr>
+              <th>Run</th>
+              <th class="slow-test-name">Test</th>
+              <th>Duration (s)</th>
+              <th>Target (s)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="slowest-api-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="group" id="cross-browser-ui">
+      <h2>3️⃣ Cross-Browser UI</h2>
+      <p class="desc">Compare reliability and speed without duplicating the full report for every browser.</p>
+
+      <div class="browser-cards">
+        <article class="card browser-card metric-fail"><div class="browser-card-head"><h3>Chromium</h3><span class="status-badge metric-fail">Failed</span></div><div class="browser-pass">0.00%</div><div class="browser-facts"><span>Failures <strong>0</strong></span><span>Flaky <strong>0.00%</strong></span><span>Avg test <strong>0.00s</strong> ≤ 11.00s</span><span>P95 test <strong>0.00s</strong></span><span>P90 run <strong>0.00s</strong> ≤ 100.00s</span><span>Runs <strong>0</strong></span></div></article>
+<article class="card browser-card metric-fail"><div class="browser-card-head"><h3>Firefox</h3><span class="status-badge metric-fail">Failed</span></div><div class="browser-pass">0.00%</div><div class="browser-facts"><span>Failures <strong>0</strong></span><span>Flaky <strong>0.00%</strong></span><span>Avg test <strong>0.00s</strong> ≤ 13.00s</span><span>P95 test <strong>0.00s</strong></span><span>P90 run <strong>0.00s</strong> ≤ 115.00s</span><span>Runs <strong>0</strong></span></div></article>
+<article class="card browser-card metric-fail"><div class="browser-card-head"><h3>WebKit</h3><span class="status-badge metric-fail">Failed</span></div><div class="browser-pass">0.00%</div><div class="browser-facts"><span>Failures <strong>0</strong></span><span>Flaky <strong>0.00%</strong></span><span>Avg test <strong>0.00s</strong> ≤ 14.00s</span><span>P95 test <strong>0.00s</strong></span><span>P90 run <strong>0.00s</strong> ≤ 120.00s</span><span>Runs <strong>0</strong></span></div></article>
+      </div>
+
+      <div class="panel coverage-banner">
+        <div>
+          <h3>Browser Coverage</h3>
+          <div class="label">UI scenarios executed in Chromium, Firefox and WebKit</div>
+          <div class="label">Chromium: 0 · Firefox: 0 · WebKit: 0</div>
+        </div>
+        <div class="coverage-value">0.00% · 0/0</div>
+      </div>
+
+      <div class="charts-2">
+        <div class="panel">
+          <h3>Pass Rate by Browser</h3>
+          <canvas id="browser-pass-trend"></canvas>
+          <div class="legend browser-legend">
+            <span><i class="dot" style="background:#2f7fc3"></i>Chromium</span>
+            <span><i class="dot" style="background:#a36a28"></i>Firefox</span>
+            <span><i class="dot" style="background:#9b4eb2"></i>WebKit</span>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Average UI Test Duration by Browser</h3>
+          <canvas id="browser-duration-trend"></canvas>
+          <div class="legend browser-legend">
+            <span><i class="dot" style="background:#2f7fc3"></i>Chromium</span>
+            <span><i class="dot" style="background:#a36a28"></i>Firefox</span>
+            <span><i class="dot" style="background:#9b4eb2"></i>WebKit</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Browser-Specific Failures</h3>
+        <table class="slow-tests-table">
+          <thead>
+            <tr>
+              <th>Browser</th>
+              <th class="slow-test-name">Test</th>
+              <th>Failed results</th>
+              <th>Failed runs</th>
+              <th>Latest failure</th>
+            </tr>
+          </thead>
+          <tbody><tr><td colspan="5">No browser-specific failures in this period</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const data = [];
+    const slowestUiTests = [];
+    const slowestApiTests = [];
+    const browserRuns = [];
+    const passRateTarget = 98.00;
+    const failRateTarget = 2.00;
+    const brokenRateTarget = 1.00;
+    const flakyRateTarget = 2.00;
+    const slowUiTargetSec = 12.00;
+    const slowApiTargetSec = 1.50;
+    const uiRunTargetSec = 300.00;
+    const apiRunTargetSec = 75.00;
+    const pipelineTargetSec = 360.00;
+
+    function setupCanvas(canvas, ctx) {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+      canvas.height = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function drawAxis(ctx, w, h, maxY, unit) {
+      const pad = { top: 24, right: 18, bottom: 70, left: 54 };
+      const innerW = w - pad.left - pad.right;
+      const innerH = h - pad.top - pad.bottom;
+      ctx.strokeStyle = '#ddd6ca';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = pad.top + (innerH / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(w - pad.right, y);
+        ctx.stroke();
+        const v = (maxY - (maxY / 4) * i).toFixed(2) + unit;
+        ctx.fillStyle = '#6d7886';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(v, 6, y + 4);
+      }
+      return { pad, innerW, innerH };
+    }
+
+    function enablePointLinks(canvas, points) {
+      canvas.qaReportPoints = points.filter(point => point.d.report_url);
+      canvas.setAttribute(
+        'aria-label',
+        'Trend chart. Click a data point to open its Allure report in a new tab.'
+      );
+      if (canvas.qaPointLinksBound) return;
+
+      const findPoint = event => {
+        const bounds = canvas.getBoundingClientRect();
+        const x = event.clientX - bounds.left;
+        const y = event.clientY - bounds.top;
+        return canvas.qaReportPoints.find(
+          point => Math.hypot(point.x - x, point.y - y) <= 11
+        );
+      };
+      canvas.addEventListener('mousemove', event => {
+        const point = findPoint(event);
+        canvas.style.cursor = point ? 'pointer' : 'default';
+        canvas.title = point
+          ? `Open Allure report for ${point.d.run_label} in a new tab`
+          : '';
+      });
+      canvas.addEventListener('mouseleave', () => {
+        canvas.style.cursor = 'default';
+        canvas.title = '';
+      });
+      canvas.addEventListener('click', event => {
+        const point = findPoint(event);
+        if (point) window.open(point.d.report_url, '_blank', 'noopener,noreferrer');
+      });
+      canvas.qaPointLinksBound = true;
+    }
+
+    function drawLineChart(canvasId, valueKey, maxY, lineColor, pointColor, unit, targetValue = null, targetColor = '#6d7886') {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      setupCanvas(canvas, ctx);
+
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      if (!data.length) {
+        ctx.fillStyle = '#5e6b7a';
+        ctx.font = '16px sans-serif';
+        ctx.fillText('No data', 20, 40);
+        return;
+      }
+
+      const axis = drawAxis(ctx, w, h, Math.max(maxY, 1), unit);
+      const pad = axis.pad;
+      const innerW = axis.innerW;
+      const innerH = axis.innerH;
+      const stepX = data.length === 1 ? 0 : innerW / (data.length - 1);
+
+      if (Number.isFinite(targetValue)) {
+        const clampedTarget = Math.max(0, Math.min(targetValue, Math.max(maxY, 1)));
+        const targetY = pad.top + innerH - (clampedTarget / Math.max(maxY, 1)) * innerH;
+        ctx.save();
+        ctx.setLineDash([6, 5]);
+        ctx.strokeStyle = targetColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(pad.left, targetY);
+        ctx.lineTo(w - pad.right, targetY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = targetColor;
+        ctx.font = '12px sans-serif';
+        ctx.fillText(`Target: ${targetValue.toFixed(2)}${unit}`, pad.left + 6, Math.max(14, targetY - 8));
+        ctx.restore();
+      }
+
+      const points = data.map((d, i) => {
+        const x = pad.left + i * stepX;
+        const y = pad.top + innerH - ((d[valueKey] || 0) / Math.max(maxY, 1)) * innerH;
+        return { x, y, d };
+      });
+
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      points.forEach((p, i) => {
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.stroke();
+
+      points.forEach((p, i) => {
+        ctx.beginPath();
+        ctx.fillStyle = pointColor;
+        ctx.arc(p.x, p.y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+        if (i % Math.max(1, Math.ceil(points.length / 7)) === 0 || i === points.length - 1) {
+          ctx.save();
+          ctx.translate(p.x, h - 54);
+          ctx.rotate(-0.55);
+          ctx.fillStyle = '#5e6b7a';
+          ctx.font = '11px sans-serif';
+          ctx.fillText(p.d.run_label, 0, 0);
+          ctx.restore();
+        }
+      });
+      enablePointLinks(canvas, points);
+    }
+
+    function drawBrowserChart(canvasId, valueKey, unit, minimumMax = 1) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      setupCanvas(canvas, ctx);
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+      if (!browserRuns.length) {
+        ctx.fillStyle = '#5e6b7a';
+        ctx.font = '16px sans-serif';
+        ctx.fillText('No data', 20, 40);
+        return;
+      }
+      const runLabels = [...new Set(browserRuns.map(row => row.run_label))];
+      const maxY = Math.max(
+        minimumMax,
+        ...browserRuns.map(row => Number(row[valueKey]) || 0)
+      );
+      const axis = drawAxis(ctx, w, h, maxY, unit);
+      const stepX = runLabels.length === 1 ? 0 : axis.innerW / (runLabels.length - 1);
+      const colors = { Chromium: '#2f7fc3', Firefox: '#a36a28', WebKit: '#9b4eb2' };
+      const reportPoints = [];
+      Object.entries(colors).forEach(([browser, color]) => {
+        const values = new Map(
+          browserRuns
+            .filter(row => row.browser === browser)
+            .map(row => [row.run_label, row])
+        );
+        const points = runLabels
+          .map((label, index) => values.has(label) ? {
+            x: axis.pad.left + index * stepX,
+            y: axis.pad.top + axis.innerH -
+              ((Number(values.get(label)[valueKey]) || 0) / maxY) * axis.innerH,
+            d: values.get(label)
+          } : null)
+          .filter(Boolean);
+        reportPoints.push(...points);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        points.forEach((point, index) => {
+          if (index === 0) ctx.moveTo(point.x, point.y);
+          else ctx.lineTo(point.x, point.y);
+        });
+        ctx.stroke();
+        points.forEach(point => {
+          ctx.beginPath();
+          ctx.fillStyle = color;
+          ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+      runLabels.forEach((label, index) => {
+        if (index % Math.max(1, Math.ceil(runLabels.length / 7)) === 0 || index === runLabels.length - 1) {
+          ctx.save();
+          ctx.translate(axis.pad.left + index * stepX, h - 54);
+          ctx.rotate(-0.55);
+          ctx.fillStyle = '#5e6b7a';
+          ctx.font = '11px sans-serif';
+          ctx.fillText(label, 0, 0);
+          ctx.restore();
+        }
+      });
+      enablePointLinks(canvas, reportPoints);
+    }
+
+    function drawStabilityChart() {
+      drawLineChart('stability-trend', 'stability_value', 100, '#1f854f', '#159a55', '%');
+    }
+
+    function drawDonutChart(canvasId, valuePercent, color, label) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      setupCanvas(canvas, ctx);
+
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const radius = Math.min(w, h) * 0.30;
+      const pct = Math.max(0, Math.min(100, valuePercent));
+      const angle = (pct / 100) * Math.PI * 2;
+      const green = '#159a55';
+      const red = '#cf3f34';
+      const remainderColor = color === green ? red : green;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.fillStyle = color;
+      ctx.arc(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + angle);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.fillStyle = remainderColor;
+      ctx.arc(cx, cy, radius, -Math.PI / 2 + angle, -Math.PI / 2 + Math.PI * 2);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = '#fffdf8';
+      ctx.arc(cx, cy, radius * 0.58, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#18212f';
+      ctx.font = '700 24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(pct.toFixed(2) + '%', cx, cy + 8);
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#5e6b7a';
+      ctx.fillText(label, cx, cy + 28);
+    }
+
+    function fillTables() {
+      const escapeHtml = value => String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+
+      const renderTargetRows = (valueKey, target, unit, higherIsBetter = false) => data.map(d => {
+        const value = d[valueKey] || 0;
+        const isOk = higherIsBetter ? value >= target : value <= target;
+        const css = isOk ? 'metric-ok' : 'metric-fail';
+        const label = isOk ? 'OK' : 'Failed';
+        const runLabel = escapeHtml(d.run_label);
+        const runCell = d.report_url
+          ? `<a class="run-report-link" href="${escapeHtml(d.report_url)}"
+                target="_blank" rel="noopener noreferrer"
+                title="Open Allure report for ${runLabel} in a new tab">${runLabel}</a>`
+          : runLabel;
+        return `
+          <tr>
+            <td>${runCell}</td>
+            <td>${value.toFixed(2)}${unit}</td>
+            <td>${higherIsBetter ? '>=' : '<='} ${target.toFixed(2)}${unit}</td>
+            <td><span class="status-badge ${css}">${label}</span></td>
+          </tr>
+        `;
+      }).join('');
+
+      const passDistributionBody = document.getElementById('pass-distribution-rows');
+      passDistributionBody.innerHTML = renderTargetRows('pass_percent', passRateTarget, '%', true);
+
+      const failDistributionBody = document.getElementById('fail-distribution-rows');
+      failDistributionBody.innerHTML = renderTargetRows('fail_percent', failRateTarget, '%', false);
+
+      const brokenDistributionBody = document.getElementById('broken-distribution-rows');
+      brokenDistributionBody.innerHTML = renderTargetRows('broken_percent', brokenRateTarget, '%', false);
+      const uiFlakyDistributionBody = document.getElementById('ui-flaky-distribution-rows');
+      uiFlakyDistributionBody.innerHTML = renderTargetRows('ui_flaky_percent', flakyRateTarget, '%', false);
+      const apiFlakyDistributionBody = document.getElementById('api-flaky-distribution-rows');
+      apiFlakyDistributionBody.innerHTML = renderTargetRows('api_flaky_percent', flakyRateTarget, '%', false);
+
+      const speedAvgUiBody = document.getElementById('speed-avg-ui-duration-rows');
+      speedAvgUiBody.innerHTML = renderTargetRows('avg_duration_sec', slowUiTargetSec, 's', false);
+
+      const speedAvgApiBody = document.getElementById('speed-avg-api-duration-rows');
+      speedAvgApiBody.innerHTML = renderTargetRows('avg_api_duration_sec', slowApiTargetSec, 's', false);
+
+      const speedUiRunBody = document.getElementById('speed-ui-run-duration-rows');
+      speedUiRunBody.innerHTML = renderTargetRows('ui_run_duration_sec', uiRunTargetSec, 's', false);
+
+      const speedApiRunBody = document.getElementById('speed-api-run-duration-rows');
+      speedApiRunBody.innerHTML = renderTargetRows('api_run_duration_sec', apiRunTargetSec, 's', false);
+
+      const speedPipelineBody = document.getElementById('speed-pipeline-duration-rows');
+      speedPipelineBody.innerHTML = renderTargetRows('suite_duration_sec', pipelineTargetSec, 's', false);
+
+      const renderSlowestRows = (rows, targetSec, includeBrowser = false) => {
+        if (!rows.length) {
+          return `
+            <tr>
+              <td colspan="${includeBrowser ? 6 : 5}">No data</td>
+            </tr>
+          `;
+        }
+        return rows.map(t => `
+          <tr>
+            <td>${
+              t.report_url
+                ? `<a class="run-report-link" href="${escapeHtml(t.report_url)}"
+                      target="_blank" rel="noopener noreferrer"
+                      title="Open Allure report for ${escapeHtml(t.run_label)} in a new tab">${escapeHtml(t.run_label)}</a>`
+                : escapeHtml(t.run_label)
+            }</td>
+            ${includeBrowser ? `<td>${t.browser || 'Unknown'}</td>` : ''}
+            <td class="slow-test-name">${t.test_name}</td>
+            <td>${t.duration_sec.toFixed(2)}</td>
+            <td>${targetSec.toFixed(2)}</td>
+            <td><span class="status-badge ${t.duration_sec <= targetSec ? 'metric-ok' : 'metric-fail'}">${t.duration_sec <= targetSec ? 'OK' : 'Failed'}</span></td>
+          </tr>
+        `).join('');
+      };
+
+      const slowestUiBody = document.getElementById('slowest-ui-rows');
+      slowestUiBody.innerHTML = renderSlowestRows(slowestUiTests, slowUiTargetSec, true);
+
+      const slowestApiBody = document.getElementById('slowest-api-rows');
+      slowestApiBody.innerHTML = renderSlowestRows(slowestApiTests, slowApiTargetSec, false);
+    }
+
+    function render() {
+      const passRateMax = Math.max(...data.map(d => d.pass_percent), 1);
+      const failRateMax = Math.max(...data.map(d => d.fail_percent), 1);
+      const brokenRateMax = Math.max(...data.map(d => d.broken_percent), 1);
+      const uiFlakyRateMax = Math.max(...data.map(d => d.ui_flaky_percent), 1);
+      const apiFlakyRateMax = Math.max(...data.map(d => d.api_flaky_percent), 1);
+      const avgDurMax = Math.max(...data.map(d => d.avg_duration_sec), 1);
+      const avgApiDurMax = Math.max(...data.map(d => d.avg_api_duration_sec), 1);
+      const uiRunDurMax = Math.max(...data.map(d => d.ui_run_duration_sec), 1);
+      const apiRunDurMax = Math.max(...data.map(d => d.api_run_duration_sec), 1);
+      const suiteDurMax = Math.max(...data.map(d => d.suite_duration_sec), 1);
+
+      drawLineChart('pass-rate-trend', 'pass_percent', passRateMax, '#1b8a4f', '#159a55', '%', 98.00, '#1b8a4f');
+      drawLineChart('fail-rate-trend', 'fail_percent', failRateMax, '#b63a31', '#cf3f34', '%', 2.00, '#b63a31');
+      drawLineChart('broken-rate-trend', 'broken_percent', brokenRateMax, '#8f3245', '#a73b52', '%', 1.00, '#8f3245');
+      drawLineChart('ui-flaky-rate-trend', 'ui_flaky_percent', uiFlakyRateMax, '#1b6f77', '#1f97a3', '%', 2.00, '#1b6f77');
+      drawLineChart('api-flaky-rate-trend', 'api_flaky_percent', apiFlakyRateMax, '#7a5a1a', '#a37b24', '%', 2.00, '#7a5a1a');
+      drawLineChart('avg-duration-trend', 'avg_duration_sec', avgDurMax, '#7a4a18', '#c9762b', 's', 12.00, '#7a4a18');
+      drawLineChart('avg-api-duration-trend', 'avg_api_duration_sec', avgApiDurMax, '#1c5d8f', '#2f7fc3', 's', 1.50, '#1c5d8f');
+      drawLineChart('ui-run-duration-trend', 'ui_run_duration_sec', uiRunDurMax, '#216a4c', '#2c9568', 's', 300.00, '#216a4c');
+      drawLineChart('api-run-duration-trend', 'api_run_duration_sec', apiRunDurMax, '#6f4b1f', '#a36a28', 's', 75.00, '#6f4b1f');
+      drawLineChart('ci-pipeline-duration-trend', 'suite_duration_sec', suiteDurMax, '#7b2f8e', '#9b4eb2', 's', 360.00, '#7b2f8e');
+      drawBrowserChart('browser-pass-trend', 'pass_rate', '%', 100);
+      drawBrowserChart('browser-duration-trend', 'avg_duration_sec', 's', 1);
+    }
+
+    fillTables();
+    render();
+    window.addEventListener('resize', render);
+  </script>
+</body>
+</html>
