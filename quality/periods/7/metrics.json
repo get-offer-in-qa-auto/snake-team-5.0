@@ -83,7 +83,7 @@
       "with_coverage": 59,
       "with_coverage_rate": 100.0
     },
-    "generated_at": "2026-07-31T09:53:18+00:00",
+    "generated_at": "2026-07-31T10:09:34+00:00",
     "latest": {
       "attempt": 1,
       "branch": "69/merge",
@@ -921,7 +921,7 @@
     "published_reports": 16,
     "runs_without_report": 0
   },
-  "generated_at": "2026-07-31T09:53:19+00:00",
+  "generated_at": "2026-07-31T10:09:34+00:00",
   "metric_runs": [
     {
       "api_flaky_rate": 0.0,
@@ -2163,6 +2163,7 @@
   ],
   "slowest_api_tests": [
     {
+      "browser": "API",
       "duration_sec": 30.2,
       "report_url": "reports/regression/30555853101-attempt-1/#testresult/dd1242f9fb6523cc",
       "run_id": 30555853101,
@@ -2171,6 +2172,7 @@
       "test_name": "tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled"
     },
     {
+      "browser": "API",
       "duration_sec": 28.98,
       "report_url": "reports/regression/30356644067-attempt-2/#testresult/22cc82d69627a2aa",
       "run_id": 30356644067,
@@ -2179,6 +2181,7 @@
       "test_name": "tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled"
     },
     {
+      "browser": "API",
       "duration_sec": 28.09,
       "report_url": "reports/regression/30342026504-attempt-1/#testresult/b66088f6dd3f4af4",
       "run_id": 30342026504,
@@ -2187,6 +2190,7 @@
       "test_name": "tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled"
     },
     {
+      "browser": "API",
       "duration_sec": 27.53,
       "report_url": "reports/regression/30361897861-attempt-2/#testresult/5cac28f0225528ca",
       "run_id": 30361897861,
@@ -2197,6 +2201,7 @@
   ],
   "slowest_ui_tests": [
     {
+      "browser": "WebKit",
       "duration_sec": 47.06,
       "report_url": "reports/regression/30557103597-attempt-1/#testresult/73840148350c261e",
       "run_id": 30557103597,
@@ -2205,6 +2210,7 @@
       "test_name": "tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step"
     },
     {
+      "browser": "Chromium",
       "duration_sec": 34.74,
       "report_url": "reports/regression/30557103597-attempt-1/#testresult/99a2432cfea686c4",
       "run_id": 30557103597,
@@ -2213,6 +2219,7 @@
       "test_name": "tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step"
     },
     {
+      "browser": "WebKit",
       "duration_sec": 34.71,
       "report_url": "reports/regression/30557720656-attempt-1/#testresult/42fd49f6df42dd71",
       "run_id": 30557720656,
@@ -2221,6 +2228,7 @@
       "test_name": "tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step"
     },
     {
+      "browser": "WebKit",
       "duration_sec": 34.04,
       "report_url": "reports/regression/30559182881-attempt-1/#testresult/89846aeb73beaf78",
       "run_id": 30559182881,
@@ -2288,7 +2296,7 @@
   },
   "window": {
     "days": 7,
-    "end": "2026-07-31T09:53:19+00:00",
+    "end": "2026-07-31T10:09:34+00:00",
     "start": "2026-07-25T00:00:00+00:00"
   }
 }
