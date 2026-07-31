@@ -901,13 +901,23 @@ def render_dashboard(
         )
         progress = ""
     else:
-        measurement_time = html.escape(metrics["latest_context"]["label"])
+        measurement_time = parse_datetime(latest["generated_at"]).strftime(
+            "%d %b %Y %H:%M UTC"
+        )
+        branch = str(latest["branch"])
+        pull_request_ref = re.fullmatch(r"(?P<number>\d+)/merge", branch)
+        source_ref = (
+            f"Pull request #{pull_request_ref.group('number')} · merge ref"
+            if pull_request_ref is not None
+            else f"Branch: {branch}"
+        )
         header_meta = (
-            f'<span class="badge">Current snapshot</span>'
-            f'<span class="badge">{measurement_time}</span>'
-            f"<span>Run {latest['run_id']}</span>"
-            f"<span>{html.escape(latest['branch'])}</span>"
-            f"<span>{html.escape(latest['sha'][:8])}</span>"
+            f'<span class="badge">Latest coverage measurement</span>'
+            f'<span class="badge">Measured: {html.escape(measurement_time)}</span>'
+            f'<a href="{html.escape(latest["run_url"])}">'
+            f"GitHub Actions run #{latest['run_id']}</a>"
+            f"<span>{html.escape(source_ref)}</span>"
+            f"<span>Commit: {html.escape(latest['sha'][:8])}</span>"
         )
         original_link = (
             f'<a class="button button-primary" '
