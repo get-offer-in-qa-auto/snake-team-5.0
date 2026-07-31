@@ -82,11 +82,14 @@ jobs:
         shell: bash
         run: |
           while IFS= read -r run_id; do
-            duration="$(
+            jobs="$(
               gh api --paginate \
                 "/repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs" \
                 --jq '.jobs[]' |
-                jq --slurp '
+                jq --slurp '.'
+            )"
+            duration="$(
+              jq '
                   [
                     .[]
                     | select(
@@ -102,18 +105,43 @@ jobs:
                         - (map(.started_at | fromdateiso8601) | min)
                       )
                     end
-                '
+                ' <<< "$jobs"
             )"
-            if [ "$duration" = "null" ]; then
-              continue
+            regression_outcome="$(
+              jq -r '
+                [
+                  (.[]
+                  | select(.name == "TeamCity regression")
+                  | .steps[]?
+                  | select(.name == "Verify API and browser jobs")
+                  | .conclusion),
+                  (.[]
+                  | select(.name == "TeamCity regression")
+                  | .steps[]?
+                  | select(.name == "Run remaining TeamCity regression tests")
+                  | .conclusion)
+                ]
+                | first // "missing"
+              ' <<< "$jobs"
+            )"
+            test_suite_complete=false
+            if [ "$regression_outcome" = "success" ] || [ "$regression_outcome" = "failure" ]; then
+              test_suite_complete=true
             fi
+
             updated_file="$(mktemp)"
             jq \
               --argjson run_id "$run_id" \
               --argjson duration "$duration" \
+              --argjson test_suite_complete "$test_suite_complete" \
               'map(
                 if .id == $run_id
-                then . + {test_duration_seconds: $duration}
+                then
+                  . + {test_suite_complete: $test_suite_complete}
+                  | if $duration == null
+                    then .
+                    else . + {test_duration_seconds: $duration}
+                    end
                 else .
                 end
               )' \
@@ -239,14 +267,16 @@ jobs:
             --days "${METRICS_DAYS}" \
             --destination "$quality_snapshot" \
             --coverage-metrics quality/coverage/metrics.json \
-            --coverage-url "../../coverage/"
+            --coverage-url "../../coverage/" \
+            --exclude-incomplete-reports
           python3 scripts/build_quality_dashboard.py \
             --site-dir pages-site \
             --runs-json workflow-runs.json \
             --days "${METRICS_DAYS}" \
             --destination quality \
             --coverage-metrics quality/coverage/metrics.json \
-            --coverage-url "coverage/"
+            --coverage-url "coverage/" \
+            --exclude-incomplete-reports
           python3 scripts/build_quality_dashboard.py \
             --site-dir pages-site \
             --runs-json postgresql-workflow-runs.json \
