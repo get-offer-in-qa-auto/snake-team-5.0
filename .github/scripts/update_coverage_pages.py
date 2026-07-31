@@ -11,6 +11,8 @@ import shutil
 from datetime import UTC, datetime
 from pathlib import Path
 
+from pages_navigation import decorate_published_reports
+
 SAFE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9._-]+$")
 
 
@@ -81,8 +83,13 @@ def main() -> None:
         encoding="utf-8",
     )
     (args.site_dir / ".nojekyll").touch()
+    allure_pages, coverage_pages = decorate_published_reports(args.site_dir)
     append_github_output(report_path)
     print(f"Coverage report path: {report_path}")
+    print(
+        "Return navigation refreshed: "
+        f"{allure_pages} Allure pages, {coverage_pages} coverage pages."
+    )
 
 
 if __name__ == "__main__":

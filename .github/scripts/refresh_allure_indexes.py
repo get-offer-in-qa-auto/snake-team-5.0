@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from pages_navigation import decorate_published_reports
 from update_allure_pages import load_reports, write_indexes
 
 
@@ -18,7 +19,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     write_indexes(args.site_dir, load_reports(args.site_dir))
-    print("Refreshed Allure indexes.")
+    allure_pages, coverage_pages = decorate_published_reports(args.site_dir)
+    print(
+        "Refreshed Allure indexes and return navigation: "
+        f"{allure_pages} Allure pages, {coverage_pages} coverage pages."
+    )
 
 
 if __name__ == "__main__":

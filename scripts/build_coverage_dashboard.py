@@ -656,7 +656,7 @@ def render_period_links(
 SNAPSHOT_CSS = """
 :root {
   color-scheme: light;
-  --background: #f6f8fa;
+  --background: #f4efe7;
   --surface: #ffffff;
   --text: #1f2328;
   --muted: #636c76;
@@ -787,15 +787,6 @@ tr:last-child td { border-bottom: 0; }
   .donut-grid { grid-template-columns: 1fr; }
   .bar-row { grid-template-columns: minmax(100px, 1fr) minmax(120px, 2fr) 62px; }
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --background: #0d1117; --surface: #161b22; --text: #e6edf3;
-    --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
-    --green: #3fb950; --amber: #d29922; --red: #f85149;
-    --purple: #a371f7; --track: #30363d;
-  }
-}
 """
 
 
@@ -910,13 +901,23 @@ def render_dashboard(
         )
         progress = ""
     else:
-        measurement_time = html.escape(metrics["latest_context"]["label"])
+        measurement_time = parse_datetime(latest["generated_at"]).strftime(
+            "%d %b %Y %H:%M UTC"
+        )
+        branch = str(latest["branch"])
+        pull_request_ref = re.fullmatch(r"(?P<number>\d+)/merge", branch)
+        source_ref = (
+            f"Pull request #{pull_request_ref.group('number')} · merge ref"
+            if pull_request_ref is not None
+            else f"Branch: {branch}"
+        )
         header_meta = (
-            f'<span class="badge">Current snapshot</span>'
-            f'<span class="badge">{measurement_time}</span>'
-            f"<span>Run {latest['run_id']}</span>"
-            f"<span>{html.escape(latest['branch'])}</span>"
-            f"<span>{html.escape(latest['sha'][:8])}</span>"
+            f'<span class="badge">Latest coverage measurement</span>'
+            f'<span class="badge">Measured: {html.escape(measurement_time)}</span>'
+            f'<a href="{html.escape(latest["run_url"])}">'
+            f"GitHub Actions run #{latest['run_id']}</a>"
+            f"<span>{html.escape(source_ref)}</span>"
+            f"<span>Commit: {html.escape(latest['sha'][:8])}</span>"
         )
         original_link = (
             f'<a class="button button-primary" '
@@ -1009,8 +1010,7 @@ def render_dashboard(
 
       <div class="snapshot-note">
         <strong>Current state only.</strong>
-        This page uses the latest published coverage measurement and does not
-        average or aggregate coverage over a 7-, 14-, or any other day window.
+        This page uses the latest published coverage measurement.
       </div>
 
       <section class="donut-grid" aria-label="Current coverage summary">{cards}</section>

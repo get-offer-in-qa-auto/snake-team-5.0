@@ -10,15 +10,39 @@ import math
 import os
 import re
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.allure_flaky_stats import RunStats
+    from scripts.reference_metrics_dashboard import (
+        DEFAULT_GATES as REFERENCE_DEFAULT_GATES,
+    )
+    from scripts.reference_metrics_dashboard import (
+        build_html as build_reference_dashboard_html,
+    )
+except ModuleNotFoundError:
+    from allure_flaky_stats import RunStats  # type: ignore[import-not-found, no-redef]
+    from reference_metrics_dashboard import (
+        DEFAULT_GATES as REFERENCE_DEFAULT_GATES,
+    )  # type: ignore[import-not-found, no-redef]
+    from reference_metrics_dashboard import (
+        build_html as build_reference_dashboard_html,
+    )  # type: ignore[import-not-found, no-redef]
+
 REPORT_ID_PATTERN = re.compile(r"^(?P<run_id>\d+)-attempt-(?P<attempt>\d+)$")
 FAILED_STATUSES = {"failed", "broken"}
 COMPLETED_TEST_STATUSES = {"passed", "failed", "broken", "skipped", "unknown"}
 UI_SCOPE_ORDER = ("API", "UI · Chromium", "UI · Firefox", "UI · WebKit")
+BROWSER_NAMES = ("Chromium", "Firefox", "WebKit")
+DEFAULT_BROWSER_TARGETS = {
+    "Chromium": {"avg_duration_sec": 11.0, "run_duration_sec": 100.0},
+    "Firefox": {"avg_duration_sec": 13.0, "run_duration_sec": 115.0},
+    "WebKit": {"avg_duration_sec": 14.0, "run_duration_sec": 120.0},
+}
 QUALITY_TARGET_KEYS = (
     "pass_rate",
     "fail_rate",
@@ -202,6 +226,40 @@ def load_quality_targets(path: Path) -> dict[str, dict[str, Any]]:
     return targets
 
 
+def load_browser_targets(path: Path) -> dict[str, dict[str, float]]:
+    payload = load_json(path)
+    if payload is None:
+        raise ValueError(f"quality targets config is missing or invalid: {path}")
+    raw_targets = payload.get("browser_targets", DEFAULT_BROWSER_TARGETS)
+    if not isinstance(raw_targets, dict):
+        raise ValueError("browser_targets must be an object")
+
+    targets: dict[str, dict[str, float]] = {}
+    for browser in BROWSER_NAMES:
+        raw_target = raw_targets.get(browser, DEFAULT_BROWSER_TARGETS[browser])
+        if not isinstance(raw_target, dict):
+            raise ValueError(f"browser target {browser!r} must be an object")
+        try:
+            avg_duration = float(raw_target["avg_duration_sec"])
+            run_duration = float(raw_target["run_duration_sec"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(
+                f"browser target {browser!r} durations must be numbers"
+            ) from error
+        if (
+            not math.isfinite(avg_duration)
+            or not math.isfinite(run_duration)
+            or avg_duration <= 0
+            or run_duration <= 0
+        ):
+            raise ValueError(f"browser target {browser!r} durations must be positive")
+        targets[browser] = {
+            "avg_duration_sec": avg_duration,
+            "run_duration_sec": run_duration,
+        }
+    return targets
+
+
 def load_published_reports(
     site_dir: Path,
     suite: str,
@@ -306,6 +364,26 @@ def test_identity(test: dict[str, Any]) -> str:
         or test.get("uid")
         or "unknown"
     )
+
+
+def browser_name(test: dict[str, Any]) -> str | None:
+    scope = test_scope(test)
+    if not scope.startswith("UI ·"):
+        return None
+    candidate = scope.split("·", maxsplit=1)[1].strip()
+    return candidate if candidate in BROWSER_NAMES else None
+
+
+def logical_ui_test_identity(test: dict[str, Any]) -> str:
+    identity = str(
+        test.get("fullName") or test.get("name") or test_identity(test)
+    ).strip()
+    return re.sub(
+        r"\[(?:chromium|firefox|webkit)\](?=($|\s))",
+        "",
+        identity,
+        flags=re.IGNORECASE,
+    ).strip()
 
 
 def status_counts(reports: list[PublishedReport]) -> Counter[str]:
@@ -507,6 +585,160 @@ def aggregate_suites(reports: list[PublishedReport]) -> list[dict[str, Any]]:
     return result
 
 
+def aggregate_browser_metrics(
+    reports: list[PublishedReport],
+    *,
+    browser_targets: dict[str, dict[str, float]],
+    quality_targets: dict[str, dict[str, Any]],
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    dict[str, Any],
+    list[dict[str, Any]],
+]:
+    browser_runs: list[dict[str, Any]] = []
+    all_durations: dict[str, list[float]] = defaultdict(list)
+    identities: dict[str, set[str]] = defaultdict(set)
+    failures: dict[tuple[str, str], dict[str, Any]] = {}
+
+    for report in sorted(reports, key=lambda item: item.generated_at):
+        tests_by_browser: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for test in report.tests:
+            browser = browser_name(test)
+            if browser is None:
+                continue
+            tests_by_browser[browser].append(test)
+            identity = logical_ui_test_identity(test)
+            identities[browser].add(identity)
+            status = str(test.get("status") or "unknown").lower()
+            if status in FAILED_STATUSES:
+                key = (browser, identity)
+                aggregate = failures.setdefault(
+                    key,
+                    {
+                        "browser": browser,
+                        "test_name": identity,
+                        "failed_results": 0,
+                        "runs": set(),
+                        "latest_run": "",
+                    },
+                )
+                aggregate["failed_results"] += 1
+                aggregate["runs"].add(report.run_id)
+                aggregate["latest_run"] = report.generated_at.strftime("%Y-%m-%d %H:%M")
+
+        for browser in BROWSER_NAMES:
+            browser_tests = tests_by_browser.get(browser, [])
+            if not browser_tests:
+                continue
+            counts: Counter[str] = Counter(
+                str(test.get("status") or "unknown").lower() for test in browser_tests
+            )
+            durations = [test_duration_ms(test) / 1000 for test in browser_tests]
+            all_durations[browser].extend(durations)
+            total = len(browser_tests)
+            flaky = sum(
+                bool(test.get("flaky")) or test_retry_count(test) > 0
+                for test in browser_tests
+            )
+            browser_runs.append(
+                {
+                    "run_id": report.run_id,
+                    "run_label": report.generated_at.strftime("%d %b %H:%M"),
+                    "generated_at": report.generated_at.isoformat(timespec="seconds"),
+                    "browser": browser,
+                    "total_tests": total,
+                    "passed_tests": counts["passed"],
+                    "failed_tests": counts["failed"],
+                    "broken_tests": counts["broken"],
+                    "pass_rate": ratio_percent(counts["passed"], total),
+                    "fail_rate": ratio_percent(counts["failed"], total),
+                    "broken_rate": ratio_percent(counts["broken"], total),
+                    "flaky_rate": ratio_percent(flaky, total),
+                    "avg_duration_sec": average(durations),
+                    "run_duration_sec": round(sum(durations), 2),
+                    "avg_target_sec": browser_targets[browser]["avg_duration_sec"],
+                    "run_target_sec": browser_targets[browser]["run_duration_sec"],
+                }
+            )
+
+    summary: list[dict[str, Any]] = []
+    pass_target = float(quality_targets["pass_rate"]["value"])
+    flaky_target = float(quality_targets["flaky_rate"]["value"])
+    for browser in BROWSER_NAMES:
+        rows = [row for row in browser_runs if row["browser"] == browser]
+        total = sum(int(row["total_tests"]) for row in rows)
+        passed = sum(int(row["passed_tests"]) for row in rows)
+        failed = sum(
+            int(row["failed_tests"]) + int(row["broken_tests"]) for row in rows
+        )
+        avg_duration = average([float(row["avg_duration_sec"]) for row in rows])
+        flaky_rate = (
+            sum(float(row["flaky_rate"]) * int(row["total_tests"]) for row in rows)
+            / total
+            if total
+            else 0.0
+        )
+        p90_run = round(
+            percentile([float(row["run_duration_sec"]) for row in rows], 0.90),
+            2,
+        )
+        avg_target = browser_targets[browser]["avg_duration_sec"]
+        run_target = browser_targets[browser]["run_duration_sec"]
+        passed_gate = (
+            ratio_percent(passed, total) >= pass_target
+            and flaky_rate <= flaky_target
+            and avg_duration <= avg_target
+            and p90_run <= run_target
+        )
+        summary.append(
+            {
+                "browser": browser,
+                "runs": len(rows),
+                "total_tests": total,
+                "failed_tests": failed,
+                "pass_rate": round(ratio_percent(passed, total), 2),
+                "flaky_rate": round(flaky_rate, 2),
+                "avg_duration_sec": avg_duration,
+                "p95_duration_sec": round(percentile(all_durations[browser], 0.95), 2),
+                "p90_run_duration_sec": p90_run,
+                "avg_target_sec": avg_target,
+                "run_target_sec": run_target,
+                "status": "ok" if passed_gate else "fail",
+                "status_label": "OK" if passed_gate else "Failed",
+            }
+        )
+
+    union = set().union(*(identities[browser] for browser in BROWSER_NAMES))
+    common = (
+        set.intersection(*(identities[browser] for browser in BROWSER_NAMES))
+        if all(identities[browser] for browser in BROWSER_NAMES)
+        else set()
+    )
+    coverage = {
+        "common_tests": len(common),
+        "unique_tests": len(union),
+        "coverage_rate": round(ratio_percent(len(common), len(union)), 2),
+        "by_browser": {browser: len(identities[browser]) for browser in BROWSER_NAMES},
+    }
+    failure_rows = [
+        {
+            **{key: value for key, value in aggregate.items() if key != "runs"},
+            "failed_runs": len(aggregate["runs"]),
+        }
+        for aggregate in failures.values()
+    ]
+    failure_rows.sort(
+        key=lambda item: (
+            int(item["failed_results"]),
+            int(item["failed_runs"]),
+            str(item["latest_run"]),
+        ),
+        reverse=True,
+    )
+    return browser_runs, summary, coverage, failure_rows[:10]
+
+
 def aggregate_tests(reports: list[PublishedReport]) -> list[dict[str, Any]]:
     aggregates: dict[str, dict[str, Any]] = {}
     for report in reports:
@@ -654,7 +886,6 @@ def reference_run_metrics(
 
     for report in sorted(reports, key=lambda item: item.generated_at):
         counts: Counter[str] = Counter()
-        total_duration_ms = 0.0
         api_duration_ms = 0.0
         ui_duration_ms = 0.0
         api_tests = 0
@@ -666,7 +897,6 @@ def reference_run_metrics(
             status = str(test.get("status") or "unknown").lower()
             counts[status] += 1
             duration_ms = test_duration_ms(test)
-            total_duration_ms += duration_ms
             flaky = bool(test.get("flaky"))
             if is_api_test(test):
                 api_tests += 1
@@ -713,10 +943,7 @@ def reference_run_metrics(
             "api_flaky_tests": api_flaky_tests,
             "api_flaky_rate": ratio_percent(api_flaky_tests, api_tests),
             "run_success": total_tests > 0 and passed_tests == total_tests,
-            # The reference averages each run's average over all final test results.
-            "avg_duration_sec": total_duration_ms / total_tests / 1000
-            if total_tests
-            else 0.0,
+            "avg_duration_sec": ui_duration_ms / ui_tests / 1000 if ui_tests else 0.0,
             "avg_api_duration_sec": api_duration_ms / api_tests / 1000
             if api_tests
             else 0.0,
@@ -793,13 +1020,13 @@ def build_quality_gates(
             f"{values['stability_rate']:.2f}%"
         ),
         "avg_duration_sec": average_formula(
-            "average test duration", rows, "avg_duration_sec", "s"
+            "average UI test duration", rows, "avg_duration_sec", "s"
         ),
         "avg_api_duration_sec": average_formula(
             "average API test duration", rows, "avg_api_duration_sec", "s"
         ),
         "ui_run_duration_sec": average_formula(
-            "average UI run duration", rows, "ui_run_duration_sec", "s"
+            "total UI test time", rows, "ui_run_duration_sec", "s"
         ),
         "api_run_duration_sec": average_formula(
             "average API run duration", rows, "api_run_duration_sec", "s"
@@ -820,7 +1047,7 @@ def build_quality_gates(
         "broken_rate": "Unweighted average of the final broken-test rate of every published run.",
         "flaky_rate": "All flaky API and UI results divided by all final test results.",
         "stability_rate": "Published runs where every final test result passed, divided by all published runs.",
-        "avg_duration_sec": "Unweighted average of each run's mean final-test duration.",
+        "avg_duration_sec": "Unweighted average of each run's mean UI-test duration.",
         "avg_api_duration_sec": "Unweighted average of each run's mean API-test duration.",
         "ui_run_duration_sec": "Unweighted average of the summed UI test duration in each run.",
         "api_run_duration_sec": "Unweighted average of the summed API test duration in each run.",
@@ -900,10 +1127,17 @@ def slowest_tests(
                 duration_seconds = round(test_duration_ms(test) / 1000, 2)
                 if duration_seconds <= 0:
                     continue
+                scope = test_scope(test)
+                browser = (
+                    scope.split("·", maxsplit=1)[1].strip()
+                    if scope.startswith("UI ·")
+                    else scope
+                )
                 records.append(
                     {
                         "run_id": report.run_id,
                         "run_label": report.generated_at.strftime("%Y-%m-%d %H:%M"),
+                        "browser": browser,
                         "test_name": str(
                             test.get("fullName")
                             or test.get("name")
@@ -930,8 +1164,11 @@ def build_metrics(
     now: datetime,
     days: int,
     quality_targets: dict[str, dict[str, Any]],
+    browser_targets: dict[str, dict[str, float]] | None = None,
     coverage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if browser_targets is None:
+        browser_targets = DEFAULT_BROWSER_TARGETS
     reference_rows = reference_run_metrics(runs, reports, quality_targets)
     reference_summary, quality_gates = build_quality_gates(
         reference_rows,
@@ -980,6 +1217,17 @@ def build_metrics(
             }
         )
 
+    (
+        browser_runs,
+        browser_summary,
+        browser_coverage,
+        browser_failures,
+    ) = aggregate_browser_metrics(
+        reports,
+        browser_targets=browser_targets,
+        quality_targets=quality_targets,
+    )
+
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "window": {
@@ -1025,6 +1273,11 @@ def build_metrics(
         "metric_runs": reference_rows,
         "slowest_ui_tests": slowest_tests(reports, ui=True),
         "slowest_api_tests": slowest_tests(reports, ui=False),
+        "browser_runs": browser_runs,
+        "browser_summary": browser_summary,
+        "browser_coverage": browser_coverage,
+        "browser_failures": browser_failures,
+        "browser_targets": browser_targets,
         "suites": aggregate_suites(reports),
         "attention": aggregate_tests(reports),
         "recent_runs": recent_runs,
@@ -1049,6 +1302,257 @@ def target_passed(value: float, target: dict[str, Any]) -> bool:
     if target["direction"] == "minimum":
         return value >= threshold
     return value <= threshold
+
+
+def chart_target(metrics: dict[str, Any], field: str) -> dict[str, Any]:
+    target_keys = {
+        "test_pass_rate": "pass_rate",
+        "pipeline_success_rate": "stability_rate",
+        "workflow_duration_seconds": "suite_duration_sec",
+    }
+    if field == "flaky_results":
+        return {"direction": "maximum", "value": 0.0}
+    return metrics["quality_targets"][target_keys[field]]
+
+
+def format_target(
+    target: dict[str, Any],
+    formatter: Callable[[float], str],
+) -> str:
+    operator = "≥" if target["direction"] == "minimum" else "≤"
+    return f"{operator} {formatter(float(target['value']))}"
+
+
+def render_line_chart(
+    metrics: dict[str, Any],
+    *,
+    field: str,
+    title: str,
+    formatter: Callable[[float], str],
+    css_class: str,
+    percentage_scale: bool = False,
+) -> str:
+    points = metrics["run_trends"]
+    target = chart_target(metrics, field)
+    values = [
+        float(point[field]) if point.get(field) is not None else None
+        for point in points
+    ]
+    available = [value for value in values if value is not None]
+    target_text = format_target(target, formatter)
+    if not available:
+        return (
+            '<article class="chart-card">'
+            '<div class="chart-head">'
+            f"<h3>{html.escape(title)}</h3>"
+            f'<span class="target-badge">Target {html.escape(target_text)}</span>'
+            "</div>"
+            '<p class="empty-state">No data in this period.</p>'
+            "</article>"
+        )
+
+    lower = 0.0
+    if percentage_scale:
+        upper = 100.0
+    else:
+        upper = max(max(available), float(target["value"])) * 1.15
+    if math.isclose(lower, upper):
+        upper = 1.0
+
+    width = 720.0
+    height = 250.0
+    left = 54.0
+    right = 18.0
+    top = 24.0
+    bottom = 62.0
+    plot_width = width - left - right
+    plot_height = height - top - bottom
+
+    def point(index: int, value: float) -> tuple[float, float]:
+        x = left
+        if len(values) > 1:
+            x += index * plot_width / (len(values) - 1)
+        y = top + (upper - value) * plot_height / (upper - lower)
+        return x, y
+
+    segments: list[list[str]] = []
+    current: list[str] = []
+    circles: list[str] = []
+    for index, value in enumerate(values):
+        if value is None:
+            if current:
+                segments.append(current)
+                current = []
+            continue
+        x, y = point(index, value)
+        current.append(f"{x:.1f},{y:.1f}")
+        state = "ok" if target_passed(value, target) else "fail"
+        label = (
+            f"Run #{points[index]['run_number']} · {points[index]['label']}: "
+            f"{formatter(value)} · target {target_text}"
+        )
+        circles.append(
+            f'<a href="{html.escape(points[index]["run_url"])}">'
+            f'<circle class="chart-point chart-point-{state}" '
+            f'cx="{x:.1f}" cy="{y:.1f}" r="4">'
+            f"<title>{html.escape(label)}</title></circle></a>"
+        )
+    if current:
+        segments.append(current)
+
+    lines = "".join(
+        f'<polyline class="chart-line {css_class}" points="{" ".join(segment)}"/>'
+        for segment in segments
+        if len(segment) > 1
+    )
+    latest_index = max(index for index, value in enumerate(values) if value is not None)
+    latest_value = values[latest_index]
+    assert latest_value is not None
+    latest_state = "ok" if target_passed(latest_value, target) else "fail"
+    target_y = point(0, float(target["value"]))[1]
+
+    grid_lines: list[str] = []
+    for grid_index in range(5):
+        ratio = grid_index / 4
+        y = top + plot_height * ratio
+        grid_value = upper - (upper - lower) * ratio
+        grid_lines.append(
+            f'<line class="chart-grid" x1="{left}" y1="{y:.1f}" '
+            f'x2="{width - right}" y2="{y:.1f}"/>'
+            f'<text class="chart-axis chart-axis-y" x="{left - 8}" '
+            f'y="{y + 4:.1f}">{html.escape(formatter(grid_value))}</text>'
+        )
+
+    label_count = min(6, len(points))
+    if label_count <= 1:
+        label_indices = {0}
+    else:
+        label_indices = {
+            round(index * (len(points) - 1) / (label_count - 1))
+            for index in range(label_count)
+        }
+    x_labels: list[str] = []
+    for index in sorted(label_indices):
+        x = point(index, lower)[0]
+        x_labels.append(
+            f'<text class="chart-axis chart-axis-x" '
+            f'transform="translate({x:.1f} {height - 30:.1f}) rotate(-22)">'
+            f"{html.escape(str(points[index]['label']))}</text>"
+        )
+
+    return f"""
+    <article class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h3>{html.escape(title)}</h3>
+          <span class="target-badge">Target {html.escape(target_text)}</span>
+        </div>
+        <div class="chart-latest">
+          <strong>{html.escape(formatter(latest_value))}</strong>
+          <span class="target-status target-status-{latest_state}">
+            {"On target" if latest_state == "ok" else "Off target"}
+          </span>
+        </div>
+      </div>
+      <svg class="line-chart" viewBox="0 0 {width:.0f} {height:.0f}" role="img"
+           aria-label="{html.escape(title)} by workflow run over {metrics["window"]["days"]} days">
+        {"".join(grid_lines)}
+        <line class="target-line" x1="{left}" y1="{target_y:.1f}"
+              x2="{width - right}" y2="{target_y:.1f}"/>
+        <text class="target-label" x="{left + 6}" y="{max(13.0, target_y - 7):.1f}">
+          Target {html.escape(target_text)}
+        </text>
+        {lines}
+        {"".join(circles)}
+        {"".join(x_labels)}
+      </svg>
+    </article>
+    """
+
+
+def render_metric_charts(metrics: dict[str, Any]) -> str:
+    return "\n".join(
+        (
+            render_line_chart(
+                metrics,
+                field="test_pass_rate",
+                title="Test pass rate",
+                formatter=lambda value: f"{value:.1f}%",
+                css_class="chart-green",
+                percentage_scale=True,
+            ),
+            render_line_chart(
+                metrics,
+                field="pipeline_success_rate",
+                title="Pipeline result",
+                formatter=lambda value: f"{value:.0f}%",
+                css_class="chart-blue",
+                percentage_scale=True,
+            ),
+            render_line_chart(
+                metrics,
+                field="workflow_duration_seconds",
+                title="Workflow duration",
+                formatter=format_duration,
+                css_class="chart-purple",
+            ),
+            render_line_chart(
+                metrics,
+                field="flaky_results",
+                title="Flaky test results",
+                formatter=lambda value: str(round(value)),
+                css_class="chart-orange",
+            ),
+        )
+    )
+
+
+def render_suite_cards(metrics: dict[str, Any]) -> str:
+    cards: list[str] = []
+    pass_rate_target = metrics["quality_targets"]["pass_rate"]
+    for suite in metrics["suites"]:
+        rate = suite["pass_rate"]
+        width = 0 if rate is None else max(0, min(100, rate))
+        state = (
+            "healthy"
+            if rate is not None and target_passed(rate, pass_rate_target)
+            else "warning"
+        )
+        cards.append(
+            '<article class="suite">'
+            f"<h3>{html.escape(suite['name'])}</h3>"
+            f'<strong class="suite-value">{html.escape(format_percent(rate))}</strong>'
+            f'<div class="progress"><span class="{state}" '
+            f'style="width: {width:.1f}%"></span></div>'
+            "<p>"
+            f"{suite['flaky_tests']} flaky · "
+            f"p95 {html.escape(format_duration(suite['p95_duration_ms'] / 1000))}"
+            "</p>"
+            "</article>"
+        )
+    if cards:
+        return "\n".join(cards)
+    return '<p class="empty-state">No published test results in this window.</p>'
+
+
+def render_attention_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
+    rows: list[str] = []
+    for test in metrics["attention"]:
+        rows.append(
+            "<tr>"
+            f'<td><a href="{html.escape(root_prefix + test["report_link"])}">'
+            f"{html.escape(test['name'])}</a></td>"
+            f'<td><span class="badge">{html.escape(test["signal"])}</span></td>'
+            f'<td class="number">{test["failed_runs"]} / {test["runs"]}</td>'
+            f'<td class="number">{test["retries"]}</td>'
+            f"<td>{html.escape(test['scope'])}</td>"
+            f'<td class="number">'
+            f"{html.escape(format_duration(test['p95_duration_ms'] / 1000))}</td>"
+            "</tr>"
+        )
+    if rows:
+        return "\n".join(rows)
+    return '<tr><td colspan="6" class="empty-state">No test data available.</td></tr>'
 
 
 def render_run_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
@@ -1183,6 +1687,195 @@ tr:last-child td { border-bottom: 0; }
     --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
     --ok: #3fb950; --ok-soft: #12261a;
     --fail: #f85149; --fail-soft: #32191c; --neutral-soft: #21262d;
+  }
+}
+"""
+
+
+GRAPH_DASHBOARD_CSS = """
+:root {
+  color-scheme: light;
+  --background: #f6f8fa;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --muted: #636c76;
+  --border: #d0d7de;
+  --primary: #0969da;
+  --healthy: #1a7f37;
+  --healthy-soft: #dafbe1;
+  --warning: #bf8700;
+  --warning-soft: #fff8c5;
+  --danger: #cf222e;
+  --danger-soft: #ffebe9;
+  --track: #eaeef2;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.page { width: min(1180px, 100%); margin: 0 auto; padding: 28px 20px 48px; }
+.topbar {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap; margin-bottom: 20px;
+}
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 0; }
+h3 { font-size: 15px; margin: 0; }
+p { margin: 0; }
+.muted, .section-note, .suite p { color: var(--muted); }
+.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.period {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+}
+.period-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--healthy); }
+.period-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.period-link {
+  display: inline-block; padding: 5px 9px; border: 1px solid var(--border);
+  border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.period-link.active {
+  border-color: var(--primary); color: var(--primary); font-weight: 600;
+}
+.stats {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
+}
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px;
+}
+.stat-label { color: var(--muted); }
+.stat-value {
+  display: block; font-size: 30px; line-height: 1.2; margin: 4px 0;
+}
+.stat-context {
+  display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.badge {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  background: var(--track); color: var(--text); white-space: nowrap;
+}
+.section { margin-top: 22px; }
+.section-head {
+  display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+  flex-wrap: wrap; margin-bottom: 10px;
+}
+.chart-grid-layout {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.chart-card {
+  min-width: 0; padding: 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+}
+.chart-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 8px;
+}
+.chart-head strong { font-size: 18px; }
+.chart-head > div:first-child { display: grid; gap: 3px; }
+.target-badge { color: var(--muted); font-size: 12px; }
+.chart-latest {
+  display: flex; align-items: flex-end; flex-direction: column; gap: 3px;
+  text-align: right;
+}
+.target-status {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.target-status-ok { color: var(--healthy); background: var(--healthy-soft); }
+.target-status-fail { color: var(--danger); background: var(--danger-soft); }
+.line-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-axis { fill: var(--muted); font-size: 11px; }
+.chart-axis-y, .chart-axis-x { text-anchor: end; }
+.target-line {
+  stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 5;
+}
+.target-label { fill: var(--muted); font-size: 11px; font-weight: 600; }
+.chart-line {
+  fill: none; stroke: currentColor; stroke-width: 3;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.chart-point { fill: var(--surface); stroke-width: 2.5; }
+.chart-point-ok { stroke: var(--healthy); }
+.chart-point-fail { stroke: var(--danger); }
+.chart-green { color: var(--healthy); }
+.chart-blue { color: var(--primary); }
+.chart-purple { color: #8250df; }
+.chart-orange { color: #bc4c00; }
+.healthy { background: var(--healthy); }
+.warning { background: var(--warning); }
+.danger { background: var(--danger); }
+.empty { background: var(--track); }
+.trend-label { font-weight: 600; white-space: nowrap; }
+.trend-detail { font-size: 12px; white-space: nowrap; }
+.suites {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0;
+}
+.suite { padding: 4px 16px 6px 0; }
+.suite + .suite {
+  border-left: 1px solid var(--border); padding-left: 16px;
+}
+.suite-value { display: block; font-size: 22px; margin: 3px 0; }
+.progress {
+  height: 7px; border-radius: 999px; overflow: hidden;
+  background: var(--track); margin: 7px 0;
+}
+.progress span { display: block; height: 100%; border-radius: inherit; }
+.table-wrap {
+  overflow-x: auto; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+}
+table { width: 100%; border-collapse: collapse; }
+th, td {
+  padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border);
+}
+th { color: var(--muted); font-size: 13px; font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+.number {
+  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.status {
+  display: inline-block; padding: 2px 7px; border-radius: 999px; font-weight: 600;
+}
+.status-success { color: var(--healthy); background: var(--healthy-soft); }
+.status-failure, .status-timed_out, .status-action_required {
+  color: var(--danger); background: var(--danger-soft);
+}
+.status-cancelled, .status-skipped, .status-neutral, .status-unknown {
+  color: var(--warning); background: var(--warning-soft);
+}
+.empty-state { color: var(--muted); padding: 14px; }
+.footer {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  color: var(--muted); margin-top: 24px; font-size: 13px;
+}
+@media (max-width: 760px) {
+  .stats { grid-template-columns: 1fr; }
+  .suites { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .suite + .suite { border-left: 0; padding-left: 0; }
+  .chart-grid-layout { grid-template-columns: 1fr; }
+}
+@media (min-width: 761px) and (max-width: 980px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .page { padding: 20px 12px 36px; }
+  .suites { grid-template-columns: 1fr; }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: #0d1117; --surface: #161b22; --text: #e6edf3;
+    --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
+    --healthy: #3fb950; --healthy-soft: #12261a;
+    --warning: #d29922; --warning-soft: #2d250d;
+    --danger: #f85149; --danger-soft: #32191c; --track: #30363d;
   }
 }
 """
@@ -1346,7 +2039,7 @@ def render_period_links(
     )
 
 
-def render_dashboard(
+def render_linear_dashboard(
     metrics: dict[str, Any],
     *,
     root_prefix: str,
@@ -1603,6 +2296,119 @@ def render_dashboard(
 """
 
 
+def render_dashboard(
+    metrics: dict[str, Any],
+    *,
+    root_prefix: str,
+    coverage_url: str,
+    periods: list[tuple[int, str]],
+) -> str:
+    del periods
+    reference_rows: list[RunStats] = []
+    for run in metrics["metric_runs"]:
+        generated_at = parse_datetime(str(run["generated_at"]))
+        total_tests = int(run["total_tests"])
+        api_tests = int(run["api_tests"])
+        ui_tests = int(run["ui_tests"])
+        reference_rows.append(
+            RunStats(
+                run_name=(
+                    f"{generated_at.strftime('%Y%m%d_%H%M%S')}_"
+                    f"{run['run_id']}_allure-results.zip"
+                ),
+                total_tests=total_tests,
+                api_tests=api_tests,
+                ui_tests=ui_tests,
+                flaky_tests=int(run["flaky_tests"]),
+                api_flaky_tests=int(run["api_flaky_tests"]),
+                ui_flaky_tests=int(run["ui_flaky_tests"]),
+                passed_tests=int(run["passed_tests"]),
+                failed_tests=int(run["failed_tests"]),
+                broken_tests=int(run["broken_tests"]),
+                total_duration_ms=round(
+                    float(run["avg_duration_sec"]) * total_tests * 1000
+                ),
+                api_duration_ms=round(float(run["api_run_duration_sec"]) * 1000),
+                ui_duration_ms=round(float(run["ui_run_duration_sec"]) * 1000),
+                suite_duration_ms=round(float(run["suite_duration_sec"]) * 1000),
+            )
+        )
+
+    def reference_slowest(key: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "run_label": str(test["run_label"]),
+                "browser": str(test.get("browser") or ""),
+                "test_name": str(test["test_name"]),
+                "duration_sec": float(test["duration_sec"]),
+                "status": str(test["status"]),
+            }
+            for test in metrics[key]
+        ]
+
+    gates_config = {
+        key: {
+            **REFERENCE_DEFAULT_GATES[key],
+            "name": str(target.get("name") or REFERENCE_DEFAULT_GATES[key]["name"]),
+            "good_threshold": float(target["value"]),
+            "warn_threshold": float(target["value"]),
+            "higher_is_better": target["direction"] == "minimum",
+            "recommendation": str(
+                target.get("recommendation")
+                or REFERENCE_DEFAULT_GATES[key]["recommendation"]
+            ),
+        }
+        for key, target in metrics["quality_targets"].items()
+    }
+    page = build_reference_dashboard_html(
+        "TeamCity QA Metrics Dashboard",
+        reference_rows,
+        reference_slowest("slowest_ui_tests"),
+        reference_slowest("slowest_api_tests"),
+        gates_config,
+        browser_runs=metrics.get("browser_runs", []),
+        browser_summary=metrics.get("browser_summary", []),
+        browser_coverage=metrics.get("browser_coverage", {}),
+        browser_failures=metrics.get("browser_failures", []),
+    )
+    navigation_css = """
+    .qa-report-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .qa-report-links a {
+      display: inline-block;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ink);
+      background: #fffefb;
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+    .qa-report-links a:hover { border-color: #8a8174; background: #fff; }
+    """
+    navigation = (
+        '<nav class="qa-report-links" aria-label="QA report navigation">'
+        f'<a href="{html.escape(coverage_url)}">Code Coverage</a>'
+        f'<a href="{html.escape(root_prefix + "reports/")}">Allure Reports</a>'
+        "</nav>"
+    )
+    page = page.replace("</style>", f"{navigation_css}</style>", 1)
+    return page.replace(
+        '<p class="subtitle">Quality metrics across GitHub runs (Allure artifacts)</p>',
+        (
+            '<p class="subtitle">Quality metrics across GitHub runs '
+            "(Allure artifacts)</p>"
+            f"{navigation}"
+        ),
+        1,
+    )
+
+
 def markdown_cell(value: Any) -> str:
     return str(value).replace("|", "\\|").replace("\n", " ")
 
@@ -1675,6 +2481,49 @@ def render_markdown_report(metrics: dict[str, Any]) -> str:
             )
             + " |"
         )
+
+    lines.extend(
+        (
+            "",
+            "## Cross-browser UI",
+            "",
+            "| Browser | Pass rate | Failures | Flaky | Avg test | Avg target | P95 test | P90 run | Run target | Status |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|---:|---|",
+        )
+    )
+    for browser in metrics.get("browser_summary", []):
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    markdown_cell(browser["browser"]),
+                    f"{float(browser['pass_rate']):.2f}%",
+                    str(browser["failed_tests"]),
+                    f"{float(browser['flaky_rate']):.2f}%",
+                    f"{float(browser['avg_duration_sec']):.2f}s",
+                    f"<= {float(browser['avg_target_sec']):.2f}s",
+                    f"{float(browser['p95_duration_sec']):.2f}s",
+                    f"{float(browser['p90_run_duration_sec']):.2f}s",
+                    f"<= {float(browser['run_target_sec']):.2f}s",
+                    markdown_cell(browser["status_label"]),
+                )
+            )
+            + " |"
+        )
+
+    browser_coverage = metrics.get("browser_coverage", {})
+    lines.extend(
+        (
+            "",
+            (
+                "Browser coverage: "
+                f"**{float(browser_coverage.get('coverage_rate', 0.0)):.2f}%** "
+                f"({int(browser_coverage.get('common_tests', 0))}/"
+                f"{int(browser_coverage.get('unique_tests', 0))} UI scenarios "
+                "executed in all three browsers)."
+            ),
+        )
+    )
 
     for title, key, target_key in (
         ("Slowest UI tests", "slowest_ui_tests", "avg_duration_sec"),
@@ -1814,12 +2663,14 @@ def main() -> None:
     coverage_path, _ = resolve_site_path(args.site_dir, args.coverage_metrics)
     coverage = load_json(coverage_path)
     quality_targets = load_quality_targets(args.targets_config)
+    browser_targets = load_browser_targets(args.targets_config)
     metrics = build_metrics(
         runs,
         reports,
         now=now,
         days=args.days,
         quality_targets=quality_targets,
+        browser_targets=browser_targets,
         coverage=coverage,
     )
 
