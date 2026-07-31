@@ -64,6 +64,11 @@ class CoverageDashboardTemplateTest(unittest.TestCase):
         self.assertIn('class="topbar"', page)
         self.assertIn('class="donut-grid"', page)
         self.assertIn("Coverage by File", page)
+        self.assertIn(
+            "This page uses the latest published coverage measurement.",
+            page,
+        )
+        self.assertNotIn("does not average or aggregate coverage", page)
         self.assertIn("--background: #f4efe7", page)
         self.assertNotIn("@media (prefers-color-scheme: dark)", page)
         self.assertNotIn('class="group"', page)

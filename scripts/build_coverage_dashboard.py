@@ -1000,8 +1000,7 @@ def render_dashboard(
 
       <div class="snapshot-note">
         <strong>Current state only.</strong>
-        This page uses the latest published coverage measurement and does not
-        average or aggregate coverage over a 7-, 14-, or any other day window.
+        This page uses the latest published coverage measurement.
       </div>
 
       <section class="donut-grid" aria-label="Current coverage summary">{cards}</section>
