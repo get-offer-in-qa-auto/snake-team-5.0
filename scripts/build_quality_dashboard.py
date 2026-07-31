@@ -2490,8 +2490,7 @@ def render_dashboard(
         "</nav>"
     )
     context = ""
-    if dashboard_kind == "postgresql":
-        data_quality = metrics["data_quality"]
+    if dashboard_kind in {"regression", "postgresql"}:
         complete_runs = [
             run
             for run in metrics.get("recent_runs", [])
@@ -2546,19 +2545,33 @@ def render_dashboard(
             )
         incomplete_panel = ""
         if incomplete_rows:
+            incomplete_label = (
+                "nightly" if dashboard_kind == "postgresql" else "regression"
+            )
             incomplete_panel = (
                 '<details class="qa-incomplete-runs">'
-                f"<summary>Excluded incomplete nightly runs ({len(incomplete_rows)})</summary>"
+                f"<summary>Excluded incomplete {incomplete_label} runs "
+                f"({len(incomplete_rows)})</summary>"
                 "<table><thead><tr><th>Run</th><th>Number</th>"
                 "<th>Test data</th><th>Workflow</th></tr></thead>"
                 f"<tbody>{''.join(incomplete_rows)}</tbody></table></details>"
             )
+        context_title = (
+            "PostgreSQL nightly execution status"
+            if dashboard_kind == "postgresql"
+            else "PR regression execution status"
+        )
+        context_label = (
+            "PostgreSQL nightly status"
+            if dashboard_kind == "postgresql"
+            else "PR regression status"
+        )
         context = (
-            '<section class="qa-run-context" aria-label="PostgreSQL nightly status">'
-            "<h2>PostgreSQL nightly execution status</h2>"
+            f'<section class="qa-run-context" aria-label="{context_label}">'
+            f"<h2>{context_title}</h2>"
             '<div class="qa-context-cards">'
             '<div class="qa-context-card"><div class="label">Complete runs used</div>'
-            f'<div class="value">{int(data_quality["metric_reports"])}</div></div>'
+            f'<div class="value">{len(complete_runs)}</div></div>'
             '<div class="qa-context-card"><div class="label">Complete-run stability</div>'
             f'<div class="value">{success_rate_text}</div></div>'
             '<div class="qa-context-card"><div class="label">Successful complete runs</div>'
@@ -2578,12 +2591,11 @@ def render_dashboard(
         ),
         1,
     )
-    if dashboard_kind == "postgresql":
-        page = page.replace(
-            '<div class="label">Total Runs</div>',
-            '<div class="label">Complete Runs Used</div>',
-            1,
-        )
+    page = page.replace(
+        '<div class="label">Total Runs</div>',
+        '<div class="label">Complete Runs Used</div>',
+        1,
+    )
     return page
 
 

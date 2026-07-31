@@ -74,6 +74,7 @@ class QualityDashboardTemplateTest(unittest.TestCase):
             },
             "data_quality": {
                 "published_reports": 1,
+                "metric_reports": 1,
                 "runs_without_report": 0,
             },
             "quality_targets": {
@@ -223,7 +224,21 @@ class QualityDashboardTemplateTest(unittest.TestCase):
             ],
             "suites": [],
             "attention": [],
-            "recent_runs": [],
+            "recent_runs": [
+                {
+                    "id": 1,
+                    "number": 1,
+                    "attempt": 1,
+                    "conclusion": "success",
+                    "event": "pull_request",
+                    "branch": "main",
+                    "created_at": "2026-07-31T09:00:00+00:00",
+                    "duration_seconds": 200.0,
+                    "run_url": "https://example.test/actions/runs/1",
+                    "report_url": "reports/regression/1-attempt-1/",
+                    "test_suite_complete": True,
+                }
+            ],
             "coverage": {
                 "latest": {
                     "line_rate": 90.0,
@@ -260,6 +275,12 @@ class QualityDashboardTemplateTest(unittest.TestCase):
         self.assertIn('href="coverage/"', page)
         self.assertIn('href="../reports/"', page)
         self.assertIn('href="../quality/">PR Regression</a>', page)
+        self.assertIn("PR regression execution status", page)
+        self.assertIn("Complete Runs Used", page)
+        self.assertIn('Complete runs used</div><div class="value">1', page)
+        self.assertIn('Complete-run stability</div><div class="value">100.00%', page)
+        self.assertIn('Successful complete runs</div><div class="value">1', page)
+        self.assertIn('Latest complete workflow</div><div class="value">Success', page)
         self.assertIn(
             'href="../quality/postgresql/">PostgreSQL Nightly</a>',
             page,
@@ -340,6 +361,22 @@ class QualityDashboardTemplateTest(unittest.TestCase):
                 "test_suite_complete": True,
             },
         ]
+        regression_page = render_dashboard(
+            metrics,
+            root_prefix="../",
+            coverage_url="coverage/",
+            periods=[],
+        )
+        self.assertIn("PR regression execution status", regression_page)
+        self.assertIn("Complete Runs Used", regression_page)
+        self.assertIn('Complete runs used</div><div class="value">1', regression_page)
+        self.assertIn(
+            'Complete-run stability</div><div class="value">100.00%',
+            regression_page,
+        )
+        self.assertIn("Excluded incomplete regression runs (1)", regression_page)
+        self.assertNotIn("Excluded incomplete nightly runs", regression_page)
+
         postgresql_page = render_dashboard(
             metrics,
             root_prefix="../../",
