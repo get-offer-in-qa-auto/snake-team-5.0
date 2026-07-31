@@ -147,29 +147,124 @@ tr:last-child td { border-bottom: 0; }
     --purple: #a371f7; --track: #30363d;
   }
 }
+
+/* Shared visual language with the QA Metrics dashboard. */
+:root {
+  color-scheme: light;
+  --background: #f4efe7;
+  --surface: #fffdf8;
+  --text: #18212f;
+  --muted: #5e6b7a;
+  --border: #d8d2c7;
+  --primary: #2f7fc3;
+  --green: #159a55;
+  --amber: #a36a28;
+  --red: #cf3f34;
+  --purple: #9b4eb2;
+  --track: #eee9df;
+  --card: #ffffffcc;
+}
+body {
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(1200px 400px at 0% 0%, #f0e3cf 10%, transparent 70%),
+    radial-gradient(900px 500px at 100% 100%, #dceeea 10%, transparent 65%),
+    var(--background);
+}
+a { color: var(--text); }
+a:hover { text-decoration: none; }
+.page { width: min(1220px, 100%); padding: 28px 20px 48px; }
+.title {
+  margin: 0; font-size: clamp(26px, 4vw, 42px);
+  line-height: 1.1; letter-spacing: 0.01em;
+}
+.subtitle { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+.qa-report-links {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
+}
+.qa-report-links .button {
+  padding: 7px 11px; border: 1px solid var(--border);
+  border-radius: 999px; color: var(--text); background: #fffefb;
+  font-size: 13px; font-weight: 650;
+}
+.qa-report-links .button:hover { border-color: #8a8174; background: #fff; }
+.report-meta {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 18px; padding: 14px 16px;
+  border: 1px solid var(--border); border-radius: 16px;
+  background: var(--card); box-shadow: 0 10px 28px rgba(24, 33, 47, 0.07);
+}
+.badge {
+  padding: 3px 10px; border: 1px solid var(--border);
+  background: #f9f6f0; font-size: 12px; font-weight: 700;
+}
+.group {
+  margin-top: 18px; padding: 14px;
+  border: 1px solid var(--border); border-radius: 18px;
+  background: #fffefb; box-shadow: 0 10px 22px rgba(24, 33, 47, 0.05);
+}
+.group > h2 { margin: 0; font-size: 24px; }
+.group > .desc { margin: 6px 0 0; color: #465463; font-size: 14px; }
+.snapshot-note, .donut-card, .progress-card, .chart-panel, .table-wrap {
+  background: var(--surface); border: 1px solid var(--border);
+  box-shadow: 0 14px 30px rgba(24, 33, 47, 0.08);
+}
+.snapshot-note {
+  margin-top: 16px; padding: 14px 16px; border-left: 1px solid var(--border);
+  border-radius: 16px; color: #465463;
+}
+.donut-grid { gap: 14px; margin-top: 16px; }
+.donut-card {
+  padding: 14px 16px; border-left: 1px solid var(--border);
+  border-radius: 16px;
+}
+.donut-card h2 { color: var(--muted); font-size: 13px; }
+.donut { width: 106px; height: 106px; }
+.donut::after { background: var(--surface); }
+.formula {
+  min-height: 74px; padding: 9px 10px; border-radius: 10px;
+  background: #f9f6f0; color: var(--muted);
+}
+.progress-grid { gap: 14px; margin-top: 14px; }
+.progress-card {
+  padding: 14px 16px; border-left: 1px solid var(--border);
+  border-radius: 16px;
+}
+.section { margin-top: 16px; }
+.chart-grid { gap: 16px; }
+.chart-panel { padding: 16px; border-radius: 18px; }
+.chart-panel h2 { font-size: 18px; }
+.table-wrap { border-radius: 18px; }
+table { background: #fff; border-radius: 12px; overflow: hidden; font-size: 14px; }
+th, td { padding: 9px 10px; border-bottom: 1px solid #eee9df; }
+th { color: #3f4a57; background: #f9f6f0; font-weight: 600; }
+tr:hover td { background: #fffbf4; }
+.coverage-cell {
+  background: linear-gradient(var(--track), var(--track)) center/100% 7px no-repeat;
+}
 </style>
   </head>
   <body>
     <main class="page">
-      <header class="topbar">
-        <div>
-          <span class="muted">QA metrics / Code coverage</span>
-          <h1>⚙ API Coverage Analysis</h1>
-          <div class="meta"><span class="badge">Current snapshot</span><span class="badge">Last available 30 Jul 2026 16:02 UTC</span><span>Run 30559182881</span><span>69/merge</span><span>8a5b543f</span></div>
-        </div>
-        <div class="actions">
+      <header>
+        <h1 class="title">API Framework Code Coverage</h1>
+        <p class="subtitle">Current coverage.py snapshot for the API test framework</p>
+        <nav class="qa-report-links" aria-label="QA report navigation">
           <a class="button" href="../">Open QA metrics</a>
           <a class="button button-primary" href="../../coverage/30559182881-attempt-1/html/">Open original coverage.py page</a>
-        </div>
+        </nav>
+        <div class="report-meta"><span class="badge">Current snapshot</span><span class="badge">Last available 30 Jul 2026 16:02 UTC</span><span>Run 30559182881</span><span>69/merge</span><span>8a5b543f</span></div>
       </header>
 
-      <div class="snapshot-note">
-        <strong>Current state only.</strong>
-        This page uses the latest published coverage measurement and does not
-        average or aggregate coverage over a 7-, 14-, or any other day window.
-      </div>
-
-      <section class="donut-grid" aria-label="Current coverage summary">
+      <section class="group">
+        <h2>1️⃣ Coverage Summary</h2>
+        <p class="desc">Current line, branch and file coverage from the latest published run.</p>
+        <div class="snapshot-note">
+          <strong>Current state only.</strong>
+          This page uses the latest published coverage measurement and does not
+          average or aggregate coverage over a 7-, 14-, or any other day window.
+        </div>
+        <div class="donut-grid" aria-label="Current coverage summary">
     <article class="donut-card">
       <h2>Line Coverage</h2>
       <div class="donut tone-blue" style="--value:89.62">
@@ -224,8 +319,8 @@ tr:last-child td { border-bottom: 0; }
         <br><strong>Source:</strong> current measured files
       </div>
     </article>
-    </section>
-      <section class="progress-grid" aria-label="Current coverage progress">
+    </div>
+        <div class="progress-grid" aria-label="Current coverage progress">
     <article class="progress-card ">
       <div class="progress-head">
         <strong>Statements Coverage</strong>
@@ -243,13 +338,17 @@ tr:last-child td { border-bottom: 0; }
       <div class="progress-track"><span style="width:100.00%"></span></div>
       <span>Covered: 59 · Total: 59</span>
     </article>
-    </section>
+    </div>
+      </section>
 
-      <section class="section">
-        <div class="chart-grid">
-          <article class="chart-panel">
-            <h2>Lowest Line Coverage by File</h2>
-            <div class="bar-list"><div class="bar-row"><code class="bar-label" title="src/main/api/fixtures/object_fixtures.py">object_fixtures.py</code><div class="bar-track"><span style="width:40.38%"></span></div><span class="bar-value">40.4%</span></div>
+      <section class="group">
+        <h2>2️⃣ Coverage Details</h2>
+        <p class="desc">Files with the lowest line coverage and the current coverage inventory.</p>
+        <div class="section">
+          <div class="chart-grid">
+            <article class="chart-panel">
+              <h2>Lowest Line Coverage by File</h2>
+              <div class="bar-list"><div class="bar-row"><code class="bar-label" title="src/main/api/fixtures/object_fixtures.py">object_fixtures.py</code><div class="bar-track"><span style="width:40.38%"></span></div><span class="bar-value">40.4%</span></div>
 <div class="bar-row"><code class="bar-label" title="src/main/api/fixtures/user_fixtures.py">user_fixtures.py</code><div class="bar-track"><span style="width:61.54%"></span></div><span class="bar-value">61.5%</span></div>
 <div class="bar-row"><code class="bar-label" title="src/main/api/classes/session_storage.py">session_storage.py</code><div class="bar-track"><span style="width:62.50%"></span></div><span class="bar-value">62.5%</span></div>
 <div class="bar-row"><code class="bar-label" title="src/main/api/database/executor.py">executor.py</code><div class="bar-track"><span style="width:71.43%"></span></div><span class="bar-value">71.4%</span></div>
@@ -259,35 +358,34 @@ tr:last-child td { border-bottom: 0; }
 <div class="bar-row"><code class="bar-label" title="src/main/api/database/client.py">client.py</code><div class="bar-track"><span style="width:82.69%"></span></div><span class="bar-value">82.7%</span></div>
 <div class="bar-row"><code class="bar-label" title="src/main/api/generators/random_model_generator.py">random_model_generator.py</code><div class="bar-track"><span style="width:83.67%"></span></div><span class="bar-value">83.7%</span></div>
 <div class="bar-row"><code class="bar-label" title="src/main/api/configuration/client.py">client.py</code><div class="bar-track"><span style="width:86.05%"></span></div><span class="bar-value">86.0%</span></div></div>
-          </article>
-          <article class="chart-panel">
-            <h2>Current Coverage Inventory</h2>
-            <div class="bar-list"><div class="bar-row inventory"><span class="bar-label">Covered lines</span><div class="bar-track"><span style="width:100.00%"></span></div><span class="bar-value">1,598</span></div>
+            </article>
+            <article class="chart-panel">
+              <h2>Current Coverage Inventory</h2>
+              <div class="bar-list"><div class="bar-row inventory"><span class="bar-label">Covered lines</span><div class="bar-track"><span style="width:100.00%"></span></div><span class="bar-value">1,598</span></div>
 <div class="bar-row inventory"><span class="bar-label">Missing lines</span><div class="bar-track"><span style="width:11.58%"></span></div><span class="bar-value">185</span></div>
 <div class="bar-row inventory"><span class="bar-label">Covered branches</span><div class="bar-track"><span style="width:7.95%"></span></div><span class="bar-value">127</span></div>
 <div class="bar-row inventory"><span class="bar-label">Missing branches</span><div class="bar-track"><span style="width:6.32%"></span></div><span class="bar-value">101</span></div></div>
-          </article>
+            </article>
+          </div>
         </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head">
-          <h2>Coverage by File</h2>
-          <span class="section-note">Current measurement · lowest line coverage first</span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>File</th>
-                <th class="number">Lines</th>
-                <th class="number">Branches</th>
-                <th class="number">Covered lines</th>
-                <th>Missing lines</th>
-                <th>Coverage</th>
-              </tr>
-            </thead>
-            <tbody><tr><td><code>src/main/api/fixtures/object_fixtures.py</code></td><td class="number">40.4%</td><td class="number">11.1%</td><td class="number">21 / 52</td><td>12–14, 16–19, 21, 23–25, 37–39, 41–43, …</td><td class="coverage-cell"><span style="width:40.4%"></span></td></tr>
+        <div class="section">
+          <div class="section-head">
+            <h2>Coverage by File</h2>
+            <span class="section-note">Current measurement · lowest line coverage first</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th class="number">Lines</th>
+                  <th class="number">Branches</th>
+                  <th class="number">Covered lines</th>
+                  <th>Missing lines</th>
+                  <th>Coverage</th>
+                </tr>
+              </thead>
+              <tbody><tr><td><code>src/main/api/fixtures/object_fixtures.py</code></td><td class="number">40.4%</td><td class="number">11.1%</td><td class="number">21 / 52</td><td>12–14, 16–19, 21, 23–25, 37–39, 41–43, …</td><td class="coverage-cell"><span style="width:40.4%"></span></td></tr>
 <tr><td><code>src/main/api/fixtures/user_fixtures.py</code></td><td class="number">61.5%</td><td class="number">0.0%</td><td class="number">24 / 39</td><td>36–37, 45–46, 51–55, 57, 62, 67, …</td><td class="coverage-cell"><span style="width:61.5%"></span></td></tr>
 <tr><td><code>src/main/api/classes/session_storage.py</code></td><td class="number">62.5%</td><td class="number">0.0%</td><td class="number">10 / 16</td><td>11–12, 16–17, 20, 24</td><td class="coverage-cell"><span style="width:62.5%"></span></td></tr>
 <tr><td><code>src/main/api/database/executor.py</code></td><td class="number">71.4%</td><td class="number">50.0%</td><td class="number">40 / 56</td><td>50–51, 66, 71, 74–76, 78–80, 86–87, …</td><td class="coverage-cell"><span style="width:71.4%"></span></td></tr>
@@ -346,12 +444,13 @@ tr:last-child td { border-bottom: 0; }
 <tr><td><code>src/main/api/requests/steps/base_steps.py</code></td><td class="number">100.0%</td><td class="number">—</td><td class="number">13 / 13</td><td>—</td><td class="coverage-cell"><span style="width:100.0%"></span></td></tr>
 <tr><td><code>src/main/api/requests/steps/database_steps.py</code></td><td class="number">100.0%</td><td class="number">—</td><td class="number">83 / 83</td><td>—</td><td class="coverage-cell"><span style="width:100.0%"></span></td></tr>
 <tr><td><code>src/main/api/requests/steps/user_steps.py</code></td><td class="number">100.0%</td><td class="number">—</td><td class="number">65 / 65</td><td>—</td><td class="coverage-cell"><span style="width:100.0%"></span></td></tr></tbody>
-          </table>
+            </table>
+          </div>
         </div>
       </section>
 
       <footer class="footer">
-        <span>Snapshot generated 31 Jul 2026 10:27 UTC</span>
+        <span>Snapshot generated 31 Jul 2026 10:35 UTC</span>
         <span>Source: latest coverage.py JSON · 13 archived measurements available</span>
       </footer>
     </main>
