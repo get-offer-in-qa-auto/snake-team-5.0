@@ -2492,21 +2492,33 @@ def render_dashboard(
     context = ""
     if dashboard_kind == "postgresql":
         data_quality = metrics["data_quality"]
-        pipeline = metrics["pipeline"]
+        complete_runs = [
+            run
+            for run in metrics.get("recent_runs", [])
+            if bool(run.get("test_suite_complete", True)) and run.get("report_url")
+        ]
         incomplete_runs = [
             run
             for run in metrics.get("recent_runs", [])
             if not bool(run.get("test_suite_complete", True))
         ]
-        latest_run = metrics["recent_runs"][0] if metrics.get("recent_runs") else None
+        successful_complete_runs = sum(
+            str(run.get("conclusion")) == "success" for run in complete_runs
+        )
+        complete_success_rate = percentage(
+            successful_complete_runs,
+            len(complete_runs),
+        )
+        latest_run = complete_runs[0] if complete_runs else None
         latest_status = (
             str(latest_run["conclusion"]).replace("_", " ").title()
             if latest_run is not None
-            else "No runs"
+            else "No complete runs"
         )
-        success_rate = pipeline.get("success_rate")
         success_rate_text = (
-            f"{float(success_rate):.2f}%" if success_rate is not None else "—"
+            f"{float(complete_success_rate):.2f}%"
+            if complete_success_rate is not None
+            else "—"
         )
         incomplete_rows: list[str] = []
         for run in incomplete_runs:
@@ -2536,7 +2548,7 @@ def render_dashboard(
         if incomplete_rows:
             incomplete_panel = (
                 '<details class="qa-incomplete-runs">'
-                f"<summary>Incomplete nightly runs ({len(incomplete_rows)})</summary>"
+                f"<summary>Excluded incomplete nightly runs ({len(incomplete_rows)})</summary>"
                 "<table><thead><tr><th>Run</th><th>Number</th>"
                 "<th>Test data</th><th>Workflow</th></tr></thead>"
                 f"<tbody>{''.join(incomplete_rows)}</tbody></table></details>"
@@ -2545,13 +2557,13 @@ def render_dashboard(
             '<section class="qa-run-context" aria-label="PostgreSQL nightly status">'
             "<h2>PostgreSQL nightly execution status</h2>"
             '<div class="qa-context-cards">'
-            '<div class="qa-context-card"><div class="label">Runs with Allure reports</div>'
+            '<div class="qa-context-card"><div class="label">Complete runs used</div>'
             f'<div class="value">{int(data_quality["metric_reports"])}</div></div>'
-            '<div class="qa-context-card"><div class="label">Workflow stability (all attempts)</div>'
+            '<div class="qa-context-card"><div class="label">Complete-run stability</div>'
             f'<div class="value">{success_rate_text}</div></div>'
-            '<div class="qa-context-card"><div class="label">All workflow attempts</div>'
-            f'<div class="value">{int(pipeline["completed"])}</div></div>'
-            '<div class="qa-context-card"><div class="label">Latest workflow</div>'
+            '<div class="qa-context-card"><div class="label">Successful complete runs</div>'
+            f'<div class="value">{successful_complete_runs}</div></div>'
+            '<div class="qa-context-card"><div class="label">Latest complete workflow</div>'
             f'<div class="value">{html.escape(latest_status)}</div></div>'
             "</div>"
             f"{incomplete_panel}"
