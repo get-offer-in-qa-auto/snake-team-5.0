@@ -656,7 +656,7 @@ def render_period_links(
 SNAPSHOT_CSS = """
 :root {
   color-scheme: light;
-  --background: #f6f8fa;
+  --background: #f4efe7;
   --surface: #ffffff;
   --text: #1f2328;
   --muted: #636c76;
@@ -786,110 +786,6 @@ tr:last-child td { border-bottom: 0; }
   .page { padding: 20px 12px 36px; }
   .donut-grid { grid-template-columns: 1fr; }
   .bar-row { grid-template-columns: minmax(100px, 1fr) minmax(120px, 2fr) 62px; }
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --background: #0d1117; --surface: #161b22; --text: #e6edf3;
-    --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
-    --green: #3fb950; --amber: #d29922; --red: #f85149;
-    --purple: #a371f7; --track: #30363d;
-  }
-}
-
-/* Shared visual language with the QA Metrics dashboard. */
-:root {
-  color-scheme: light;
-  --background: #f4efe7;
-  --surface: #fffdf8;
-  --text: #18212f;
-  --muted: #5e6b7a;
-  --border: #d8d2c7;
-  --primary: #2f7fc3;
-  --green: #159a55;
-  --amber: #a36a28;
-  --red: #cf3f34;
-  --purple: #9b4eb2;
-  --track: #eee9df;
-  --card: #ffffffcc;
-}
-body {
-  font-family: "Avenir Next", "Segoe UI", sans-serif;
-  background:
-    radial-gradient(1200px 400px at 0% 0%, #f0e3cf 10%, transparent 70%),
-    radial-gradient(900px 500px at 100% 100%, #dceeea 10%, transparent 65%),
-    var(--background);
-}
-a { color: var(--text); }
-a:hover { text-decoration: none; }
-.page { width: min(1220px, 100%); padding: 28px 20px 48px; }
-.title {
-  margin: 0; font-size: clamp(26px, 4vw, 42px);
-  line-height: 1.1; letter-spacing: 0.01em;
-}
-.subtitle { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
-.qa-report-links {
-  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px;
-}
-.qa-report-links .button {
-  padding: 7px 11px; border: 1px solid var(--border);
-  border-radius: 999px; color: var(--text); background: #fffefb;
-  font-size: 13px; font-weight: 650;
-}
-.qa-report-links .button:hover { border-color: #8a8174; background: #fff; }
-.report-meta {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  margin-top: 18px; padding: 14px 16px;
-  border: 1px solid var(--border); border-radius: 16px;
-  background: var(--card); box-shadow: 0 10px 28px rgba(24, 33, 47, 0.07);
-}
-.badge {
-  padding: 3px 10px; border: 1px solid var(--border);
-  background: #f9f6f0; font-size: 12px; font-weight: 700;
-}
-.group {
-  margin-top: 18px; padding: 14px;
-  border: 1px solid var(--border); border-radius: 18px;
-  background: #fffefb; box-shadow: 0 10px 22px rgba(24, 33, 47, 0.05);
-}
-.group > h2 { margin: 0; font-size: 24px; }
-.group > .desc { margin: 6px 0 0; color: #465463; font-size: 14px; }
-.snapshot-note, .donut-card, .progress-card, .chart-panel, .table-wrap {
-  background: var(--surface); border: 1px solid var(--border);
-  box-shadow: 0 14px 30px rgba(24, 33, 47, 0.08);
-}
-.snapshot-note {
-  margin-top: 16px; padding: 14px 16px; border-left: 1px solid var(--border);
-  border-radius: 16px; color: #465463;
-}
-.donut-grid { gap: 14px; margin-top: 16px; }
-.donut-card {
-  padding: 14px 16px; border-left: 1px solid var(--border);
-  border-radius: 16px;
-}
-.donut-card h2 { color: var(--muted); font-size: 13px; }
-.donut { width: 106px; height: 106px; }
-.donut::after { background: var(--surface); }
-.formula {
-  min-height: 74px; padding: 9px 10px; border-radius: 10px;
-  background: #f9f6f0; color: var(--muted);
-}
-.progress-grid { gap: 14px; margin-top: 14px; }
-.progress-card {
-  padding: 14px 16px; border-left: 1px solid var(--border);
-  border-radius: 16px;
-}
-.section { margin-top: 16px; }
-.chart-grid { gap: 16px; }
-.chart-panel { padding: 16px; border-radius: 18px; }
-.chart-panel h2 { font-size: 18px; }
-.table-wrap { border-radius: 18px; }
-table { background: #fff; border-radius: 12px; overflow: hidden; font-size: 14px; }
-th, td { padding: 9px 10px; border-bottom: 1px solid #eee9df; }
-th { color: #3f4a57; background: #f9f6f0; font-weight: 600; }
-tr:hover td { background: #fffbf4; }
-.coverage-cell {
-  background: linear-gradient(var(--track), var(--track)) center/100% 7px no-repeat;
 }
 """
 
@@ -1090,63 +986,59 @@ def render_dashboard(
   </head>
   <body>
     <main class="page">
-      <header>
-        <h1 class="title">API Framework Code Coverage</h1>
-        <p class="subtitle">Current coverage.py snapshot for the API test framework</p>
-        <nav class="qa-report-links" aria-label="QA report navigation">
+      <header class="topbar">
+        <div>
+          <span class="muted">QA metrics / Code coverage</span>
+          <h1>⚙ API Coverage Analysis</h1>
+          <div class="meta">{header_meta}</div>
+        </div>
+        <div class="actions">
           <a class="button" href="{html.escape(quality_url)}">Open QA metrics</a>
           {original_link}
-        </nav>
-        <div class="report-meta">{header_meta}</div>
+        </div>
       </header>
 
-      <section class="group">
-        <h2>1️⃣ Coverage Summary</h2>
-        <p class="desc">Current line, branch and file coverage from the latest published run.</p>
-        <div class="snapshot-note">
-          <strong>Current state only.</strong>
-          This page uses the latest published coverage measurement and does not
-          average or aggregate coverage over a 7-, 14-, or any other day window.
+      <div class="snapshot-note">
+        <strong>Current state only.</strong>
+        This page uses the latest published coverage measurement and does not
+        average or aggregate coverage over a 7-, 14-, or any other day window.
+      </div>
+
+      <section class="donut-grid" aria-label="Current coverage summary">{cards}</section>
+      <section class="progress-grid" aria-label="Current coverage progress">{progress}</section>
+
+      <section class="section">
+        <div class="chart-grid">
+          <article class="chart-panel">
+            <h2>Lowest Line Coverage by File</h2>
+            <div class="bar-list">{render_lowest_file_bars(metrics)}</div>
+          </article>
+          <article class="chart-panel">
+            <h2>Current Coverage Inventory</h2>
+            <div class="bar-list">{render_inventory_bars(metrics)}</div>
+          </article>
         </div>
-        <div class="donut-grid" aria-label="Current coverage summary">{cards}</div>
-        <div class="progress-grid" aria-label="Current coverage progress">{progress}</div>
       </section>
 
-      <section class="group">
-        <h2>2️⃣ Coverage Details</h2>
-        <p class="desc">Files with the lowest line coverage and the current coverage inventory.</p>
-        <div class="section">
-          <div class="chart-grid">
-            <article class="chart-panel">
-              <h2>Lowest Line Coverage by File</h2>
-              <div class="bar-list">{render_lowest_file_bars(metrics)}</div>
-            </article>
-            <article class="chart-panel">
-              <h2>Current Coverage Inventory</h2>
-              <div class="bar-list">{render_inventory_bars(metrics)}</div>
-            </article>
-          </div>
+      <section class="section">
+        <div class="section-head">
+          <h2>Coverage by File</h2>
+          <span class="section-note">Current measurement · lowest line coverage first</span>
         </div>
-        <div class="section">
-          <div class="section-head">
-            <h2>Coverage by File</h2>
-            <span class="section-note">Current measurement · lowest line coverage first</span>
-          </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>File</th>
-                  <th class="number">Lines</th>
-                  <th class="number">Branches</th>
-                  <th class="number">Covered lines</th>
-                  <th>Missing lines</th>
-                  <th>Coverage</th>
-                </tr>
-              </thead>
-              <tbody>{render_module_rows(metrics)}</tbody>
-            </table>
-          </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>File</th>
+                <th class="number">Lines</th>
+                <th class="number">Branches</th>
+                <th class="number">Covered lines</th>
+                <th>Missing lines</th>
+                <th>Coverage</th>
+              </tr>
+            </thead>
+            <tbody>{render_module_rows(metrics)}</tbody>
+          </table>
         </div>
       </section>
 

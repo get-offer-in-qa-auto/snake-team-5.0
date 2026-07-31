@@ -10,7 +10,7 @@ from scripts.build_coverage_dashboard import render_dashboard  # noqa: E402
 
 
 class CoverageDashboardTemplateTest(unittest.TestCase):
-    def test_uses_quality_dashboard_visual_language(self) -> None:
+    def test_replaces_only_the_black_page_theme(self) -> None:
         metrics = {
             "generated_at": "2026-07-31T09:00:00+00:00",
             "reports": 1,
@@ -60,14 +60,13 @@ class CoverageDashboardTemplateTest(unittest.TestCase):
             quality_url="../",
         )
 
-        self.assertIn("API Framework Code Coverage", page)
-        self.assertIn("1️⃣ Coverage Summary", page)
-        self.assertIn("2️⃣ Coverage Details", page)
-        self.assertEqual(page.count('<section class="group">'), 2)
+        self.assertIn("⚙ API Coverage Analysis", page)
+        self.assertIn('class="topbar"', page)
+        self.assertIn('class="donut-grid"', page)
+        self.assertIn("Coverage by File", page)
         self.assertIn("--background: #f4efe7", page)
-        self.assertIn('"Avenir Next", "Segoe UI", sans-serif', page)
-        self.assertIn("radial-gradient(1200px 400px", page)
-        self.assertIn('class="qa-report-links"', page)
+        self.assertNotIn("@media (prefers-color-scheme: dark)", page)
+        self.assertNotIn('class="group"', page)
         self.assertIn('href="../"', page)
         self.assertIn('href="../../coverage/1-attempt-1/html/"', page)
 
