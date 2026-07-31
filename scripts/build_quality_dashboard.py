@@ -10,6 +10,7 @@ import math
 import os
 import re
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -1051,6 +1052,257 @@ def target_passed(value: float, target: dict[str, Any]) -> bool:
     return value <= threshold
 
 
+def chart_target(metrics: dict[str, Any], field: str) -> dict[str, Any]:
+    target_keys = {
+        "test_pass_rate": "pass_rate",
+        "pipeline_success_rate": "stability_rate",
+        "workflow_duration_seconds": "suite_duration_sec",
+    }
+    if field == "flaky_results":
+        return {"direction": "maximum", "value": 0.0}
+    return metrics["quality_targets"][target_keys[field]]
+
+
+def format_target(
+    target: dict[str, Any],
+    formatter: Callable[[float], str],
+) -> str:
+    operator = "≥" if target["direction"] == "minimum" else "≤"
+    return f"{operator} {formatter(float(target['value']))}"
+
+
+def render_line_chart(
+    metrics: dict[str, Any],
+    *,
+    field: str,
+    title: str,
+    formatter: Callable[[float], str],
+    css_class: str,
+    percentage_scale: bool = False,
+) -> str:
+    points = metrics["run_trends"]
+    target = chart_target(metrics, field)
+    values = [
+        float(point[field]) if point.get(field) is not None else None
+        for point in points
+    ]
+    available = [value for value in values if value is not None]
+    target_text = format_target(target, formatter)
+    if not available:
+        return (
+            '<article class="chart-card">'
+            '<div class="chart-head">'
+            f"<h3>{html.escape(title)}</h3>"
+            f'<span class="target-badge">Target {html.escape(target_text)}</span>'
+            "</div>"
+            '<p class="empty-state">No data in this period.</p>'
+            "</article>"
+        )
+
+    lower = 0.0
+    if percentage_scale:
+        upper = 100.0
+    else:
+        upper = max(max(available), float(target["value"])) * 1.15
+    if math.isclose(lower, upper):
+        upper = 1.0
+
+    width = 720.0
+    height = 250.0
+    left = 54.0
+    right = 18.0
+    top = 24.0
+    bottom = 62.0
+    plot_width = width - left - right
+    plot_height = height - top - bottom
+
+    def point(index: int, value: float) -> tuple[float, float]:
+        x = left
+        if len(values) > 1:
+            x += index * plot_width / (len(values) - 1)
+        y = top + (upper - value) * plot_height / (upper - lower)
+        return x, y
+
+    segments: list[list[str]] = []
+    current: list[str] = []
+    circles: list[str] = []
+    for index, value in enumerate(values):
+        if value is None:
+            if current:
+                segments.append(current)
+                current = []
+            continue
+        x, y = point(index, value)
+        current.append(f"{x:.1f},{y:.1f}")
+        state = "ok" if target_passed(value, target) else "fail"
+        label = (
+            f"Run #{points[index]['run_number']} · {points[index]['label']}: "
+            f"{formatter(value)} · target {target_text}"
+        )
+        circles.append(
+            f'<a href="{html.escape(points[index]["run_url"])}">'
+            f'<circle class="chart-point chart-point-{state}" '
+            f'cx="{x:.1f}" cy="{y:.1f}" r="4">'
+            f"<title>{html.escape(label)}</title></circle></a>"
+        )
+    if current:
+        segments.append(current)
+
+    lines = "".join(
+        f'<polyline class="chart-line {css_class}" points="{" ".join(segment)}"/>'
+        for segment in segments
+        if len(segment) > 1
+    )
+    latest_index = max(index for index, value in enumerate(values) if value is not None)
+    latest_value = values[latest_index]
+    assert latest_value is not None
+    latest_state = "ok" if target_passed(latest_value, target) else "fail"
+    target_y = point(0, float(target["value"]))[1]
+
+    grid_lines: list[str] = []
+    for grid_index in range(5):
+        ratio = grid_index / 4
+        y = top + plot_height * ratio
+        grid_value = upper - (upper - lower) * ratio
+        grid_lines.append(
+            f'<line class="chart-grid" x1="{left}" y1="{y:.1f}" '
+            f'x2="{width - right}" y2="{y:.1f}"/>'
+            f'<text class="chart-axis chart-axis-y" x="{left - 8}" '
+            f'y="{y + 4:.1f}">{html.escape(formatter(grid_value))}</text>'
+        )
+
+    label_count = min(6, len(points))
+    if label_count <= 1:
+        label_indices = {0}
+    else:
+        label_indices = {
+            round(index * (len(points) - 1) / (label_count - 1))
+            for index in range(label_count)
+        }
+    x_labels: list[str] = []
+    for index in sorted(label_indices):
+        x = point(index, lower)[0]
+        x_labels.append(
+            f'<text class="chart-axis chart-axis-x" '
+            f'transform="translate({x:.1f} {height - 30:.1f}) rotate(-22)">'
+            f"{html.escape(str(points[index]['label']))}</text>"
+        )
+
+    return f"""
+    <article class="chart-card">
+      <div class="chart-head">
+        <div>
+          <h3>{html.escape(title)}</h3>
+          <span class="target-badge">Target {html.escape(target_text)}</span>
+        </div>
+        <div class="chart-latest">
+          <strong>{html.escape(formatter(latest_value))}</strong>
+          <span class="target-status target-status-{latest_state}">
+            {"On target" if latest_state == "ok" else "Off target"}
+          </span>
+        </div>
+      </div>
+      <svg class="line-chart" viewBox="0 0 {width:.0f} {height:.0f}" role="img"
+           aria-label="{html.escape(title)} by workflow run over {metrics["window"]["days"]} days">
+        {"".join(grid_lines)}
+        <line class="target-line" x1="{left}" y1="{target_y:.1f}"
+              x2="{width - right}" y2="{target_y:.1f}"/>
+        <text class="target-label" x="{left + 6}" y="{max(13.0, target_y - 7):.1f}">
+          Target {html.escape(target_text)}
+        </text>
+        {lines}
+        {"".join(circles)}
+        {"".join(x_labels)}
+      </svg>
+    </article>
+    """
+
+
+def render_metric_charts(metrics: dict[str, Any]) -> str:
+    return "\n".join(
+        (
+            render_line_chart(
+                metrics,
+                field="test_pass_rate",
+                title="Test pass rate",
+                formatter=lambda value: f"{value:.1f}%",
+                css_class="chart-green",
+                percentage_scale=True,
+            ),
+            render_line_chart(
+                metrics,
+                field="pipeline_success_rate",
+                title="Pipeline result",
+                formatter=lambda value: f"{value:.0f}%",
+                css_class="chart-blue",
+                percentage_scale=True,
+            ),
+            render_line_chart(
+                metrics,
+                field="workflow_duration_seconds",
+                title="Workflow duration",
+                formatter=format_duration,
+                css_class="chart-purple",
+            ),
+            render_line_chart(
+                metrics,
+                field="flaky_results",
+                title="Flaky test results",
+                formatter=lambda value: str(round(value)),
+                css_class="chart-orange",
+            ),
+        )
+    )
+
+
+def render_suite_cards(metrics: dict[str, Any]) -> str:
+    cards: list[str] = []
+    pass_rate_target = metrics["quality_targets"]["pass_rate"]
+    for suite in metrics["suites"]:
+        rate = suite["pass_rate"]
+        width = 0 if rate is None else max(0, min(100, rate))
+        state = (
+            "healthy"
+            if rate is not None and target_passed(rate, pass_rate_target)
+            else "warning"
+        )
+        cards.append(
+            '<article class="suite">'
+            f"<h3>{html.escape(suite['name'])}</h3>"
+            f'<strong class="suite-value">{html.escape(format_percent(rate))}</strong>'
+            f'<div class="progress"><span class="{state}" '
+            f'style="width: {width:.1f}%"></span></div>'
+            "<p>"
+            f"{suite['flaky_tests']} flaky · "
+            f"p95 {html.escape(format_duration(suite['p95_duration_ms'] / 1000))}"
+            "</p>"
+            "</article>"
+        )
+    if cards:
+        return "\n".join(cards)
+    return '<p class="empty-state">No published test results in this window.</p>'
+
+
+def render_attention_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
+    rows: list[str] = []
+    for test in metrics["attention"]:
+        rows.append(
+            "<tr>"
+            f'<td><a href="{html.escape(root_prefix + test["report_link"])}">'
+            f"{html.escape(test['name'])}</a></td>"
+            f'<td><span class="badge">{html.escape(test["signal"])}</span></td>'
+            f'<td class="number">{test["failed_runs"]} / {test["runs"]}</td>'
+            f'<td class="number">{test["retries"]}</td>'
+            f"<td>{html.escape(test['scope'])}</td>"
+            f'<td class="number">'
+            f"{html.escape(format_duration(test['p95_duration_ms'] / 1000))}</td>"
+            "</tr>"
+        )
+    if rows:
+        return "\n".join(rows)
+    return '<tr><td colspan="6" class="empty-state">No test data available.</td></tr>'
+
+
 def render_run_rows(metrics: dict[str, Any], *, root_prefix: str) -> str:
     rows: list[str] = []
     for run in metrics["recent_runs"]:
@@ -1183,6 +1435,195 @@ tr:last-child td { border-bottom: 0; }
     --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
     --ok: #3fb950; --ok-soft: #12261a;
     --fail: #f85149; --fail-soft: #32191c; --neutral-soft: #21262d;
+  }
+}
+"""
+
+
+GRAPH_DASHBOARD_CSS = """
+:root {
+  color-scheme: light;
+  --background: #f6f8fa;
+  --surface: #ffffff;
+  --text: #1f2328;
+  --muted: #636c76;
+  --border: #d0d7de;
+  --primary: #0969da;
+  --healthy: #1a7f37;
+  --healthy-soft: #dafbe1;
+  --warning: #bf8700;
+  --warning-soft: #fff8c5;
+  --danger: #cf222e;
+  --danger-soft: #ffebe9;
+  --track: #eaeef2;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.page { width: min(1180px, 100%); margin: 0 auto; padding: 28px 20px 48px; }
+.topbar {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 18px; flex-wrap: wrap; margin-bottom: 20px;
+}
+h1 { font-size: 28px; line-height: 1.2; margin: 0 0 4px; }
+h2 { font-size: 19px; margin: 0; }
+h3 { font-size: 15px; margin: 0; }
+p { margin: 0; }
+.muted, .section-note, .suite p { color: var(--muted); }
+.top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.period {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+}
+.period-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--healthy); }
+.period-links { display: flex; gap: 6px; flex-wrap: wrap; }
+.period-link {
+  display: inline-block; padding: 5px 9px; border: 1px solid var(--border);
+  border-radius: 999px; background: var(--surface); color: var(--text);
+}
+.period-link.active {
+  border-color: var(--primary); color: var(--primary); font-weight: 600;
+}
+.stats {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
+}
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px;
+}
+.stat-label { color: var(--muted); }
+.stat-value {
+  display: block; font-size: 30px; line-height: 1.2; margin: 4px 0;
+}
+.stat-context {
+  display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+.badge {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  background: var(--track); color: var(--text); white-space: nowrap;
+}
+.section { margin-top: 22px; }
+.section-head {
+  display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+  flex-wrap: wrap; margin-bottom: 10px;
+}
+.chart-grid-layout {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.chart-card {
+  min-width: 0; padding: 14px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+}
+.chart-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 12px; margin-bottom: 8px;
+}
+.chart-head strong { font-size: 18px; }
+.chart-head > div:first-child { display: grid; gap: 3px; }
+.target-badge { color: var(--muted); font-size: 12px; }
+.chart-latest {
+  display: flex; align-items: flex-end; flex-direction: column; gap: 3px;
+  text-align: right;
+}
+.target-status {
+  display: inline-block; padding: 2px 7px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.target-status-ok { color: var(--healthy); background: var(--healthy-soft); }
+.target-status-fail { color: var(--danger); background: var(--danger-soft); }
+.line-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-grid { stroke: var(--border); stroke-width: 1; }
+.chart-axis { fill: var(--muted); font-size: 11px; }
+.chart-axis-y, .chart-axis-x { text-anchor: end; }
+.target-line {
+  stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 6 5;
+}
+.target-label { fill: var(--muted); font-size: 11px; font-weight: 600; }
+.chart-line {
+  fill: none; stroke: currentColor; stroke-width: 3;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.chart-point { fill: var(--surface); stroke-width: 2.5; }
+.chart-point-ok { stroke: var(--healthy); }
+.chart-point-fail { stroke: var(--danger); }
+.chart-green { color: var(--healthy); }
+.chart-blue { color: var(--primary); }
+.chart-purple { color: #8250df; }
+.chart-orange { color: #bc4c00; }
+.healthy { background: var(--healthy); }
+.warning { background: var(--warning); }
+.danger { background: var(--danger); }
+.empty { background: var(--track); }
+.trend-label { font-weight: 600; white-space: nowrap; }
+.trend-detail { font-size: 12px; white-space: nowrap; }
+.suites {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0;
+}
+.suite { padding: 4px 16px 6px 0; }
+.suite + .suite {
+  border-left: 1px solid var(--border); padding-left: 16px;
+}
+.suite-value { display: block; font-size: 22px; margin: 3px 0; }
+.progress {
+  height: 7px; border-radius: 999px; overflow: hidden;
+  background: var(--track); margin: 7px 0;
+}
+.progress span { display: block; height: 100%; border-radius: inherit; }
+.table-wrap {
+  overflow-x: auto; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px;
+}
+table { width: 100%; border-collapse: collapse; }
+th, td {
+  padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border);
+}
+th { color: var(--muted); font-size: 13px; font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+.number {
+  text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.status {
+  display: inline-block; padding: 2px 7px; border-radius: 999px; font-weight: 600;
+}
+.status-success { color: var(--healthy); background: var(--healthy-soft); }
+.status-failure, .status-timed_out, .status-action_required {
+  color: var(--danger); background: var(--danger-soft);
+}
+.status-cancelled, .status-skipped, .status-neutral, .status-unknown {
+  color: var(--warning); background: var(--warning-soft);
+}
+.empty-state { color: var(--muted); padding: 14px; }
+.footer {
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  color: var(--muted); margin-top: 24px; font-size: 13px;
+}
+@media (max-width: 760px) {
+  .stats { grid-template-columns: 1fr; }
+  .suites { grid-template-columns: 1fr 1fr; gap: 14px; }
+  .suite + .suite { border-left: 0; padding-left: 0; }
+  .chart-grid-layout { grid-template-columns: 1fr; }
+}
+@media (min-width: 761px) and (max-width: 980px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .page { padding: 20px 12px 36px; }
+  .suites { grid-template-columns: 1fr; }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: #0d1117; --surface: #161b22; --text: #e6edf3;
+    --muted: #8b949e; --border: #30363d; --primary: #58a6ff;
+    --healthy: #3fb950; --healthy-soft: #12261a;
+    --warning: #d29922; --warning-soft: #2d250d;
+    --danger: #f85149; --danger-soft: #32191c; --track: #30363d;
   }
 }
 """
@@ -1346,7 +1787,7 @@ def render_period_links(
     )
 
 
-def render_dashboard(
+def render_linear_dashboard(
     metrics: dict[str, Any],
     *,
     root_prefix: str,
@@ -1596,6 +2037,158 @@ def render_dashboard(
       <footer class="footer">
         <span>Updated {generated_at.strftime("%d %b %Y %H:%M UTC")}</span>
         <span>Sources: GitHub Actions jobs and persistent Allure final test cases</span>
+      </footer>
+    </main>
+  </body>
+</html>
+"""
+
+
+def render_dashboard(
+    metrics: dict[str, Any],
+    *,
+    root_prefix: str,
+    coverage_url: str,
+    periods: list[tuple[int, str]],
+) -> str:
+    pipeline = metrics["pipeline"]
+    tests = metrics["tests"]
+    quality = metrics["data_quality"]
+    coverage = metrics.get("coverage")
+    generated_at = parse_datetime(metrics["generated_at"])
+    window_start_at = parse_datetime(metrics["window"]["start"])
+    window_end = parse_datetime(metrics["window"]["end"])
+    return f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TeamCity QA metrics</title>
+    <style>{GRAPH_DASHBOARD_CSS}</style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="topbar">
+        <div>
+          <h1>TeamCity QA metrics</h1>
+          <p class="muted">Rolling quality health for TeamCity Regression</p>
+        </div>
+        <div class="top-actions">
+          <div class="period-links" aria-label="Saved metric periods">
+            {render_period_links(periods, current_days=metrics["window"]["days"])}
+          </div>
+          <a class="period-link" href="{html.escape(coverage_url)}">Code coverage</a>
+          <a class="period-link" href="{html.escape(root_prefix + "reports/")}">All reports</a>
+          <div class="period">
+            <span class="period-dot" aria-hidden="true"></span>
+            <strong>{metrics["window"]["days"]} days</strong>
+            <span>{window_start_at.strftime("%d %b")}–{window_end.strftime("%d %b %Y")}</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="stats" aria-label="Quality summary">
+        <article class="card">
+          <span class="stat-label">Pipeline stability</span>
+          <strong class="stat-value">{format_percent(pipeline["success_rate"])}</strong>
+          <div class="stat-context">
+            <span>{pipeline["successful"]} of {pipeline["completed"]} successful</span>
+            <span class="badge">p95 {format_duration(pipeline["p95_duration_seconds"])}</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="stat-label">Test reliability</span>
+          <strong class="stat-value">{format_percent(tests["pass_rate"])}</strong>
+          <div class="stat-context">
+            <span>{tests["total"]:,} final results</span>
+            <span class="badge">{tests["failed"]} failed</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="stat-label">Flaky tests</span>
+          <strong class="stat-value">{tests["flaky"]}</strong>
+          <div class="stat-context">
+            <span>{format_percent(tests["retry_rate"])} retry rate</span>
+            <span class="badge">{tests["retries"]} retries</span>
+          </div>
+        </article>
+        <article class="card">
+          <span class="stat-label">API framework coverage</span>
+          <strong class="stat-value">{format_percent(coverage["latest"]["line_rate"]) if coverage and coverage.get("latest") else "—"}</strong>
+          <div class="stat-context">
+            <span>{format_percent(coverage["latest"]["branch_rate"]) + " branches" if coverage and coverage.get("latest") else "No reports yet"}</span>
+            <a class="badge" href="{html.escape(coverage_url)}">Open coverage</a>
+          </div>
+        </article>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Metric history</h2>
+          <span class="section-note">Every completed workflow run · targets from configuration</span>
+        </div>
+        <div class="chart-grid-layout">
+          {render_metric_charts(metrics)}
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Where instability is</h2>
+          <span class="section-note">Final pass rate · flaky tests · p95 test duration</span>
+        </div>
+        <div class="card suites">
+          {render_suite_cards(metrics)}
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Needs attention</h2>
+          <span class="section-note">Final failures and flakiness first, then slow tests</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Test</th>
+                <th>Signal</th>
+                <th class="number">Failed runs</th>
+                <th class="number">Retries</th>
+                <th>Scope</th>
+                <th class="number">p95</th>
+              </tr>
+            </thead>
+            <tbody>{render_attention_rows(metrics, root_prefix=root_prefix)}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>Recent regression runs</h2>
+          <span class="section-note">{quality["published_reports"]} published reports · {quality["runs_without_report"]} runs without report</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Conclusion</th>
+                <th>Event</th>
+                <th>Branch</th>
+                <th class="number">Duration</th>
+                <th>Report</th>
+              </tr>
+            </thead>
+            <tbody>{render_run_rows(metrics, root_prefix=root_prefix)}</tbody>
+          </table>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>Updated {generated_at.strftime("%d %b %Y %H:%M UTC")}</span>
+        <span>Sources: GitHub Actions API and persistent Allure reports</span>
       </footer>
     </main>
   </body>
