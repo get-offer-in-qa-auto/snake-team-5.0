@@ -71,6 +71,25 @@
       box-shadow: 0 14px 30px rgba(24, 33, 47, 0.08);
     }
     .panel h3 { margin: 0 0 10px; font-size: 18px; }
+    .calculation-details summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 700;
+      list-style: none;
+    }
+    .calculation-details summary::-webkit-details-marker { display: none; }
+    .calculation-details summary::after {
+      content: "Show";
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .calculation-details[open] summary::after { content: "Hide"; }
+    .calculation-details[open] summary { margin-bottom: 10px; }
     .charts-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
     .metric-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
     .chart-single { margin-top: 16px; }
@@ -161,8 +180,8 @@
         <div class="card metric-ok"><div class="label">average API flaky rate</div><div class="value">0.00%</div></div>
       </div>
 
-      <div class="panel">
-        <h3>How Metrics Are Calculated</h3>
+      <details class="panel calculation-details">
+        <summary>How Metrics Are Calculated</summary>
         <div class="formulas">
           average pass rate = (100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 100.00 + 98.70 + 100.00 + 98.70 + 96.10 + 100.00 + 100.00) / 16 = 99.59%<br/>
           average fail rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 3.90 + 0.00 + 0.00) / 16 = 0.24%<br/>
@@ -170,7 +189,7 @@
           average UI flaky rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00) / 16 = 0.00%<br/>
           average API flaky rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00) / 16 = 0.00%
         </div>
-      </div>
+      </details>
 
       <div class="metric-pair">
         <div class="panel">
@@ -302,12 +321,12 @@
           </tbody>
         </table>
       </div>
-      <div class="panel">
-        <h3>How Metrics Are Calculated</h3>
+      <details class="panel calculation-details">
+        <summary>How Metrics Are Calculated</summary>
         <div class="formulas">
           Average Test Duration = (3.94 + 4.51 + 4.56 + 4.17 + 4.21 + 3.87 + 4.36 + 4.16 + 4.38 + 4.06 + 5.02 + 4.35 + 4.72 + 4.90 + 4.81 + 5.04)/16=4.44s<br/>Average API Test Duration = (1.49 + 1.48 + 1.43 + 1.41 + 1.41 + 1.43 + 1.54 + 1.41 + 1.48 + 1.38 + 1.49 + 1.42 + 1.54 + 1.46 + 1.38 + 1.48)/16=1.45s<br/>Average UI Test Run Duration = (205.58 + 246.47 + 252.21 + 225.95 + 227.99 + 202.72 + 232.93 + 225.22 + 237.24 + 218.97 + 312.16 + 238.19 + 286.68 + 304.65 + 301.31 + 313.94)/16=252.01s<br/>Average API Test Run Duration = (74.30 + 74.02 + 71.61 + 70.38 + 70.64 + 71.72 + 76.87 + 70.37 + 73.91 + 69.11 + 74.29 + 70.97 + 76.82 + 73.01 + 69.21 + 73.92)/16=72.57s<br/>Average Pipeline Duration = (256.00 + 276.00 + 302.00 + 627.00 + 277.00 + 286.00 + 629.00 + 270.00 + 1231.00 + 319.00 + 280.00 + 293.00 + 267.00 + 300.00 + 327.00 + 281.00)/16=388.81s
         </div>
-      </div>
+      </details>
       <div class="metric-cards">
         <div class="card metric-fail"><div class="label">Average Test Duration UI tests</div><div class="value">4.44s</div></div>
         <div class="card metric-fail"><div class="label">Average Test Duration API tests</div><div class="value">1.45s</div></div>
