@@ -1,6 +1,6 @@
 # TeamCity QA metrics report
 
-Period: **7 UTC calendar days** (2026-07-25T00:00:00+00:00 — 2026-07-31T12:38:41+00:00).
+Period: **7 UTC calendar days** (2026-07-25T00:00:00+00:00 — 2026-07-31T12:45:43+00:00).
 
 Published runs: **0** · fully passed: **0** · final test results: **0** · flaky results: **0**.
 
@@ -50,8 +50,8 @@ Browser coverage: **0.00%** (0/0 UI scenarios executed in all three browsers).
 
 ## Data completeness
 
-- Completed workflow runs: **7**
+- Completed workflow runs: **9**
 - Published Allure reports used in test metrics: **0**
-- Workflow runs without a published report: **7**
+- Workflow runs without a published report: **9**
 
 Flaky counts use final Allure test cases explicitly marked `flaky`. Pass, fail and broken rates are calculated per run and then averaged without weighting, matching the reference report.
