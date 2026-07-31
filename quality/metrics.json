@@ -83,7 +83,7 @@
       "with_coverage": 59,
       "with_coverage_rate": 100.0
     },
-    "generated_at": "2026-07-31T09:43:52+00:00",
+    "generated_at": "2026-07-31T09:53:18+00:00",
     "latest": {
       "attempt": 1,
       "branch": "69/merge",
@@ -921,7 +921,7 @@
     "published_reports": 16,
     "runs_without_report": 0
   },
-  "generated_at": "2026-07-31T09:43:53+00:00",
+  "generated_at": "2026-07-31T09:53:19+00:00",
   "metric_runs": [
     {
       "api_flaky_rate": 0.0,
@@ -930,7 +930,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.48598,
-      "avg_duration_sec": 3.9419577464788733,
+      "avg_duration_sec": 9.789523809523809,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -963,7 +963,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.48036,
-      "avg_duration_sec": 4.513859154929577,
+      "avg_duration_sec": 11.736476190476191,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -996,7 +996,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.43228,
-      "avg_duration_sec": 4.560845070422535,
+      "avg_duration_sec": 12.009809523809523,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1029,7 +1029,7 @@
       "api_tests": 50,
       "attempt": 2,
       "avg_api_duration_sec": 1.40764,
-      "avg_duration_sec": 4.17369014084507,
+      "avg_duration_sec": 10.75952380952381,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1062,7 +1062,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.4128399999999999,
-      "avg_duration_sec": 4.206070422535211,
+      "avg_duration_sec": 10.856619047619049,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1095,7 +1095,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.4344000000000001,
-      "avg_duration_sec": 3.865338028169014,
+      "avg_duration_sec": 9.653285714285714,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1128,7 +1128,7 @@
       "api_tests": 50,
       "attempt": 2,
       "avg_api_duration_sec": 1.5374,
-      "avg_duration_sec": 4.363408450704226,
+      "avg_duration_sec": 11.092,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1161,7 +1161,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.40746,
-      "avg_duration_sec": 4.163352112676056,
+      "avg_duration_sec": 10.725,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1194,7 +1194,7 @@
       "api_tests": 50,
       "attempt": 2,
       "avg_api_duration_sec": 1.47822,
-      "avg_duration_sec": 4.382464788732395,
+      "avg_duration_sec": 11.297333333333334,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1227,7 +1227,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.3822,
-      "avg_duration_sec": 4.057394366197183,
+      "avg_duration_sec": 10.426904761904762,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1260,7 +1260,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.48576,
-      "avg_duration_sec": 5.018831168831169,
+      "avg_duration_sec": 11.561555555555556,
       "broken_rate": 1.2987012987012987,
       "broken_tests": 1,
       "fail_rate": 0.0,
@@ -1293,7 +1293,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.41944,
-      "avg_duration_sec": 4.354408450704225,
+      "avg_duration_sec": 11.34242857142857,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1326,7 +1326,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.53648,
-      "avg_duration_sec": 4.720883116883116,
+      "avg_duration_sec": 10.617925925925926,
       "broken_rate": 1.2987012987012987,
       "broken_tests": 1,
       "fail_rate": 0.0,
@@ -1359,7 +1359,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.46026,
-      "avg_duration_sec": 4.904766233766234,
+      "avg_duration_sec": 11.283481481481482,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 3.896103896103896,
@@ -1392,7 +1392,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.3841400000000001,
-      "avg_duration_sec": 4.811896103896104,
+      "avg_duration_sec": 11.159592592592594,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1425,7 +1425,7 @@
       "api_tests": 50,
       "attempt": 1,
       "avg_api_duration_sec": 1.47844,
-      "avg_duration_sec": 5.037155844155844,
+      "avg_duration_sec": 11.62737037037037,
       "broken_rate": 0.0,
       "broken_tests": 0,
       "fail_rate": 0.0,
@@ -1559,18 +1559,18 @@
       "value": 81.25
     },
     {
-      "description": "Unweighted average of each run's mean final-test duration.",
+      "description": "Unweighted average of each run's mean UI-test duration.",
       "direction": "maximum",
-      "formula": "average test duration = (3.94 + 4.51 + 4.56 + 4.17 + 4.21 + 3.87 + 4.36 + 4.16 + 4.38 + 4.06 + 5.02 + 4.35 + 4.72 + 4.90 + 4.81 + 5.04) / 16 = 4.44s",
+      "formula": "average UI test duration = (9.79 + 11.74 + 12.01 + 10.76 + 10.86 + 9.65 + 11.09 + 10.72 + 11.30 + 10.43 + 11.56 + 11.34 + 10.62 + 11.28 + 11.16 + 11.63) / 16 = 11.00s",
       "key": "avg_duration_sec",
-      "name": "Average Test Duration",
-      "recommendation": "Optimize slow tests and reduce external dependencies.",
-      "status": "fail",
-      "status_label": "Failed",
-      "target": 3.0,
-      "threshold": "<= 3.00",
+      "name": "Average UI Test Duration",
+      "recommendation": "Optimize slow UI tests and reduce repeated browser setup.",
+      "status": "ok",
+      "status_label": "OK",
+      "target": 12.0,
+      "threshold": "<= 12.00",
       "unit": "s",
-      "value": 4.44
+      "value": 11.0
     },
     {
       "description": "Unweighted average of each run's mean API-test duration.",
@@ -1579,10 +1579,10 @@
       "key": "avg_api_duration_sec",
       "name": "Average API Test Duration",
       "recommendation": "Optimize slow API tests and reduce network or database overhead.",
-      "status": "fail",
-      "status_label": "Failed",
-      "target": 0.2,
-      "threshold": "<= 0.20",
+      "status": "ok",
+      "status_label": "OK",
+      "target": 1.5,
+      "threshold": "<= 1.50",
       "unit": "s",
       "value": 1.45
     },
@@ -1593,10 +1593,10 @@
       "key": "ui_run_duration_sec",
       "name": "Average UI Test Run Duration",
       "recommendation": "Reduce UI runtime with better parallelization and setup reuse.",
-      "status": "fail",
-      "status_label": "Failed",
-      "target": 240.0,
-      "threshold": "<= 240.00",
+      "status": "ok",
+      "status_label": "OK",
+      "target": 300.0,
+      "threshold": "<= 300.00",
       "unit": "s",
       "value": 252.01
     },
@@ -1607,10 +1607,10 @@
       "key": "api_run_duration_sec",
       "name": "Average API Test Run Duration",
       "recommendation": "Optimize API request and database paths and trim heavy setup.",
-      "status": "fail",
-      "status_label": "Failed",
-      "target": 20.0,
-      "threshold": "<= 20.00",
+      "status": "ok",
+      "status_label": "OK",
+      "target": 75.0,
+      "threshold": "<= 75.00",
       "unit": "s",
       "value": 72.57
     },
@@ -1623,8 +1623,8 @@
       "recommendation": "Increase parallelism and remove long serial bottlenecks.",
       "status": "fail",
       "status_label": "Failed",
-      "target": 240.0,
-      "threshold": "<= 240.00",
+      "target": 360.0,
+      "threshold": "<= 360.00",
       "unit": "s",
       "value": 388.81
     }
@@ -1634,19 +1634,19 @@
       "direction": "maximum",
       "name": "Average API Test Run Duration",
       "recommendation": "Optimize API request and database paths and trim heavy setup.",
-      "value": 20.0
+      "value": 75.0
     },
     "avg_api_duration_sec": {
       "direction": "maximum",
       "name": "Average API Test Duration",
       "recommendation": "Optimize slow API tests and reduce network or database overhead.",
-      "value": 0.2
+      "value": 1.5
     },
     "avg_duration_sec": {
       "direction": "maximum",
-      "name": "Average Test Duration",
-      "recommendation": "Optimize slow tests and reduce external dependencies.",
-      "value": 3.0
+      "name": "Average UI Test Duration",
+      "recommendation": "Optimize slow UI tests and reduce repeated browser setup.",
+      "value": 12.0
     },
     "broken_rate": {
       "direction": "maximum",
@@ -1682,13 +1682,13 @@
       "direction": "maximum",
       "name": "Average Pipeline Duration",
       "recommendation": "Increase parallelism and remove long serial bottlenecks.",
-      "value": 240.0
+      "value": 360.0
     },
     "ui_run_duration_sec": {
       "direction": "maximum",
       "name": "Average UI Test Run Duration",
       "recommendation": "Reduce UI runtime with better parallelization and setup reuse.",
-      "value": 240.0
+      "value": 300.0
     }
   },
   "recent_runs": [
@@ -1889,7 +1889,7 @@
     "api_flaky_rate": 0.0,
     "api_run_duration_sec": 72.57,
     "avg_api_duration_sec": 1.45,
-    "avg_duration_sec": 4.44,
+    "avg_duration_sec": 11.0,
     "broken_rate": 0.16,
     "fail_rate": 0.24,
     "flaky_rate": 0.0,
@@ -2288,7 +2288,7 @@
   },
   "window": {
     "days": 7,
-    "end": "2026-07-31T09:43:53+00:00",
+    "end": "2026-07-31T09:53:19+00:00",
     "start": "2026-07-25T00:00:00+00:00"
   }
 }
