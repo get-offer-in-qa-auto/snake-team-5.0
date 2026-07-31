@@ -44,8 +44,8 @@
   "ui_run_duration_sec": {
     "direction": "maximum",
     "value": 300.0,
-    "name": "Average UI Test Run Duration",
-    "recommendation": "Reduce UI runtime with better parallelization and setup reuse."
+    "name": "Total UI Test Time",
+    "recommendation": "Reduce total UI test work with faster tests and setup reuse."
   },
   "api_run_duration_sec": {
     "direction": "maximum",
@@ -58,5 +58,19 @@
     "value": 360.0,
     "name": "Average Pipeline Duration",
     "recommendation": "Increase parallelism and remove long serial bottlenecks."
+  },
+  "browser_targets": {
+    "Chromium": {
+      "avg_duration_sec": 11.0,
+      "run_duration_sec": 100.0
+    },
+    "Firefox": {
+      "avg_duration_sec": 13.0,
+      "run_duration_sec": 115.0
+    },
+    "WebKit": {
+      "avg_duration_sec": 14.0,
+      "run_duration_sec": 120.0
+    }
   }
 }

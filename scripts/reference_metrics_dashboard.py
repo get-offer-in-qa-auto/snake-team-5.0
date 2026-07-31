@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import html
 import json
 import os
 import re
@@ -81,7 +82,7 @@ DEFAULT_GATES: dict[str, dict[str, Any]] = {
         "recommendation": "Optimize slow API tests and reduce network/DB overhead.",
     },
     "ui_run_duration_sec": {
-        "name": "Average UI Test Run Duration",
+        "name": "Total UI Test Time",
         "unit": "s",
         "good_threshold": 300.0,
         "warn_threshold": 360.0,
@@ -399,7 +400,21 @@ def build_html(
     slowest_ui_tests: list[dict],
     slowest_api_tests: list[dict],
     gates_config: dict[str, dict[str, Any]],
+    *,
+    browser_runs: list[dict[str, Any]] | None = None,
+    browser_summary: list[dict[str, Any]] | None = None,
+    browser_coverage: dict[str, Any] | None = None,
+    browser_failures: list[dict[str, Any]] | None = None,
 ) -> str:
+    browser_runs = browser_runs or []
+    browser_summary = browser_summary or []
+    browser_coverage = browser_coverage or {
+        "common_tests": 0,
+        "unique_tests": 0,
+        "coverage_rate": 0.0,
+        "by_browser": {},
+    }
+    browser_failures = browser_failures or []
     sorted_rows = sorted(
         rows, key=lambda r: parse_run_datetime(r.run_name) or datetime.min
     )
@@ -692,7 +707,7 @@ def build_html(
         "stability_rate": "Share of successful runs among all runs.",
         "avg_duration_sec": "Average UI Test Duration = Average(UI duration / UI test count) across runs",
         "avg_api_duration_sec": "Average API Test Duration = Average(API duration / API test count) across runs",
-        "ui_run_duration_sec": "Average UI Test Run Duration = Sum(UI run durations) / Number of runs",
+        "ui_run_duration_sec": "Total UI Test Time = Average of summed UI test durations per run; this is test work, not wall-clock pipeline time",
         "api_run_duration_sec": "Average API Test Run Duration = Sum(API run durations) / Number of runs",
         "suite_duration_sec": "Pipeline Duration = Time from the first API/UI test job start to the last completion",
     }
@@ -843,6 +858,51 @@ def build_html(
     points_json = json.dumps(points, ensure_ascii=False)
     slowest_ui_json = json.dumps(slowest_ui_tests, ensure_ascii=False)
     slowest_api_json = json.dumps(slowest_api_tests, ensure_ascii=False)
+    browser_runs_json = json.dumps(browser_runs, ensure_ascii=False)
+    browser_cards_html = (
+        "\n".join(
+            (
+                f'<article class="card browser-card metric-{item["status"]}">'
+                '<div class="browser-card-head">'
+                f"<h3>{html.escape(str(item['browser']))}</h3>"
+                f'<span class="status-badge metric-{item["status"]}">'
+                f"{html.escape(str(item['status_label']))}</span></div>"
+                f'<div class="browser-pass">{float(item["pass_rate"]):.2f}%</div>'
+                '<div class="browser-facts">'
+                f"<span>Failures <strong>{int(item['failed_tests'])}</strong></span>"
+                f"<span>Flaky <strong>{float(item['flaky_rate']):.2f}%</strong></span>"
+                f"<span>Avg test <strong>{float(item['avg_duration_sec']):.2f}s</strong> "
+                f"≤ {float(item['avg_target_sec']):.2f}s</span>"
+                f"<span>P95 test <strong>{float(item['p95_duration_sec']):.2f}s</strong></span>"
+                f"<span>P90 run <strong>{float(item['p90_run_duration_sec']):.2f}s</strong> "
+                f"≤ {float(item['run_target_sec']):.2f}s</span>"
+                f"<span>Runs <strong>{int(item['runs'])}</strong></span>"
+                "</div></article>"
+            )
+            for item in browser_summary
+        )
+        or '<div class="panel">No cross-browser data</div>'
+    )
+    browser_failure_rows_html = (
+        "\n".join(
+            (
+                "<tr>"
+                f"<td>{html.escape(str(item['browser']))}</td>"
+                f'<td class="slow-test-name">{html.escape(str(item["test_name"]))}</td>'
+                f"<td>{int(item['failed_results'])}</td>"
+                f"<td>{int(item['failed_runs'])}</td>"
+                f"<td>{html.escape(str(item['latest_run']))}</td>"
+                "</tr>"
+            )
+            for item in browser_failures
+        )
+        or '<tr><td colspan="5">No browser-specific failures in this period</td></tr>'
+    )
+    browser_counts = browser_coverage.get("by_browser", {})
+    browser_coverage_details = " · ".join(
+        f"{browser}: {int(browser_counts.get(browser, 0))}"
+        for browser in ("Chromium", "Firefox", "WebKit")
+    )
     report_title_safe = report_title.replace("<", "&lt;").replace(">", "&gt;")
 
     return f"""<!doctype html>
@@ -956,10 +1016,42 @@ def build_html(
       overflow-wrap: anywhere;
       word-break: break-word;
     }}
+    .browser-cards {{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }}
+    .browser-card-head {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }}
+    .browser-card h3 {{ margin: 0; font-size: 20px; }}
+    .browser-pass {{ margin-top: 10px; font-size: 32px; font-weight: 750; }}
+    .browser-facts {{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 12px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+    }}
+    .browser-facts strong {{ color: var(--ink); }}
+    .coverage-banner {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }}
+    .coverage-value {{ font-size: 28px; font-weight: 750; white-space: nowrap; }}
+    .browser-legend {{ flex-wrap: wrap; }}
 
     @media (max-width: 960px) {{
       .charts-2 {{ grid-template-columns: 1fr; }}
       .metric-pair {{ grid-template-columns: 1fr; }}
+      .browser-cards {{ grid-template-columns: 1fr; }}
     }}
   </style>
 </head>
@@ -1150,7 +1242,7 @@ def build_html(
       <div class=\"metric-cards\">
         <div class=\"card {avg_duration_class}\"><div class=\"label\">Average Test Duration UI tests</div><div class=\"value\">{avg_duration_sec:.2f}s</div></div>
         <div class=\"card {avg_api_duration_class}\"><div class=\"label\">Average Test Duration API tests</div><div class=\"value\">{avg_api_duration_sec:.2f}s</div></div>
-        <div class=\"card {ui_run_duration_class}\"><div class=\"label\">Average UI Test Run Duration</div><div class=\"value\">{ui_run_duration_sec:.2f}s</div></div>
+        <div class=\"card {ui_run_duration_class}\"><div class=\"label\">Total UI Test Time</div><div class=\"value\">{ui_run_duration_sec:.2f}s</div></div>
         <div class=\"card {api_run_duration_class}\"><div class=\"label\">Average API Test Run Duration</div><div class=\"value\">{api_run_duration_sec:.2f}s</div></div>
         <div class=\"card {suite_duration_class}\"><div class=\"label\">Average Pipeline Duration</div><div class=\"value\">{avg_suite_duration_sec:.2f}s</div></div>
       </div>
@@ -1197,11 +1289,11 @@ def build_html(
       </div>
       <div class=\"metric-pair\">
         <div class=\"panel\">
-          <h3>Average UI Test Run Duration Trend</h3>
+          <h3>Total UI Test Time Trend</h3>
           <canvas id=\"ui-run-duration-trend\"></canvas>
         </div>
         <div class=\"panel\">
-          <h3>Average UI Test Run Duration vs Target by Run</h3>
+          <h3>Total UI Test Time vs Target by Run</h3>
           <table>
             <thead>
               <tr>
@@ -1289,12 +1381,68 @@ def build_html(
       </div>
     </section>
 
+    <section class=\"group\" id=\"cross-browser-ui\">
+      <h2>3️⃣ Cross-Browser UI</h2>
+      <p class=\"desc\">Compare reliability and speed without duplicating the full report for every browser.</p>
+
+      <div class=\"browser-cards\">
+        {browser_cards_html}
+      </div>
+
+      <div class=\"panel coverage-banner\">
+        <div>
+          <h3>Browser Coverage</h3>
+          <div class=\"label\">UI scenarios executed in Chromium, Firefox and WebKit</div>
+          <div class=\"label\">{html.escape(browser_coverage_details)}</div>
+        </div>
+        <div class=\"coverage-value\">{float(browser_coverage.get("coverage_rate", 0.0)):.2f}% · {int(browser_coverage.get("common_tests", 0))}/{int(browser_coverage.get("unique_tests", 0))}</div>
+      </div>
+
+      <div class=\"charts-2\">
+        <div class=\"panel\">
+          <h3>Pass Rate by Browser</h3>
+          <canvas id=\"browser-pass-trend\"></canvas>
+          <div class=\"legend browser-legend\">
+            <span><i class=\"dot\" style=\"background:#2f7fc3\"></i>Chromium</span>
+            <span><i class=\"dot\" style=\"background:#a36a28\"></i>Firefox</span>
+            <span><i class=\"dot\" style=\"background:#9b4eb2\"></i>WebKit</span>
+          </div>
+        </div>
+        <div class=\"panel\">
+          <h3>Average UI Test Duration by Browser</h3>
+          <canvas id=\"browser-duration-trend\"></canvas>
+          <div class=\"legend browser-legend\">
+            <span><i class=\"dot\" style=\"background:#2f7fc3\"></i>Chromium</span>
+            <span><i class=\"dot\" style=\"background:#a36a28\"></i>Firefox</span>
+            <span><i class=\"dot\" style=\"background:#9b4eb2\"></i>WebKit</span>
+          </div>
+        </div>
+      </div>
+
+      <div class=\"panel\">
+        <h3>Browser-Specific Failures</h3>
+        <table class=\"slow-tests-table\">
+          <thead>
+            <tr>
+              <th>Browser</th>
+              <th class=\"slow-test-name\">Test</th>
+              <th>Failed results</th>
+              <th>Failed runs</th>
+              <th>Latest failure</th>
+            </tr>
+          </thead>
+          <tbody>{browser_failure_rows_html}</tbody>
+        </table>
+      </div>
+    </section>
+
   </div>
 
   <script>
     const data = {points_json};
     const slowestUiTests = {slowest_ui_json};
     const slowestApiTests = {slowest_api_json};
+    const browserRuns = {browser_runs_json};
     const passRateTarget = {pass_rate_target:.2f};
     const failRateTarget = {fail_rate_target:.2f};
     const brokenRateTarget = {broken_rate_target:.2f};
@@ -1399,6 +1547,67 @@ def build_html(
           ctx.fillStyle = '#5e6b7a';
           ctx.font = '11px sans-serif';
           ctx.fillText(p.d.run_label, 0, 0);
+          ctx.restore();
+        }}
+      }});
+    }}
+
+    function drawBrowserChart(canvasId, valueKey, unit, minimumMax = 1) {{
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      setupCanvas(canvas, ctx);
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      ctx.clearRect(0, 0, w, h);
+      if (!browserRuns.length) {{
+        ctx.fillStyle = '#5e6b7a';
+        ctx.font = '16px sans-serif';
+        ctx.fillText('No data', 20, 40);
+        return;
+      }}
+      const runLabels = [...new Set(browserRuns.map(row => row.run_label))];
+      const maxY = Math.max(
+        minimumMax,
+        ...browserRuns.map(row => Number(row[valueKey]) || 0)
+      );
+      const axis = drawAxis(ctx, w, h, maxY, unit);
+      const stepX = runLabels.length === 1 ? 0 : axis.innerW / (runLabels.length - 1);
+      const colors = {{ Chromium: '#2f7fc3', Firefox: '#a36a28', WebKit: '#9b4eb2' }};
+      Object.entries(colors).forEach(([browser, color]) => {{
+        const values = new Map(
+          browserRuns
+            .filter(row => row.browser === browser)
+            .map(row => [row.run_label, Number(row[valueKey]) || 0])
+        );
+        const points = runLabels
+          .map((label, index) => values.has(label) ? {{
+            x: axis.pad.left + index * stepX,
+            y: axis.pad.top + axis.innerH - (values.get(label) / maxY) * axis.innerH
+          }} : null)
+          .filter(Boolean);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        points.forEach((point, index) => {{
+          if (index === 0) ctx.moveTo(point.x, point.y);
+          else ctx.lineTo(point.x, point.y);
+        }});
+        ctx.stroke();
+        points.forEach(point => {{
+          ctx.beginPath();
+          ctx.fillStyle = color;
+          ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }});
+      }});
+      runLabels.forEach((label, index) => {{
+        if (index % Math.max(1, Math.ceil(runLabels.length / 7)) === 0 || index === runLabels.length - 1) {{
+          ctx.save();
+          ctx.translate(axis.pad.left + index * stepX, h - 54);
+          ctx.rotate(-0.55);
+          ctx.fillStyle = '#5e6b7a';
+          ctx.font = '11px sans-serif';
+          ctx.fillText(label, 0, 0);
           ctx.restore();
         }}
       }});
@@ -1547,6 +1756,8 @@ def build_html(
       drawLineChart('ui-run-duration-trend', 'ui_run_duration_sec', uiRunDurMax, '#216a4c', '#2c9568', 's', {ui_run_target_sec:.2f}, '#216a4c');
       drawLineChart('api-run-duration-trend', 'api_run_duration_sec', apiRunDurMax, '#6f4b1f', '#a36a28', 's', {api_run_target_sec:.2f}, '#6f4b1f');
       drawLineChart('ci-pipeline-duration-trend', 'suite_duration_sec', suiteDurMax, '#7b2f8e', '#9b4eb2', 's', {pipeline_target_sec:.2f}, '#7b2f8e');
+      drawBrowserChart('browser-pass-trend', 'pass_rate', '%', 100);
+      drawBrowserChart('browser-duration-trend', 'avg_duration_sec', 's', 1);
     }}
 
     fillTables();

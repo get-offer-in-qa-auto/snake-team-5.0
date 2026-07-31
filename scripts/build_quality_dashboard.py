@@ -37,6 +37,12 @@ REPORT_ID_PATTERN = re.compile(r"^(?P<run_id>\d+)-attempt-(?P<attempt>\d+)$")
 FAILED_STATUSES = {"failed", "broken"}
 COMPLETED_TEST_STATUSES = {"passed", "failed", "broken", "skipped", "unknown"}
 UI_SCOPE_ORDER = ("API", "UI · Chromium", "UI · Firefox", "UI · WebKit")
+BROWSER_NAMES = ("Chromium", "Firefox", "WebKit")
+DEFAULT_BROWSER_TARGETS = {
+    "Chromium": {"avg_duration_sec": 11.0, "run_duration_sec": 100.0},
+    "Firefox": {"avg_duration_sec": 13.0, "run_duration_sec": 115.0},
+    "WebKit": {"avg_duration_sec": 14.0, "run_duration_sec": 120.0},
+}
 QUALITY_TARGET_KEYS = (
     "pass_rate",
     "fail_rate",
@@ -220,6 +226,40 @@ def load_quality_targets(path: Path) -> dict[str, dict[str, Any]]:
     return targets
 
 
+def load_browser_targets(path: Path) -> dict[str, dict[str, float]]:
+    payload = load_json(path)
+    if payload is None:
+        raise ValueError(f"quality targets config is missing or invalid: {path}")
+    raw_targets = payload.get("browser_targets", DEFAULT_BROWSER_TARGETS)
+    if not isinstance(raw_targets, dict):
+        raise ValueError("browser_targets must be an object")
+
+    targets: dict[str, dict[str, float]] = {}
+    for browser in BROWSER_NAMES:
+        raw_target = raw_targets.get(browser, DEFAULT_BROWSER_TARGETS[browser])
+        if not isinstance(raw_target, dict):
+            raise ValueError(f"browser target {browser!r} must be an object")
+        try:
+            avg_duration = float(raw_target["avg_duration_sec"])
+            run_duration = float(raw_target["run_duration_sec"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError(
+                f"browser target {browser!r} durations must be numbers"
+            ) from error
+        if (
+            not math.isfinite(avg_duration)
+            or not math.isfinite(run_duration)
+            or avg_duration <= 0
+            or run_duration <= 0
+        ):
+            raise ValueError(f"browser target {browser!r} durations must be positive")
+        targets[browser] = {
+            "avg_duration_sec": avg_duration,
+            "run_duration_sec": run_duration,
+        }
+    return targets
+
+
 def load_published_reports(
     site_dir: Path,
     suite: str,
@@ -324,6 +364,26 @@ def test_identity(test: dict[str, Any]) -> str:
         or test.get("uid")
         or "unknown"
     )
+
+
+def browser_name(test: dict[str, Any]) -> str | None:
+    scope = test_scope(test)
+    if not scope.startswith("UI ·"):
+        return None
+    candidate = scope.split("·", maxsplit=1)[1].strip()
+    return candidate if candidate in BROWSER_NAMES else None
+
+
+def logical_ui_test_identity(test: dict[str, Any]) -> str:
+    identity = str(
+        test.get("fullName") or test.get("name") or test_identity(test)
+    ).strip()
+    return re.sub(
+        r"\[(?:chromium|firefox|webkit)\](?=($|\s))",
+        "",
+        identity,
+        flags=re.IGNORECASE,
+    ).strip()
 
 
 def status_counts(reports: list[PublishedReport]) -> Counter[str]:
@@ -523,6 +583,160 @@ def aggregate_suites(reports: list[PublishedReport]) -> list[dict[str, Any]]:
             }
         )
     return result
+
+
+def aggregate_browser_metrics(
+    reports: list[PublishedReport],
+    *,
+    browser_targets: dict[str, dict[str, float]],
+    quality_targets: dict[str, dict[str, Any]],
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    dict[str, Any],
+    list[dict[str, Any]],
+]:
+    browser_runs: list[dict[str, Any]] = []
+    all_durations: dict[str, list[float]] = defaultdict(list)
+    identities: dict[str, set[str]] = defaultdict(set)
+    failures: dict[tuple[str, str], dict[str, Any]] = {}
+
+    for report in sorted(reports, key=lambda item: item.generated_at):
+        tests_by_browser: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for test in report.tests:
+            browser = browser_name(test)
+            if browser is None:
+                continue
+            tests_by_browser[browser].append(test)
+            identity = logical_ui_test_identity(test)
+            identities[browser].add(identity)
+            status = str(test.get("status") or "unknown").lower()
+            if status in FAILED_STATUSES:
+                key = (browser, identity)
+                aggregate = failures.setdefault(
+                    key,
+                    {
+                        "browser": browser,
+                        "test_name": identity,
+                        "failed_results": 0,
+                        "runs": set(),
+                        "latest_run": "",
+                    },
+                )
+                aggregate["failed_results"] += 1
+                aggregate["runs"].add(report.run_id)
+                aggregate["latest_run"] = report.generated_at.strftime("%Y-%m-%d %H:%M")
+
+        for browser in BROWSER_NAMES:
+            browser_tests = tests_by_browser.get(browser, [])
+            if not browser_tests:
+                continue
+            counts: Counter[str] = Counter(
+                str(test.get("status") or "unknown").lower() for test in browser_tests
+            )
+            durations = [test_duration_ms(test) / 1000 for test in browser_tests]
+            all_durations[browser].extend(durations)
+            total = len(browser_tests)
+            flaky = sum(
+                bool(test.get("flaky")) or test_retry_count(test) > 0
+                for test in browser_tests
+            )
+            browser_runs.append(
+                {
+                    "run_id": report.run_id,
+                    "run_label": report.generated_at.strftime("%d %b %H:%M"),
+                    "generated_at": report.generated_at.isoformat(timespec="seconds"),
+                    "browser": browser,
+                    "total_tests": total,
+                    "passed_tests": counts["passed"],
+                    "failed_tests": counts["failed"],
+                    "broken_tests": counts["broken"],
+                    "pass_rate": ratio_percent(counts["passed"], total),
+                    "fail_rate": ratio_percent(counts["failed"], total),
+                    "broken_rate": ratio_percent(counts["broken"], total),
+                    "flaky_rate": ratio_percent(flaky, total),
+                    "avg_duration_sec": average(durations),
+                    "run_duration_sec": round(sum(durations), 2),
+                    "avg_target_sec": browser_targets[browser]["avg_duration_sec"],
+                    "run_target_sec": browser_targets[browser]["run_duration_sec"],
+                }
+            )
+
+    summary: list[dict[str, Any]] = []
+    pass_target = float(quality_targets["pass_rate"]["value"])
+    flaky_target = float(quality_targets["flaky_rate"]["value"])
+    for browser in BROWSER_NAMES:
+        rows = [row for row in browser_runs if row["browser"] == browser]
+        total = sum(int(row["total_tests"]) for row in rows)
+        passed = sum(int(row["passed_tests"]) for row in rows)
+        failed = sum(
+            int(row["failed_tests"]) + int(row["broken_tests"]) for row in rows
+        )
+        avg_duration = average([float(row["avg_duration_sec"]) for row in rows])
+        flaky_rate = (
+            sum(float(row["flaky_rate"]) * int(row["total_tests"]) for row in rows)
+            / total
+            if total
+            else 0.0
+        )
+        p90_run = round(
+            percentile([float(row["run_duration_sec"]) for row in rows], 0.90),
+            2,
+        )
+        avg_target = browser_targets[browser]["avg_duration_sec"]
+        run_target = browser_targets[browser]["run_duration_sec"]
+        passed_gate = (
+            ratio_percent(passed, total) >= pass_target
+            and flaky_rate <= flaky_target
+            and avg_duration <= avg_target
+            and p90_run <= run_target
+        )
+        summary.append(
+            {
+                "browser": browser,
+                "runs": len(rows),
+                "total_tests": total,
+                "failed_tests": failed,
+                "pass_rate": round(ratio_percent(passed, total), 2),
+                "flaky_rate": round(flaky_rate, 2),
+                "avg_duration_sec": avg_duration,
+                "p95_duration_sec": round(percentile(all_durations[browser], 0.95), 2),
+                "p90_run_duration_sec": p90_run,
+                "avg_target_sec": avg_target,
+                "run_target_sec": run_target,
+                "status": "ok" if passed_gate else "fail",
+                "status_label": "OK" if passed_gate else "Failed",
+            }
+        )
+
+    union = set().union(*(identities[browser] for browser in BROWSER_NAMES))
+    common = (
+        set.intersection(*(identities[browser] for browser in BROWSER_NAMES))
+        if all(identities[browser] for browser in BROWSER_NAMES)
+        else set()
+    )
+    coverage = {
+        "common_tests": len(common),
+        "unique_tests": len(union),
+        "coverage_rate": round(ratio_percent(len(common), len(union)), 2),
+        "by_browser": {browser: len(identities[browser]) for browser in BROWSER_NAMES},
+    }
+    failure_rows = [
+        {
+            **{key: value for key, value in aggregate.items() if key != "runs"},
+            "failed_runs": len(aggregate["runs"]),
+        }
+        for aggregate in failures.values()
+    ]
+    failure_rows.sort(
+        key=lambda item: (
+            int(item["failed_results"]),
+            int(item["failed_runs"]),
+            str(item["latest_run"]),
+        ),
+        reverse=True,
+    )
+    return browser_runs, summary, coverage, failure_rows[:10]
 
 
 def aggregate_tests(reports: list[PublishedReport]) -> list[dict[str, Any]]:
@@ -812,7 +1026,7 @@ def build_quality_gates(
             "average API test duration", rows, "avg_api_duration_sec", "s"
         ),
         "ui_run_duration_sec": average_formula(
-            "average UI run duration", rows, "ui_run_duration_sec", "s"
+            "total UI test time", rows, "ui_run_duration_sec", "s"
         ),
         "api_run_duration_sec": average_formula(
             "average API run duration", rows, "api_run_duration_sec", "s"
@@ -950,8 +1164,11 @@ def build_metrics(
     now: datetime,
     days: int,
     quality_targets: dict[str, dict[str, Any]],
+    browser_targets: dict[str, dict[str, float]] | None = None,
     coverage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if browser_targets is None:
+        browser_targets = DEFAULT_BROWSER_TARGETS
     reference_rows = reference_run_metrics(runs, reports, quality_targets)
     reference_summary, quality_gates = build_quality_gates(
         reference_rows,
@@ -1000,6 +1217,17 @@ def build_metrics(
             }
         )
 
+    (
+        browser_runs,
+        browser_summary,
+        browser_coverage,
+        browser_failures,
+    ) = aggregate_browser_metrics(
+        reports,
+        browser_targets=browser_targets,
+        quality_targets=quality_targets,
+    )
+
     return {
         "generated_at": now.isoformat(timespec="seconds"),
         "window": {
@@ -1045,6 +1273,11 @@ def build_metrics(
         "metric_runs": reference_rows,
         "slowest_ui_tests": slowest_tests(reports, ui=True),
         "slowest_api_tests": slowest_tests(reports, ui=False),
+        "browser_runs": browser_runs,
+        "browser_summary": browser_summary,
+        "browser_coverage": browser_coverage,
+        "browser_failures": browser_failures,
+        "browser_targets": browser_targets,
         "suites": aggregate_suites(reports),
         "attention": aggregate_tests(reports),
         "recent_runs": recent_runs,
@@ -2133,6 +2366,10 @@ def render_dashboard(
         reference_slowest("slowest_ui_tests"),
         reference_slowest("slowest_api_tests"),
         gates_config,
+        browser_runs=metrics.get("browser_runs", []),
+        browser_summary=metrics.get("browser_summary", []),
+        browser_coverage=metrics.get("browser_coverage", {}),
+        browser_failures=metrics.get("browser_failures", []),
     )
     navigation_css = """
     .qa-report-links {
@@ -2244,6 +2481,49 @@ def render_markdown_report(metrics: dict[str, Any]) -> str:
             )
             + " |"
         )
+
+    lines.extend(
+        (
+            "",
+            "## Cross-browser UI",
+            "",
+            "| Browser | Pass rate | Failures | Flaky | Avg test | Avg target | P95 test | P90 run | Run target | Status |",
+            "|---|---:|---:|---:|---:|---:|---:|---:|---:|---|",
+        )
+    )
+    for browser in metrics.get("browser_summary", []):
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    markdown_cell(browser["browser"]),
+                    f"{float(browser['pass_rate']):.2f}%",
+                    str(browser["failed_tests"]),
+                    f"{float(browser['flaky_rate']):.2f}%",
+                    f"{float(browser['avg_duration_sec']):.2f}s",
+                    f"<= {float(browser['avg_target_sec']):.2f}s",
+                    f"{float(browser['p95_duration_sec']):.2f}s",
+                    f"{float(browser['p90_run_duration_sec']):.2f}s",
+                    f"<= {float(browser['run_target_sec']):.2f}s",
+                    markdown_cell(browser["status_label"]),
+                )
+            )
+            + " |"
+        )
+
+    browser_coverage = metrics.get("browser_coverage", {})
+    lines.extend(
+        (
+            "",
+            (
+                "Browser coverage: "
+                f"**{float(browser_coverage.get('coverage_rate', 0.0)):.2f}%** "
+                f"({int(browser_coverage.get('common_tests', 0))}/"
+                f"{int(browser_coverage.get('unique_tests', 0))} UI scenarios "
+                "executed in all three browsers)."
+            ),
+        )
+    )
 
     for title, key, target_key in (
         ("Slowest UI tests", "slowest_ui_tests", "avg_duration_sec"),
@@ -2383,12 +2663,14 @@ def main() -> None:
     coverage_path, _ = resolve_site_path(args.site_dir, args.coverage_metrics)
     coverage = load_json(coverage_path)
     quality_targets = load_quality_targets(args.targets_config)
+    browser_targets = load_browser_targets(args.targets_config)
     metrics = build_metrics(
         runs,
         reports,
         now=now,
         days=args.days,
         quality_targets=quality_targets,
+        browser_targets=browser_targets,
         coverage=coverage,
     )
 

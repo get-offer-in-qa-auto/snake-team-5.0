@@ -103,6 +103,70 @@ class QualityDashboardTemplateTest(unittest.TestCase):
                     "status": "passed",
                 }
             ],
+            "browser_runs": [
+                {
+                    "run_id": 1,
+                    "run_label": "31 Jul 09:00",
+                    "browser": "Chromium",
+                    "pass_rate": 100.0,
+                    "avg_duration_sec": 1.0,
+                },
+                {
+                    "run_id": 1,
+                    "run_label": "31 Jul 09:00",
+                    "browser": "Firefox",
+                    "pass_rate": 100.0,
+                    "avg_duration_sec": 1.2,
+                },
+                {
+                    "run_id": 1,
+                    "run_label": "31 Jul 09:00",
+                    "browser": "WebKit",
+                    "pass_rate": 100.0,
+                    "avg_duration_sec": 1.4,
+                },
+            ],
+            "browser_summary": [
+                {
+                    "browser": browser,
+                    "runs": 1,
+                    "total_tests": 5,
+                    "failed_tests": 0,
+                    "pass_rate": 100.0,
+                    "flaky_rate": 0.0,
+                    "avg_duration_sec": duration,
+                    "p95_duration_sec": duration + 0.5,
+                    "p90_run_duration_sec": duration * 5,
+                    "avg_target_sec": target,
+                    "run_target_sec": run_target,
+                    "status": "ok",
+                    "status_label": "OK",
+                }
+                for browser, duration, target, run_target in (
+                    ("Chromium", 1.0, 11.0, 100.0),
+                    ("Firefox", 1.2, 13.0, 115.0),
+                    ("WebKit", 1.4, 14.0, 120.0),
+                )
+            ],
+            "browser_coverage": {
+                "common_tests": 5,
+                "unique_tests": 5,
+                "coverage_rate": 100.0,
+                "by_browser": {
+                    "Chromium": 5,
+                    "Firefox": 5,
+                    "WebKit": 5,
+                },
+            },
+            "browser_failures": [
+                {
+                    "browser": "Firefox",
+                    "test_name": "tests.ui.test_page",
+                    "failed_results": 1,
+                    "failed_runs": 1,
+                    "latest_run": "2026-07-31 09:00",
+                }
+            ],
             "run_trends": [
                 {
                     "run_number": 1,
@@ -132,9 +196,15 @@ class QualityDashboardTemplateTest(unittest.TestCase):
             periods=[(7, "periods/7/"), (14, "periods/14/")],
         )
 
-        self.assertEqual(page.count("<canvas id="), 10)
+        self.assertEqual(page.count("<canvas id="), 12)
         self.assertIn("1️⃣ Test Result Distribution", page)
         self.assertIn("2️⃣ Speed Metrics", page)
+        self.assertIn("3️⃣ Cross-Browser UI", page)
+        self.assertIn("Browser Coverage", page)
+        self.assertIn("Browser-Specific Failures", page)
+        self.assertIn('id="browser-pass-trend"', page)
+        self.assertIn('id="browser-duration-trend"', page)
+        self.assertIn("Total UI Test Time", page)
         self.assertIn("Average Pass Rate Trend", page)
         self.assertIn("Slowest tests API", page)
         self.assertIn("<th>Browser</th>", page)
