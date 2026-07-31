@@ -20,16 +20,41 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  postgresql-regression:
-    name: Run TeamCity PostgreSQL regression
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install development dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+
+      - name: Lint Python code
+        run: python3 -m ruff check .
+
+      - name: Check Python formatting
+        run: python3 -m ruff format --check .
+
+      - name: Check static types
+        run: python3 -m mypy src/main
+
+  teamcity-api:
+    name: TeamCity PostgreSQL API regression
+    needs: code-quality
     runs-on: ubuntu-latest
     env:
       TEAMCITY_PARALLELISM: ${{ inputs.parallelism || vars.TEAMCITY_PARALLELISM || '2' }}
-    timeout-minutes: 60
+    timeout-minutes: 20
     permissions:
       contents: read
-    outputs:
-      allure_pages_ready: ${{ steps.teamcity-report.outputs.allure_pages_ready }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,13 +67,14 @@ jobs:
           echo "TEAMCITY_POSTGRES_PASSWORD=$password" >> "$GITHUB_ENV"
           echo "TEAMCITY_DB_ADAPTER=postgresql" >> "$GITHUB_ENV"
 
-      - name: Start and prepare TeamCity with PostgreSQL
+      - name: Start and prepare TeamCity with PostgreSQL for API tests
         uses: ./.github/actions/teamcity-setup
         with:
           compose_file: ci/teamcity/postgresql/compose.yaml
           server_container: teamcity-server-postgresql-ci
           agent_count: ${{ env.TEAMCITY_PARALLELISM }}
           database_mode: external
+          playwright_browser: none
 
       - name: Configure and verify PostgreSQL access
         shell: bash
@@ -71,34 +97,164 @@ jobs:
             TEAMCITY_DB_CONTAINER=teamcity-server-postgresql-ci \
             python3 -m scripts.teamcity_database_preflight
 
-      - name: Run TeamCity PostgreSQL smoke gate
+      - name: Run TeamCity PostgreSQL API smoke gate
         uses: ./.github/actions/teamcity-test
         with:
-          pytest_marker: smoke
+          pytest_marker: "smoke and api"
           pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
-          junit_filename: smoke-teamcity-postgresql-regression.xml
+          junit_filename: smoke-teamcity-postgresql-api-regression.xml
           server_container: teamcity-server-postgresql-ci
+          browser: none
 
-      - name: Run remaining TeamCity PostgreSQL regression tests
+      - name: Run remaining TeamCity PostgreSQL API regression tests
         uses: ./.github/actions/teamcity-test
         with:
-          pytest_marker: "(regression) and not smoke"
+          pytest_marker: "(regression and api) and not smoke"
           pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
-          junit_filename: teamcity-postgresql-regression.xml
+          junit_filename: teamcity-postgresql-api-regression.xml
           server_container: teamcity-server-postgresql-ci
           preserve_allure_results: "true"
+          browser: none
 
-      - name: Build PostgreSQL reports and stop TeamCity
-        id: teamcity-report
+      - name: Collect PostgreSQL API results and stop TeamCity
         if: always()
         uses: ./.github/actions/teamcity-report
         with:
-          test_label: postgresql-regression
+          test_label: postgresql-api
           compose_file: ci/teamcity/postgresql/compose.yaml
           server_container: teamcity-server-postgresql-ci
-          logs_artifact_name: teamcity-postgresql-regression-logs
-          results_artifact_name: teamcity-postgresql-regression-test-results
-          page_artifact_name: teamcity-postgresql-login-page
+          logs_artifact_name: teamcity-postgresql-api-logs
+          results_artifact_name: teamcity-postgresql-api-test-results
+          page_artifact_name: teamcity-postgresql-api-login-page
+          generate_allure_report: "false"
+
+  teamcity-ui:
+    name: TeamCity PostgreSQL UI · ${{ matrix.title }}
+    needs: code-quality
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - browser: chromium
+            title: Chromium
+          - browser: firefox
+            title: Firefox
+          - browser: webkit
+            title: WebKit
+    env:
+      TEAMCITY_PARALLELISM: ${{ inputs.parallelism || vars.TEAMCITY_PARALLELISM || '2' }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate PostgreSQL CI credentials
+        shell: bash
+        run: |
+          password="$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          echo "TEAMCITY_POSTGRES_PASSWORD=$password" >> "$GITHUB_ENV"
+          echo "TEAMCITY_DB_ADAPTER=postgresql" >> "$GITHUB_ENV"
+
+      - name: Start and prepare TeamCity with PostgreSQL for ${{ matrix.title }}
+        uses: ./.github/actions/teamcity-setup
+        with:
+          compose_file: ci/teamcity/postgresql/compose.yaml
+          server_container: teamcity-server-postgresql-ci
+          agent_count: ${{ env.TEAMCITY_PARALLELISM }}
+          database_mode: external
+          playwright_browser: ${{ matrix.browser }}
+
+      - name: Configure and verify PostgreSQL access
+        shell: bash
+        run: |
+          endpoint="$(
+            docker compose \
+              -f ci/teamcity/postgresql/compose.yaml \
+              port teamcity-postgres 5432
+          )"
+          port="${endpoint##*:}"
+          if [[ ! "$port" =~ ^[0-9]+$ ]]; then
+            echo "Could not determine the PostgreSQL host port from: $endpoint" >&2
+            exit 1
+          fi
+
+          dsn="postgresql://teamcity:${TEAMCITY_POSTGRES_PASSWORD}@127.0.0.1:${port}/teamcity"
+          echo "::add-mask::$dsn"
+          echo "TEAMCITY_DB_DSN=$dsn" >> "$GITHUB_ENV"
+          TEAMCITY_DB_DSN="$dsn" \
+            TEAMCITY_DB_CONTAINER=teamcity-server-postgresql-ci \
+            python3 -m scripts.teamcity_database_preflight
+
+      - name: Run TeamCity PostgreSQL UI tests in ${{ matrix.title }}
+        uses: ./.github/actions/teamcity-test
+        with:
+          pytest_marker: "(regression) and ui"
+          pytest_workers: ${{ env.TEAMCITY_PARALLELISM }}
+          junit_filename: teamcity-postgresql-ui-${{ matrix.browser }}-regression.xml
+          server_container: teamcity-server-postgresql-ci
+          browser: ${{ matrix.browser }}
+
+      - name: Collect PostgreSQL ${{ matrix.title }} results and stop TeamCity
+        if: always()
+        uses: ./.github/actions/teamcity-report
+        with:
+          test_label: postgresql-${{ matrix.browser }}
+          compose_file: ci/teamcity/postgresql/compose.yaml
+          server_container: teamcity-server-postgresql-ci
+          logs_artifact_name: teamcity-postgresql-${{ matrix.browser }}-logs
+          results_artifact_name: teamcity-postgresql-${{ matrix.browser }}-test-results
+          page_artifact_name: teamcity-postgresql-${{ matrix.browser }}-login-page
+          generate_allure_report: "false"
+
+  postgresql-regression:
+    name: TeamCity PostgreSQL regression
+    if: ${{ always() }}
+    needs:
+      - teamcity-api
+      - teamcity-ui
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      allure_pages_ready: ${{ steps.allure-report.outputs.ready }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build combined PostgreSQL Allure report
+        id: allure-report
+        uses: ./.github/actions/allure-aggregate
+        with:
+          source_artifact_pattern: teamcity-postgresql-*-allure-results
+          expected_artifact_names: >-
+            teamcity-postgresql-api-allure-results
+            teamcity-postgresql-chromium-allure-results
+            teamcity-postgresql-firefox-allure-results
+            teamcity-postgresql-webkit-allure-results
+          test_label: postgresql-regression
+          results_artifact_name: teamcity-postgresql-regression-allure-results
+          report_artifact_name: teamcity-postgresql-regression-allure-report
+          database: PostgreSQL
+          pytest_workers: ${{ inputs.parallelism || vars.TEAMCITY_PARALLELISM || '2' }}
+
+      - name: Verify PostgreSQL API and browser jobs
+        if: always()
+        shell: bash
+        env:
+          API_RESULT: ${{ needs.teamcity-api.result }}
+          UI_RESULT: ${{ needs.teamcity-ui.result }}
+        run: |
+          if [ "$API_RESULT" != "success" ] || [ "$UI_RESULT" != "success" ]; then
+            echo "PostgreSQL API job result: $API_RESULT" >&2
+            echo "PostgreSQL UI matrix result: $UI_RESULT" >&2
+            exit 1
+          fi
 
   deploy-allure-pages:
     name: Publish PostgreSQL Allure report page
