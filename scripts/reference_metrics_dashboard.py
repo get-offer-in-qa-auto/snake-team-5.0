@@ -460,6 +460,17 @@ def build_html(
         )
 
     total_runs = len(rows)
+    run_datetimes = [
+        run_datetime
+        for row in sorted_rows
+        if (run_datetime := parse_run_datetime(row.run_name)) is not None
+    ]
+    run_period = (
+        f"{run_datetimes[0].strftime('%d %b %Y')} — "
+        f"{run_datetimes[-1].strftime('%d %b %Y')}"
+        if run_datetimes
+        else "No runs in selected period"
+    )
     total_tests = sum(r.total_tests for r in rows)
     total_flaky = sum(r.flaky_tests for r in rows)
     successful_runs = sum(
@@ -939,7 +950,11 @@ def build_html(
     <p class=\"subtitle\">Quality metrics across GitHub runs (Allure artifacts)</p>
 
     <div class=\"summary\">
-      <div class=\"card\"><div class=\"label\">Total Runs</div><div class=\"value\">{total_runs}</div></div>
+      <div class=\"card\">
+        <div class=\"label\">Total Runs</div>
+        <div class=\"value\">{total_runs}</div>
+        <div class=\"label\">{run_period}</div>
+      </div>
     </div>
 
     <section class=\"group\">

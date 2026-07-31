@@ -135,6 +135,7 @@ class QualityDashboardTemplateTest(unittest.TestCase):
         self.assertIn("2️⃣ Speed Metrics", page)
         self.assertIn("Average Pass Rate Trend", page)
         self.assertIn("Slowest tests API", page)
+        self.assertIn("31 Jul 2026 — 31 Jul 2026", page)
         self.assertIn('href="coverage/"', page)
         self.assertIn('href="../reports/"', page)
 
