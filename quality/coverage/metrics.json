@@ -10,7 +10,7 @@
     "with_coverage": 59,
     "with_coverage_rate": 100.0
   },
-  "generated_at": "2026-07-31T15:05:35+00:00",
+  "generated_at": "2026-08-01T05:34:39+00:00",
   "latest": {
     "attempt": 1,
     "branch": "80/merge",
@@ -34,8 +34,8 @@
     "xml_url": "coverage/30640447362-attempt-1/coverage.xml"
   },
   "latest_context": {
-    "is_today": true,
-    "label": "Today at 14:58 UTC"
+    "is_today": false,
+    "label": "Last available 31 Jul 2026 14:58 UTC"
   },
   "mode": "current-snapshot",
   "modules": [
