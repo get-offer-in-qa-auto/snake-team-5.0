@@ -1,0 +1,242 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+hide empty members
+
+legend top right
+  Diagram owner: Katya
+endlegend
+
+package "Presentation / UI Layer" <<Layer>> {
+package "Page Objects" {
+  abstract class BasePage {
+    - page: Page
+    {abstract} + path(): str
+    + open(): BasePage
+    + get_page(page_class): BasePage
+  }
+
+  class LoginPage {
+    + login(user_request): LoginPage
+    + login_success(user_request): ProjectsPage
+  }
+  class ProjectsPage {
+    + header(): TeamCityHeader
+    + open_create_project(): CreateProjectPage
+    + should_contain_project(project): ProjectsPage
+  }
+  class CreateProjectPage {
+    + create_project(project_request): ProjectSetupPage
+    + create_project_success(project_request): ProjectSetupPage
+  }
+  class ProjectSetupPage {
+    + should_be_opened(): ProjectSetupPage
+  }
+  class ProjectPage {
+    + should_be_opened(): ProjectPage
+    + should_not_allow_creation(): ProjectPage
+  }
+  class UsersPage {
+    + open_create_user(): CreateUserPage
+    + open_user(user_request): UserPage
+    + should_contain_user(user_request): UsersPage
+  }
+  class CreateUserPage {
+    + create_user(user_request): UsersPage
+    + should_show_required_fields_errors(): CreateUserPage
+  }
+  class UserPage {
+    + open_access_tokens(): AccessTokensPage
+    + delete_user(): UsersPage
+  }
+  class AccessTokensPage {
+    + create_token(token_request): AccessTokensPage
+    + should_show_created_token(): AccessTokensPage
+  }
+  class BuildStepsPage {
+    + should_be_opened(): BuildStepsPage
+  }
+  class CreateCommandLineBuildStepPage {
+    + create_build_step(build_step_request): BuildStepsPage
+  }
+}
+
+package "UI Components & Navigation" {
+  class TeamCityHeader {
+    + page: Page
+    + should_be_visible(): TeamCityHeader
+  }
+  class TeamCityRoutes {
+    {static} + NEW_RUNNER_ID: str
+    {static} + build_steps(build_configuration_id): str
+    {static} + create_build_step(build_configuration_id): str
+  }
+}
+}
+
+package "UI Integration / Authentication Adapter Layer" <<Layer>> {
+  class UiAuthClient {
+    {static} + session_cookie_name: str
+    + base_url: str
+    + request_timeout: float
+    + authenticate(context, user_request): None
+  }
+}
+
+package "Test State / Context Layer" <<Layer>> {
+  class SessionStorage {
+    {static} - _users: list[CreateUserRequest]
+    {static} + add_users(users): None
+    {static} + get_user(index): CreateUserRequest
+    {static} + clear(): None
+  }
+}
+
+package "Data Contracts / DTO Layer\nIdentity & Project" <<Layer>> {
+  class BaseModel <<Pydantic>>
+
+  class CreateUserRequest {
+    + username: str
+    + password: str
+    + name: str
+  }
+  class CreateUserResponse {
+    + id: int
+    + username: str
+    + name: str?
+    + email: str?
+    + href: str?
+    + hasPassword: bool?
+  }
+  class CreateUserTokenRequest {
+    + name: str
+  }
+  class UserTokenResponse {
+    + name: str
+    + value: str?
+    + creationTime: str?
+    + username: str?
+    + password: str?
+  }
+  class UserTokensResponse {
+    + count: int
+    + token: list[UserTokenResponse]
+  }
+  enum Role {
+    PROJECT_VIEWER
+    SYSTEM_ADMIN
+  }
+  class RoleScope {
+    {static} + GLOBAL: str
+    {static} + project(project_id): str
+  }
+  class RoleAssignmentRequest {
+    + roleId: str
+    + scope: str
+  }
+  class RoleAssignmentResponse {
+    + roleId: str
+    + scope: str
+    + href: str?
+  }
+  class RoleAssignmentsResponse {
+    + role: list[RoleAssignmentResponse]
+  }
+  class ParentProjectRequest {
+    + locator: str
+  }
+  class CreateProjectRequest {
+    + id: str
+    + name: str
+    + parentProject: ParentProjectRequest
+  }
+  class ProjectReferenceResponse {
+    + id: str?
+    + name: str?
+    + locator: str?
+  }
+  class ProjectResponse {
+    + id: str
+    + name: str
+    + href: str?
+    + parentProject: ProjectReferenceResponse?
+  }
+}
+
+package "External architectural dependencies" <<External>> {
+  class "Build Models Layer\nCreateBuildStepRequest\nOwner: Petr" as ExternalBuildModels <<external>>
+  class "Shared API Configuration\nConfig · TimeoutConfig · RequestSpecs" as ExternalApiSupport <<external>>
+  class "Test Data Generation\nGeneratingRule\nOwner: Nikita" as ExternalGenerators <<external>>
+}
+
+' Page Object inheritance
+BasePage <|-- LoginPage
+BasePage <|-- ProjectsPage
+BasePage <|-- CreateProjectPage
+BasePage <|-- ProjectSetupPage
+BasePage <|-- ProjectPage
+BasePage <|-- UsersPage
+BasePage <|-- CreateUserPage
+BasePage <|-- UserPage
+BasePage <|-- AccessTokensPage
+BasePage <|-- BuildStepsPage
+BasePage <|-- CreateCommandLineBuildStepPage
+
+' Page navigation
+LoginPage ..> ProjectsPage : successful login
+ProjectsPage ..> CreateProjectPage : opens
+CreateProjectPage ..> ProjectSetupPage : creates project
+UsersPage ..> CreateUserPage : opens
+UsersPage ..> UserPage : opens
+CreateUserPage ..> UsersPage : creates user
+UserPage ..> AccessTokensPage : opens
+UserPage ..> UsersPage : deletes user
+CreateCommandLineBuildStepPage ..> BuildStepsPage : saves build step
+
+' Cross-layer dependencies: Presentation/UI -> Data Contracts
+ProjectsPage ..> TeamCityHeader : uses
+ProjectsPage ..> CreateProjectRequest
+CreateProjectPage ..> CreateProjectRequest
+ProjectPage ..> ProjectResponse
+LoginPage ..> CreateUserRequest
+UsersPage ..> CreateUserRequest
+CreateUserPage ..> CreateUserRequest
+AccessTokensPage ..> CreateUserTokenRequest
+UiAuthClient ..> CreateUserRequest
+
+' Test State -> Data Contracts
+SessionStorage o-- "0..*" CreateUserRequest : stores
+
+' Internal Presentation/UI dependencies
+BuildStepsPage ..> TeamCityRoutes
+CreateCommandLineBuildStepPage ..> TeamCityRoutes
+
+' External dependencies of this diagram fragment
+CreateCommandLineBuildStepPage ..> ExternalBuildModels : uses
+UiAuthClient ..> ExternalApiSupport : uses
+CreateUserRequest ..> ExternalGenerators : metadata
+CreateProjectRequest ..> ExternalGenerators : metadata
+CreateUserTokenRequest ..> ExternalGenerators : metadata
+
+' Data contract inheritance and composition
+BaseModel <|-- CreateUserRequest
+BaseModel <|-- CreateUserResponse
+BaseModel <|-- CreateUserTokenRequest
+BaseModel <|-- UserTokenResponse
+BaseModel <|-- UserTokensResponse
+BaseModel <|-- RoleAssignmentRequest
+BaseModel <|-- RoleAssignmentResponse
+BaseModel <|-- RoleAssignmentsResponse
+BaseModel <|-- ParentProjectRequest
+BaseModel <|-- CreateProjectRequest
+BaseModel <|-- ProjectReferenceResponse
+BaseModel <|-- ProjectResponse
+
+UserTokensResponse *-- "0..*" UserTokenResponse
+RoleAssignmentsResponse *-- "0..*" RoleAssignmentResponse
+CreateProjectRequest *-- "1" ParentProjectRequest
+ProjectResponse *-- "0..1" ProjectReferenceResponse
+
+@enduml
