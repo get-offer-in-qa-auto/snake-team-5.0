@@ -1,25 +1,25 @@
 # TeamCity QA metrics report
 
-Period: **7 UTC calendar days** (2026-07-30T00:00:00+00:00 — 2026-08-05T06:05:02+00:00).
+Period: **7 UTC calendar days** (2026-07-31T00:00:00+00:00 — 2026-08-06T05:28:42+00:00).
 
-Published runs: **10** · fully passed: **6** · final test results: **770** · flaky results: **1**.
+Published runs: **11** · fully passed: **6** · final test results: **847** · flaky results: **1**.
 
 ## Quality gates and exact calculations
 
 | Metric | Value | Target | Status | Calculation |
 |---|---:|---:|---|---|
-| Average Pass Rate | 99.48% | >= 98.00% | OK | average pass rate = (100.00 + 100.00 + 98.70 + 100.00 + 98.70 + 98.70 + 100.00 + 98.70 + 100.00 + 100.00) / 10 = 99.48% |
-| Average Fail Rate | 0.52% | <= 2.00% | OK | average fail rate = (0.00 + 0.00 + 1.30 + 0.00 + 1.30 + 1.30 + 0.00 + 1.30 + 0.00 + 0.00) / 10 = 0.52% |
-| Average Broken Rate | 0.00% | <= 1.00% | OK | average broken rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00) / 10 = 0.00% |
-| Flaky Rate | 0.13% | <= 2.00% | OK | flaky rate = 1 / 770 = 0.13% |
-| Average UI Flaky Rate | 0.37% | <= 2.00% | OK | average UI flaky rate = (0.00 + 0.00 + 0.00 + 0.00 + 3.70 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00) / 10 = 0.37% |
-| Average API Flaky Rate | 0.00% | <= 2.00% | OK | average API flaky rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00) / 10 = 0.00% |
-| Test Stability | 60.00% | >= 95.00% | Failed | stability = 6 / 10 = 60.00% |
-| Average UI Test Duration | 10.34s | <= 12.00s | OK | average UI test duration = (8.45 + 8.46 + 11.33 + 11.21 + 11.69 + 9.75 + 8.87 + 10.84 + 11.49 + 11.26) / 10 = 10.34s |
-| Average API Test Duration | 1.33s | <= 1.50s | OK | average API test duration = (1.07 + 0.94 + 1.41 + 1.47 + 1.39 + 1.38 + 1.40 + 1.44 + 1.37 + 1.39) / 10 = 1.33s |
-| Total UI Test Time | 279.05s | <= 300.00s | OK | total UI test time = (228.17 + 228.38 + 306.04 + 302.70 + 315.65 + 263.21 + 239.38 + 292.62 + 310.23 + 304.10) / 10 = 279.05s |
-| Average API Test Run Duration | 66.33s | <= 75.00s | OK | average API run duration = (53.62 + 46.97 + 70.46 + 73.69 + 69.58 + 68.81 + 70.07 + 71.96 + 68.45 + 69.74) / 10 = 66.33s |
-| Average Pipeline Duration | 327.60s | <= 360.00s | OK | average pipeline duration = (452.00 + 420.00 + 297.00 + 281.00 + 329.00 + 290.00 + 284.00 + 313.00 + 298.00 + 312.00) / 10 = 327.60s |
+| Average Pass Rate | 99.41% | >= 98.00% | OK | average pass rate = (100.00 + 100.00 + 98.70 + 100.00 + 98.70 + 98.70 + 100.00 + 98.70 + 100.00 + 100.00 + 98.70) / 11 = 99.41% |
+| Average Fail Rate | 0.59% | <= 2.00% | OK | average fail rate = (0.00 + 0.00 + 1.30 + 0.00 + 1.30 + 1.30 + 0.00 + 1.30 + 0.00 + 0.00 + 1.30) / 11 = 0.59% |
+| Average Broken Rate | 0.00% | <= 1.00% | OK | average broken rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00) / 11 = 0.00% |
+| Flaky Rate | 0.12% | <= 2.00% | OK | flaky rate = 1 / 847 = 0.12% |
+| Average UI Flaky Rate | 0.34% | <= 2.00% | OK | average UI flaky rate = (0.00 + 0.00 + 0.00 + 0.00 + 3.70 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00) / 11 = 0.34% |
+| Average API Flaky Rate | 0.00% | <= 2.00% | OK | average API flaky rate = (0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00 + 0.00) / 11 = 0.00% |
+| Test Stability | 54.55% | >= 95.00% | Failed | stability = 6 / 11 = 54.55% |
+| Average UI Test Duration | 10.40s | <= 12.00s | OK | average UI test duration = (8.45 + 8.46 + 11.33 + 11.21 + 11.69 + 9.75 + 8.87 + 10.84 + 11.49 + 11.26 + 11.01) / 11 = 10.40s |
+| Average API Test Duration | 1.33s | <= 1.50s | OK | average API test duration = (1.07 + 0.94 + 1.41 + 1.47 + 1.39 + 1.38 + 1.40 + 1.44 + 1.37 + 1.39 + 1.38) / 11 = 1.33s |
+| Total UI Test Time | 280.69s | <= 300.00s | OK | total UI test time = (228.17 + 228.38 + 306.04 + 302.70 + 315.65 + 263.21 + 239.38 + 292.62 + 310.23 + 304.10 + 297.15) / 11 = 280.69s |
+| Average API Test Run Duration | 66.56s | <= 75.00s | OK | average API run duration = (53.62 + 46.97 + 70.46 + 73.69 + 69.58 + 68.81 + 70.07 + 71.96 + 68.45 + 69.74 + 68.82) / 11 = 66.56s |
+| Average Pipeline Duration | 349.73s | <= 360.00s | OK | average pipeline duration = (452.00 + 420.00 + 297.00 + 281.00 + 329.00 + 290.00 + 284.00 + 313.00 + 298.00 + 312.00 + 571.00) / 11 = 349.73s |
 
 ## Every published run
 
@@ -35,14 +35,15 @@ Published runs: **10** · fully passed: **6** · final test results: **770** · 
 | [2026-08-03 05:48](https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30787886208) | 77 | 76 / 98.70% | 1 / 1.30% | 0 / 0.00% | 0 / 0.00% | Unstable | 10.84s | 1.44s | 292.62s | 71.96s | 313.00s |
 | [2026-08-04 05:21](https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30880101070) | 77 | 77 / 100.00% | 0 / 0.00% | 0 / 0.00% | 0 / 0.00% | Successful | 11.49s | 1.37s | 310.23s | 68.45s | 298.00s |
 | [2026-08-05 05:21](https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/30977522823) | 77 | 77 / 100.00% | 0 / 0.00% | 0 / 0.00% | 0 / 0.00% | Successful | 11.26s | 1.39s | 304.10s | 69.74s | 312.00s |
+| [2026-08-06 05:27](https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/31073646604) | 77 | 76 / 98.70% | 1 / 1.30% | 0 / 0.00% | 0 / 0.00% | Unstable | 11.01s | 1.38s | 297.15s | 68.82s | 571.00s |
 
 ## Cross-browser UI
 
 | Browser | Pass rate | Failures | Flaky | Avg test | Avg target | P95 test | P90 run | Run target | Status |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| Chromium | 97.78% | 2 | 0.00% | 9.42s | <= 11.00s | 21.96s | 91.03s | <= 100.00s | Failed |
-| Firefox | 97.78% | 2 | 1.11% | 10.66s | <= 13.00s | 24.93s | 108.75s | <= 115.00s | Failed |
-| WebKit | 100.00% | 0 | 0.00% | 10.93s | <= 14.00s | 29.03s | 113.82s | <= 120.00s | OK |
+| Chromium | 97.98% | 2 | 0.00% | 9.53s | <= 11.00s | 22.21s | 94.69s | <= 100.00s | Failed |
+| Firefox | 96.97% | 3 | 1.01% | 10.74s | <= 13.00s | 24.99s | 108.65s | <= 115.00s | Failed |
+| WebKit | 100.00% | 0 | 0.00% | 10.93s | <= 14.00s | 29.40s | 112.29s | <= 120.00s | OK |
 
 Browser coverage: **100.00%** (9/9 UI scenarios executed in all three browsers).
 
@@ -52,8 +53,8 @@ Browser coverage: **100.00%** (9/9 UI scenarios executed in all three browsers).
 |---|---|---:|---:|---|
 | 2026-07-31 13:26 | tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step | 37.62s | <= 12.00s | Failed |
 | 2026-07-31 13:13 | tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step | 33.06s | <= 12.00s | Failed |
+| 2026-08-06 05:27 | tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step | 32.85s | <= 12.00s | Failed |
 | 2026-07-31 13:19 | tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step | 30.46s | <= 12.00s | Failed |
-| 2026-08-05 05:21 | tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step | 30.15s | <= 12.00s | Failed |
 
 ## Slowest API tests
 
@@ -61,13 +62,13 @@ Browser coverage: **100.00%** (9/9 UI scenarios executed in all three browsers).
 |---|---|---:|---:|---|
 | 2026-07-31 13:13 | tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled | 29.62s | <= 1.50s | Failed |
 | 2026-08-02 05:33 | tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled | 29.48s | <= 1.50s | Failed |
+| 2026-08-06 05:27 | tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled | 29.41s | <= 1.50s | Failed |
 | 2026-08-03 05:48 | tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled | 29.27s | <= 1.50s | Failed |
-| 2026-07-31 13:19 | tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled | 29.14s | <= 1.50s | Failed |
 
 ## Data completeness
 
 - Completed workflow runs: **16**
-- Published Allure reports used in test metrics: **10**
-- Workflow runs without a published report: **6**
+- Published Allure reports used in test metrics: **11**
+- Workflow runs without a published report: **5**
 
 Flaky counts use final Allure test cases explicitly marked `flaky`. Pass, fail and broken rates are calculated per run and then averaged without weighting, matching the reference report.
