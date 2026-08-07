@@ -10,32 +10,32 @@
     "with_coverage": 59,
     "with_coverage_rate": 100.0
   },
-  "generated_at": "2026-08-07T12:25:55+00:00",
+  "generated_at": "2026-08-07T12:35:43+00:00",
   "latest": {
     "attempt": 1,
     "branch": "85/merge",
-    "branch_rate": 55.7,
-    "covered_branches": 127,
-    "covered_lines": 1598,
+    "branch_rate": 56.14,
+    "covered_branches": 128,
+    "covered_lines": 1599,
     "excluded_lines": 22,
-    "generated_at": "2026-08-07T12:25:55+00:00",
-    "html_url": "coverage/31177720513-attempt-1/html/",
-    "json_url": "coverage/31177720513-attempt-1/coverage.json",
-    "line_rate": 89.62,
-    "missing_branches": 101,
-    "missing_lines": 185,
+    "generated_at": "2026-08-07T12:35:43+00:00",
+    "html_url": "coverage/31178419149-attempt-1/html/",
+    "json_url": "coverage/31178419149-attempt-1/coverage.json",
+    "line_rate": 89.68,
+    "missing_branches": 100,
+    "missing_lines": 184,
     "num_branches": 228,
     "num_statements": 1783,
-    "report_id": "31177720513-attempt-1",
-    "run_id": 31177720513,
-    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/31177720513",
-    "sha": "5527563884ce38b044d7c6082809dbe690d79c82",
+    "report_id": "31178419149-attempt-1",
+    "run_id": 31178419149,
+    "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/31178419149",
+    "sha": "f5c155926ea4b9309b96006f9ddeab6f561e9235",
     "source": "src/main/api",
-    "xml_url": "coverage/31177720513-attempt-1/coverage.xml"
+    "xml_url": "coverage/31178419149-attempt-1/coverage.xml"
   },
   "latest_context": {
     "is_today": true,
-    "label": "Today at 12:25 UTC"
+    "label": "Today at 12:35 UTC"
   },
   "mode": "current-snapshot",
   "modules": [
@@ -100,13 +100,13 @@
       "path": "src/main/api/utils/cleanup_helper.py"
     },
     {
-      "branch_rate": 50.0,
-      "covered_branches": 4,
-      "covered_lines": 32,
-      "line_rate": 76.19,
-      "missing": "44\u201346, 48\u201349, 69\u201371, 73\u201374",
-      "missing_branches": 4,
-      "missing_lines": 10,
+      "branch_rate": 62.5,
+      "covered_branches": 5,
+      "covered_lines": 33,
+      "line_rate": 78.57,
+      "missing": "44\u201345, 48\u201349, 69\u201371, 73\u201374",
+      "missing_branches": 3,
+      "missing_lines": 9,
       "num_branches": 8,
       "num_statements": 42,
       "path": "src/main/api/requests/steps/configuration_steps.py"
@@ -748,5 +748,5 @@
       "path": "src/main/api/requests/steps/user_steps.py"
     }
   ],
-  "reports": 29
+  "reports": 30
 }
