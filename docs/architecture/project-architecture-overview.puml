@@ -80,8 +80,10 @@ package "Infrastructure / Support" as SupportArea #FFF5D9 {
 package "External runtime" <<External>> as RuntimeArea #F4F4F4 {
   component "TeamCity UI" as TeamCityUi
   component "TeamCity REST API" as TeamCityRest
-  component "TeamCity configuration / backup" as TeamCityInternal
-  database "PostgreSQL / HSQLDB" as TeamCityDatabase
+  component "TeamCity configuration files\nData Directory · XML" as TeamCityConfiguration
+  component "TeamCity Backup API" as TeamCityBackupApi
+  artifact "HSQLDB backup snapshot\nZIP · database_dump" as HsqlDbSnapshot
+  database "PostgreSQL" as PostgreSql
 }
 
 ' =========================================================
@@ -97,9 +99,11 @@ Fixtures --> Lifecycle
 PageObjects --> TeamCityUi : Playwright
 UiIntegration --> TeamCityRest : REST session
 HttpPipeline --> TeamCityRest : HTTP
-ConfigurationAdapter --> TeamCityInternal : configuration
-Database --> TeamCityInternal : backup
-Database --> TeamCityDatabase : SQL
+ConfigurationAdapter --> TeamCityConfiguration : reads XML via Docker
+Database --> TeamCityBackupApi : requests backup
+TeamCityBackupApi --> HsqlDbSnapshot : creates archive
+Database --> HsqlDbSnapshot : reads snapshot
+Database --> PostgreSql : read-only SQL
 
 TestData ..> IdentityProjectDtos
 TestData ..> BuildDtos
