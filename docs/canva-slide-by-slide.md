@@ -1,21 +1,19 @@
-# ИНСТРУКЦИИ ДЛЯ CANVA — НЕ ПОКАЗЫВАТЬ В ПРЕЗЕНТАЦИИ
+# CANVA IMPORT INSTRUCTIONS — DO NOT CREATE A SLIDE FROM THIS SECTION
 
-Используй этот документ как единственный источник содержания.
+Use this document as the only source of presentation content. Every section
+headed `SLIDE` is exactly one slide. Keep the exact slide count, order, titles,
+names, numbers, and Russian wording.
 
-Каждый раздел с пометкой `SLIDE` — отдельный слайд презентации. Сохраняй
-указанный порядок и размещай текст только на назначенном ему слайде. Не
-объединяй разные слайды.
+Do not invent, rewrite, summarize, shorten, omit, merge, or expand any content.
+Do not add technologies, test types, metrics, achievements, conclusions, or
+examples that are not explicitly written in this document. Your role is visual
+design only, not content creation.
 
-Не придумывай, не переписывай, не пересказывай, не сокращай, не удаляй и не
-расширяй предоставленный русский текст. Сохраняй имена, технические термины,
-числа и обозначения STAR точно в исходном виде. Твоя задача — только визуальное
-оформление.
+Keep all Russian text in Russian. Use visual elements, icons, and layout only to
+support the provided text. If a slide has too much content, use a compact layout
+and reduce decorative elements; do not remove or change any text.
 
-Если текст не помещается, создай дополнительный слайд-продолжение, не удаляя
-содержание. Не добавляй unit-тесты, contract-тесты, технологии, метрики,
-достижения или выводы, которых нет в документе.
-
-Не показывай эти инструкции в готовой презентации.
+Do not show these import instructions in the final presentation.
 
 ---
 
