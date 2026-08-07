@@ -65,12 +65,17 @@ package "Framework Services" as SupportArea #FFF5D9 {
   component "Test data generation\nrandom models · build scenarios" as TestData
   component "Model verification\nassertions · comparator · rules" as Verification
   component "Test lifecycle\nregistry · cleanup" as Lifecycle
-  component "Database infrastructure\nclients · executors · DAO" as Database
+  component "Database verification\nDatabaseSteps · DAO · DBRequest" as DatabaseVerification
+  component "HSQLDB backup client\nBackup API · snapshot executor" as HsqlDbAdapter
+  component "PostgreSQL client\nread-only connection · SQL executor" as PostgreSqlAdapter
   component "Cross-cutting support\nconfig · timeouts · constants · Allure" as CrossCutting
 
   TestData ..> CrossCutting
   Verification ..> CrossCutting
-  Database ..> CrossCutting
+  DatabaseVerification --> HsqlDbAdapter : backup mode
+  DatabaseVerification --> PostgreSqlAdapter : PostgreSQL mode
+  HsqlDbAdapter ..> CrossCutting
+  PostgreSqlAdapter ..> CrossCutting
 }
 
 ' =========================================================
@@ -100,17 +105,17 @@ PageObjects --> TeamCityUi : Playwright
 UiIntegration --> TeamCityRest : REST session
 HttpPipeline --> TeamCityRest : HTTP
 ConfigurationAdapter --> TeamCityConfiguration : reads XML via Docker
-Database --> TeamCityBackupApi : requests backup
+HsqlDbAdapter --> TeamCityBackupApi : requests backup
 TeamCityBackupApi --> HsqlDbSnapshot : creates archive
-Database --> HsqlDbSnapshot : reads snapshot
-Database --> PostgreSql : read-only SQL
+HsqlDbAdapter --> HsqlDbSnapshot : reads snapshot
+PostgreSqlAdapter --> PostgreSql : read-only SQL
 
 TestData ..> IdentityProjectDtos
 TestData ..> BuildDtos
 ApiComposition ..> IdentityProjectDtos
 ApiComposition ..> Verification
 ApiComposition ..> Lifecycle
-ApiComposition ..> Database
+ApiComposition ..> DatabaseVerification
 
 ' Layout anchors: tests -> feature areas -> support -> runtime.
 TestArea -[hidden]down- UiArea
