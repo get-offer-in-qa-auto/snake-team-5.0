@@ -1,5 +1,5 @@
 @startuml
-title TeamCity Autotests — complete project architecture
+title Архитектура тестового фреймворка TeamCity
 
 top to bottom direction
 skinparam backgroundColor #FFFFFF
