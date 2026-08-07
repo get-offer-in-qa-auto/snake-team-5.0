@@ -1,0 +1,277 @@
+@startuml
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam nodesep 30
+skinparam ranksep 40
+hide empty members
+
+
+' =========================================================
+' API COMPOSITION
+' =========================================================
+
+package "API Composition Layer" <<Layer>> {
+
+  class ApiManager {
+    + admin_steps
+    + build_run_steps
+    + configuration_steps
+    + database_steps
+    + user_steps
+  }
+}
+
+
+' =========================================================
+' API DOMAIN STEPS
+' =========================================================
+
+package "API Domain Steps Layer" <<Layer>> {
+
+  class ConfigurationSteps {
+    - client: TeamCityConfigurationClient
+    + verify_build_step_persisted(...)
+    + verify_build_step_deleted(...)
+  }
+}
+
+
+' =========================================================
+' HTTP REQUEST LAYER
+' =========================================================
+
+package "HTTP Request Layer" <<Layer>> {
+
+  class EndpointConfig <<dataclass>> {
+    + url: str
+    + request_model
+    + response_model
+  }
+
+  enum Endpoint
+
+  abstract class HttpRequest {
+    # request_spec
+    # endpoint
+    # response_spec
+  }
+
+  interface CrudEndpointInterface <<Protocol>>
+
+  class CrudRequester
+
+  class ValidatedCrudRequester {
+    - crud_requester: CrudRequester
+  }
+}
+
+
+' =========================================================
+' API SPECIFICATIONS
+' =========================================================
+
+package "API Specification Layer" <<Layer>> {
+
+  class RequestSpecs
+
+  class ResponseSpecs
+
+  enum ResponseError
+}
+
+
+' =========================================================
+' CONFIGURATION ADAPTER
+' =========================================================
+
+package "TeamCity Configuration Adapter" <<Layer>> {
+
+  class BuildStepConfiguration <<dataclass>> {
+    + id: str
+    + name: str
+    + type: str
+    + parameters
+  }
+
+  class TeamCityConfigurationClient
+}
+
+
+' =========================================================
+' BUILD DOMAIN
+' =========================================================
+
+package "Build Domain DTO Layer" <<Layer>> {
+
+  class BaseModel <<Pydantic>>
+
+
+  package "Build Configuration" {
+
+    class CreateBuildConfigurationRequest {
+      + id: str
+      + name: str
+    }
+
+    class BuildConfigurationResponse {
+      + id: str
+      + name: str
+      + projectId: str?
+    }
+  }
+
+
+  package "Build Steps" {
+
+    class BuildStepProperty {
+      + name: str
+      + value: str
+    }
+
+    class BuildStepProperties {
+      + property: list[BuildStepProperty]
+    }
+
+    class CreateBuildStepRequest {
+      + name: str
+      + type: str
+      + properties: BuildStepProperties
+    }
+
+    class BuildStepResponse {
+      + id: str
+      + name: str
+      + type: str
+      + properties: BuildStepProperties?
+    }
+
+    class BuildStepsResponse {
+      + count: int
+      + step: list[BuildStepResponse]
+    }
+  }
+
+
+  package "Build Runs" {
+
+    class BuildTypeReference {
+      + id: str
+    }
+
+    class BuildProperty {
+      + name: str
+      + value: str
+    }
+
+    class BuildProperties {
+      + property: list[BuildProperty]
+    }
+
+    class StartBuildRequest {
+      + buildType: BuildTypeReference
+      + properties: BuildProperties?
+    }
+
+    class BuildCancelRequest {
+      + comment: str
+      + readdIntoQueue: bool
+    }
+
+    enum BuildState
+    enum BuildStatus
+
+    class BuildRunResponse {
+      + id: int
+      + state: BuildState
+      + status: BuildStatus?
+    }
+  }
+}
+
+
+' =========================================================
+' EXTERNAL DEPENDENCIES
+' =========================================================
+
+package "External architectural dependencies" <<External>> {
+
+  class "API Domain Steps\nAdminSteps · BuildRunSteps · UserSteps" as ExternalSteps <<external>>
+
+  class "Identity & Project Domain" as ExternalIdentity <<external>>
+
+  class "Shared Configuration\nConfig · TimeoutConfig" as ExternalConfig <<external>>
+
+  class "Test Data Generation" as ExternalGenerators <<external>>
+}
+
+
+' =========================================================
+' REQUEST INFRASTRUCTURE
+' =========================================================
+
+HttpRequest <|-- CrudRequester
+HttpRequest <|-- ValidatedCrudRequester
+
+CrudEndpointInterface <|.. CrudRequester
+
+ValidatedCrudRequester *-- CrudRequester : delegates
+
+HttpRequest --> Endpoint
+Endpoint *-- EndpointConfig
+
+
+' =========================================================
+' SPECS
+' =========================================================
+
+HttpRequest ..> RequestSpecs
+HttpRequest ..> ResponseSpecs
+
+ResponseSpecs ..> ResponseError
+
+
+' =========================================================
+' TEAMCITY CONFIGURATION ADAPTER
+' =========================================================
+
+ApiManager *-- ConfigurationSteps
+
+ConfigurationSteps --> TeamCityConfigurationClient : uses
+ConfigurationSteps ..> CreateBuildStepRequest : expected step
+ConfigurationSteps ..> BuildStepConfiguration : verifies
+
+TeamCityConfigurationClient ..> BuildStepConfiguration : returns
+
+
+' =========================================================
+' BUILD DOMAIN COMPOSITION
+' =========================================================
+
+BuildStepProperties *-- BuildStepProperty
+CreateBuildStepRequest *-- BuildStepProperties
+BuildStepResponse *-- BuildStepProperties
+BuildStepsResponse *-- BuildStepResponse
+
+BuildProperties *-- BuildProperty
+StartBuildRequest *-- BuildTypeReference
+StartBuildRequest *-- BuildProperties
+
+
+' =========================================================
+' HIGH-LEVEL CROSS-LAYER DEPENDENCIES
+' =========================================================
+
+EndpointConfig ..> BaseModel : request / response DTOs
+
+ApiManager *-- ExternalSteps
+
+BuildConfigurationResponse ..> ExternalIdentity : project reference
+
+HttpRequest ..> ExternalConfig
+
+CreateBuildConfigurationRequest ..> ExternalGenerators : generation metadata
+
+@enduml
