@@ -61,10 +61,10 @@ package "Framework Adapters" <<Layer>> as AdaptersArea #ECF8EA {
 }
 
 ' =========================================================
-' DATA CONTRACTS
+' DATA MODELS
 ' =========================================================
 
-package "Data Contracts" <<Layer>> as DataContractsArea #F1EFF8 {
+package "Data Models (DTOs)" <<Layer>> as DataModelsArea #F1EFF8 {
   component "Identity & Project DTOs\nusers · tokens · roles · projects" as IdentityProjectDtos
   component "Build DTOs\nconfigurations · steps · executions" as BuildDtos
 }
@@ -129,15 +129,15 @@ TeamCityBackupApi --> HsqlDbSnapshot : creates ZIP
 HsqlDbAdapter --> HsqlDbSnapshot : reads snapshot
 PostgreSqlAdapter --> PostgreSql : read-only SQL
 
-OrchestrationArea ..> DataContractsArea : uses DTOs
-TestData ..> DataContractsArea : generates DTOs
-Verification ..> DataContractsArea : compares models
+OrchestrationArea ..> DataModelsArea : uses DTOs
+TestData ..> DataModelsArea : generates DTOs
+Verification ..> DataModelsArea : compares models
 AdaptersArea ..> FrameworkConfiguration : settings & timeouts
 
 ' Stable overview layout: main flow in the center, shared layers on the sides.
 TestArea -[hidden]down- OrchestrationArea
 ServicesArea -[hidden]right- OrchestrationArea
-OrchestrationArea -[hidden]right- DataContractsArea
+OrchestrationArea -[hidden]right- DataModelsArea
 OrchestrationArea -[hidden]down- AdaptersArea
 AdaptersArea -[hidden]down- EnvironmentArea
 
