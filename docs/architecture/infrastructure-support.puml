@@ -1,0 +1,174 @@
+@startuml
+title Infrastructure / Support — architecture overview
+
+top to bottom direction
+skinparam backgroundColor #FFFFFF
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam defaultFontSize 12
+skinparam ArrowColor #65717D
+skinparam ClassBorderColor #65717D
+skinparam ClassBackgroundColor #FFFFFF
+skinparam PackageBorderColor #65717D
+hide empty members
+
+legend top right
+  Diagram owner: Nikita
+  One box = a group of related classes; members are intentionally omitted.
+  <color:#C0392B>red dashed</color> = dependency between owned clusters
+  <color:#D97706>orange</color> = two-way coupling with another project layer
+  gray dashed = ordinary dependency on another project layer
+endlegend
+
+package "External project layers" <<External>> as External #F4F4F4 {
+  class "API data contracts" as ApiDataContracts <<external layer>> {
+    request models
+    response models
+    BuildState / BuildStatus
+  }
+
+  class "API / UI orchestration" as ApiOrchestration <<external layer>> {
+    ApiManager
+    BaseSteps / AdminSteps / DatabaseSteps
+    RequestSpecs / API and UI clients
+  }
+
+  class "Tests & fixtures" as TestConsumers <<external layer>>
+}
+
+package "Test Data Generation" <<Layer>> as TestData #ECF8EA {
+  class "Model data generation" as ModelDataGeneration <<class group>> {
+    GeneratingRule
+    RandomModelGenerator
+    RandomData
+  }
+
+  class "Scenario data" as ScenarioData <<class group>> {
+    BuildRunScenario
+    CancellableBuildRunScenario
+    BuildRunData
+    --
+    build_step_data
+  }
+}
+
+package "Model Verification" <<Layer>> as Verification #FFF5D9 {
+  class "Assertion API" as AssertionApi <<class group>> {
+    ModelAssertions
+    EntityAssertions
+  }
+
+  class "Comparison engine" as ComparisonCore <<class group>> {
+    ModelComparator
+    ComparisonResult
+    Mismatch
+  }
+
+  class "Comparison rules" as ComparisonRules <<class group>> {
+    ModelComparisonConfigLoader
+    ComparisonRule
+    CaseSensitiveConfigParser
+    --
+    model-comparison.properties
+  }
+}
+
+package "Test Lifecycle Support" <<Layer>> as Lifecycle #FCEBDD {
+  class "Object lifecycle" as LifecycleSupport <<class group>> {
+    CreatedObjectsRegistry
+    CleanupFailure
+    --
+    cleanup_objects()
+  }
+}
+
+package "Database Infrastructure" <<Layer>> as Infrastructure #EAF4FF {
+  class "Clients & factory" as DatabaseClients <<class group>> {
+    DatabaseClient
+    TeamCityBackupDatabaseClient
+    PostgreSQLDatabaseClient
+    --
+    create_database_client()
+  }
+
+  class "Executors" as DatabaseExecutors <<class group>> {
+    DBExecutor
+    TeamCityBackupExecutor
+    PostgreSQLExecutor
+  }
+
+  class "Query & DAO contracts" as DatabaseContracts <<class group>> {
+    DBRequest
+    ProjectDao
+    BuildConfigurationDao
+    UserDao
+  }
+}
+
+package "Cross-cutting Support" <<Layer>> as CrossCutting #F1EFF8 {
+  class "Runtime configuration" as RuntimeConfiguration <<class group>> {
+    Config
+    TimeoutConfig
+  }
+
+  class "TeamCity conventions" as TeamCityMetadata <<class group>> {
+    TeamCityLocator
+    --
+    BUILD_CANCELLATION_COMMENT
+    BUILD_RUNTIME_PARAMETER_NAME
+    ROOT_PROJECT_ID
+  }
+
+  class "Allure metadata" as AllureMetadata <<class group>> {
+    AllureTag
+    --
+    allure_tags()
+    api_regression_tags()
+  }
+}
+
+' Main relations inside owned clusters
+DatabaseClients --> DatabaseExecutors : creates / yields
+DatabaseExecutors --> DatabaseContracts : executes DBRequest
+AssertionApi --> ComparisonCore : compares
+AssertionApi --> ComparisonRules : loads mapping
+
+' Dependencies between owned clusters
+DatabaseClients ..[#C0392B,dashed]> RuntimeConfiguration : settings / timeouts
+ScenarioData ..[#C0392B,dashed]> TeamCityMetadata : shared constants
+
+' Boundary dependencies and coupling hotspots
+ApiOrchestration <..[#D97706]> DatabaseClients : DatabaseSteps / RequestSpecs
+ApiOrchestration <..[#D97706]> LifecycleSupport : registry / cleanup via ApiManager
+ApiOrchestration ..[#7F8C8D,dashed]> DatabaseContracts : DBRequest / DAO
+ApiOrchestration ..[#7F8C8D,dashed]> AssertionApi : verification
+ApiOrchestration ..[#7F8C8D,dashed]> RuntimeConfiguration : settings / timeouts
+
+ApiDataContracts ..[#D97706,dashed]> ModelDataGeneration : GeneratingRule metadata
+ScenarioData ..[#D97706,dashed]> ApiDataContracts : status enums
+LifecycleSupport ..[#7F8C8D,dashed]> ApiDataContracts : tracks concrete DTOs
+
+TestConsumers ..[#7F8C8D,dashed]> ModelDataGeneration : generated models
+TestConsumers ..[#7F8C8D,dashed]> ScenarioData : scenarios
+TestConsumers ..[#7F8C8D,dashed]> LifecycleSupport : fixture teardown
+TestConsumers ..[#7F8C8D,dashed]> TeamCityMetadata : locators
+TestConsumers ..[#7F8C8D,dashed]> AllureMetadata : tags
+
+' Stable overview layout: external layers, feature clusters, shared support.
+ApiDataContracts -[hidden]right- ApiOrchestration
+ApiOrchestration -[hidden]right- TestConsumers
+ModelDataGeneration -[hidden]right- AssertionApi
+AssertionApi -[hidden]right- LifecycleSupport
+LifecycleSupport -[hidden]right- DatabaseClients
+RuntimeConfiguration -[hidden]right- TeamCityMetadata
+TeamCityMetadata -[hidden]right- AllureMetadata
+AssertionApi -[hidden]down- RuntimeConfiguration
+
+note bottom of CrossCutting
+  All 30 owned classes are represented.
+  Methods, fields, standard-library types and technology details are omitted.
+end note
+
+@enduml
