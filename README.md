@@ -73,7 +73,7 @@ http://localhost:8111
 7. Перейти в `Agents -> Unauthorized`.
 8. Авторизовать agent `local-agent-1`.
 
-Локально используем `Internal database / HSQLDB`, потому что это самый простой вариант для изучения продукта и быстрых автотестов. Production-like проверки с внешними базами описаны в `docs/test-environments.md`.
+Локально используем `Internal database / HSQLDB`, потому что это самый простой вариант для изучения продукта и быстрых автотестов.
 
 ### Проверка состояния
 
@@ -140,8 +140,6 @@ jetbrains/teamcity-agent:2026.1.1
 Не используем тег `latest`, чтобы локальный стенд не менял версию без явного решения в проекте.
 
 Для agent используем полный образ `jetbrains/teamcity-agent`, а не `jetbrains/teamcity-minimal-agent`. Минимальный agent можно использовать для простых smoke-проверок или кастомного образа, но как основной локальный agent он слишком ограничен.
-
-Подробное обоснование версии: `docs/teamcity-version.md`.
 
 ## 3. Важное для CI
 
@@ -392,7 +390,7 @@ export TEAMCITY_DB_DSN='postgresql://teamcity:<password>@db.example.test:5432/te
 python3 -m pytest tests/api/projects/test_project_lifecycle.py::test_created_project_is_persisted_in_database
 ```
 
-Пароли и реальные DSN не коммитятся. Подробная архитектура, параметры и ограничения описаны в `docs/database-checks.md`.
+Пароли и реальные DSN не коммитятся.
 
 Production-like PostgreSQL regression запускается nightly в `05:00 МСК` и
 вручную через workflow `TeamCity PostgreSQL Regression`. TeamCity и тестовый
@@ -412,11 +410,5 @@ volumes удаляются.
 
 ## 9. Документация проекта
 
-- Подробная инструкция по локальному стенду: `docs/local-teamcity-setup.md`
-- Стратегия окружений для автотестов: `docs/test-environments.md`
-- Группы автотестов: `docs/test-suites.md`
-- Заметки по REST API: `docs/rest-api.md`
-- Проверки persisted state в БД: `docs/database-checks.md`
-- Решение по версии TeamCity: `docs/teamcity-version.md`
-- Первый этап GitHub Actions pipeline: `docs/github-actions-pipeline.md`
+- Материалы презентации по слайдам: `docs/canva-slide-by-slide.md`
 - Тест-план автоматизации: `docs/Тест План по Автоматизации Тестирования - TeamCity.docx`
