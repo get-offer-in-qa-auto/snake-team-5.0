@@ -1,5 +1,5 @@
 @startuml
-title Архитектура тестового фреймворка TeamCity
+title TeamCity Test Framework Architecture
 
 top to bottom direction
 skinparam backgroundColor #FFFFFF
