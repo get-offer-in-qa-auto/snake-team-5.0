@@ -22,111 +22,123 @@ legend top left
 endlegend
 
 ' =========================================================
-' TEST LAYER
+' TESTS
 ' =========================================================
 
 package "Tests" <<Layer>> as TestArea #F4F4F4 {
   component "Pytest suites\nAPI · UI" as TestSuites
-  component "Fixtures & context\nsetup · sessions · teardown" as Fixtures
-
-  TestSuites --> Fixtures : fixtures
 }
 
 ' =========================================================
-' UI + IDENTITY / PROJECT
+' TEST ORCHESTRATION
 ' =========================================================
 
-package "UI + Identity / Project" as UiArea #EAF4FF {
-  component "Page Objects\nBasePage + feature pages" as PageObjects
-  component "UI components & routes\nTeamCityHeader · TeamCityRoutes" as UiNavigation
-  component "UI authentication & state\nUiAuthClient · SessionStorage" as UiIntegration
+package "Test Orchestration" <<Layer>> as OrchestrationArea #EAF4FF {
+  component "Fixtures & test context\nsetup · SessionStorage · teardown" as Fixtures
+  component "UI orchestration\nPage Objects · components · routes" as UiOrchestration
+  component "API orchestration\nApiManager · domain steps" as ApiOrchestration
+  component "Persistence verification\nConfigurationSteps · DatabaseSteps" as PersistenceSteps
+
+  ApiOrchestration --> PersistenceSteps : coordinates checks
+}
+
+' =========================================================
+' FRAMEWORK ADAPTERS
+' =========================================================
+
+package "Framework Adapters" <<Layer>> as AdaptersArea #ECF8EA {
+  component "UI authentication adapter\nUiAuthClient" as UiAuthAdapter
+  component "REST adapter\nrequesters · endpoints · specs" as RestAdapter
+  component "Configuration adapter\nTeamCityConfigurationClient" as ConfigurationAdapter
+  component "Database access facade\nclient factory · DAO · DBRequest" as DatabaseAccess
+  component "HSQLDB backup adapter\nclient · snapshot executor" as HsqlDbAdapter
+  component "PostgreSQL adapter\nclient · SQL executor" as PostgreSqlAdapter
+
+  PersistenceSteps --> ConfigurationAdapter : configuration checks
+  PersistenceSteps --> DatabaseAccess : database checks
+  DatabaseAccess --> HsqlDbAdapter : backup mode
+  DatabaseAccess --> PostgreSqlAdapter : PostgreSQL mode
+}
+
+' =========================================================
+' DATA CONTRACTS
+' =========================================================
+
+package "Data Contracts" <<Layer>> as DataContractsArea #F1EFF8 {
   component "Identity & Project DTOs\nusers · tokens · roles · projects" as IdentityProjectDtos
-
-  PageObjects --> UiNavigation : navigation
-  PageObjects ..> IdentityProjectDtos : models
-  UiIntegration ..> IdentityProjectDtos : credentials
-}
-
-' =========================================================
-' API + BUILD
-' =========================================================
-
-package "API + Build" as ApiArea #ECF8EA {
-  component "API composition\nApiManager · domain steps" as ApiComposition
-  component "HTTP request pipeline\nrequesters · endpoints · specs" as HttpPipeline
-  component "TeamCity configuration adapter\nConfigurationSteps · configuration client" as ConfigurationAdapter
   component "Build DTOs\nconfigurations · steps · executions" as BuildDtos
-
-  ApiComposition --> HttpPipeline : requests
-  ApiComposition --> ConfigurationAdapter : persistence
-  ApiComposition ..> BuildDtos : models
-  ConfigurationAdapter ..> BuildDtos : expected model
 }
 
 ' =========================================================
 ' FRAMEWORK SERVICES
 ' =========================================================
 
-package "Framework Services" as SupportArea #FFF5D9 {
+package "Framework Services" <<Layer>> as ServicesArea #FFF5D9 {
   component "Test data generation\nrandom models · build scenarios" as TestData
   component "Model verification\nassertions · comparator · rules" as Verification
   component "Test lifecycle\nregistry · cleanup" as Lifecycle
-  component "Database verification\nDatabaseSteps · DAO · DBRequest" as DatabaseVerification
-  component "HSQLDB backup client\nBackup API · snapshot executor" as HsqlDbAdapter
-  component "PostgreSQL client\nread-only connection · SQL executor" as PostgreSqlAdapter
-  component "Cross-cutting support\nconfig · timeouts · constants · Allure" as CrossCutting
+  component "Framework configuration\nconfig · timeouts · constants" as FrameworkConfiguration
+  component "Allure metadata\ntags · suite · feature · story" as AllureMetadata
 
-  TestData ..> CrossCutting : constants
-  DatabaseVerification --> HsqlDbAdapter : backup mode
-  DatabaseVerification --> PostgreSqlAdapter : PostgreSQL mode
-  HsqlDbAdapter ..> CrossCutting : settings & timeouts
-  PostgreSqlAdapter ..> CrossCutting : connection settings
+  TestData ..> FrameworkConfiguration : constants
 }
 
 ' =========================================================
 ' TEAMCITY ENVIRONMENT
 ' =========================================================
 
-package "TeamCity Environment" <<External>> as RuntimeArea #F4F4F4 {
-  component "TeamCity UI" as TeamCityUi
-  component "TeamCity REST API" as TeamCityRest
-  component "TeamCity configuration files\nData Directory · XML" as TeamCityConfiguration
-  component "TeamCity Backup API" as TeamCityBackupApi
-  artifact "HSQLDB backup snapshot\nZIP · database_dump" as HsqlDbSnapshot
+package "TeamCity Environment" <<External>> as EnvironmentArea #F4F4F4 {
+  package "TeamCity Server" as TeamCityServer #FFFFFF {
+    component "TeamCity UI" as TeamCityUi
+    component "TeamCity REST API" as TeamCityRest
+    component "TeamCity Backup API" as TeamCityBackupApi
+    component "Configuration files\nData Directory · XML" as TeamCityConfiguration
+    artifact "HSQLDB backup snapshot\nZIP · database_dump" as HsqlDbSnapshot
+  }
+
+  component "TeamCity Agent" as TeamCityAgent
   database "PostgreSQL" as PostgreSql
+
+  TeamCityServer --> TeamCityAgent : dispatches builds
+  TeamCityServer --> PostgreSql : persists data
 }
 
 ' =========================================================
 ' PROJECT-WIDE FLOW
 ' =========================================================
 
-TestSuites --> PageObjects : UI scenarios
-TestSuites --> ApiComposition : API scenarios
-Fixtures --> UiIntegration : authenticated context
+TestSuites --> Fixtures : fixtures
+TestSuites --> UiOrchestration : UI scenarios
+TestSuites --> ApiOrchestration : API scenarios & setup
+TestSuites ..> AllureMetadata : reporting metadata
+
+Fixtures --> UiAuthAdapter : authenticated context
 Fixtures --> TestData : generated data
 Fixtures --> Lifecycle : teardown
 
-PageObjects --> TeamCityUi : Playwright
-UiIntegration --> TeamCityRest : REST auth
-HttpPipeline --> TeamCityRest : HTTP
+UiOrchestration --> TeamCityUi : Playwright
+ApiOrchestration --> RestAdapter : requests
+ApiOrchestration --> Verification : assertions
+ApiOrchestration --> Lifecycle : registration
+
+UiAuthAdapter --> TeamCityRest : REST auth
+RestAdapter --> TeamCityRest : HTTP
 ConfigurationAdapter --> TeamCityConfiguration : XML via Docker
 HsqlDbAdapter --> TeamCityBackupApi : backup REST
 TeamCityBackupApi --> HsqlDbSnapshot : creates ZIP
 HsqlDbAdapter --> HsqlDbSnapshot : reads snapshot
 PostgreSqlAdapter --> PostgreSql : read-only SQL
 
-TestData ..> IdentityProjectDtos : generates
-TestData ..> BuildDtos : generates
-ApiComposition ..> IdentityProjectDtos : models
-ApiComposition ..> Verification : assertions
-ApiComposition ..> Lifecycle : registration
-ApiComposition --> DatabaseVerification : DB checks
+OrchestrationArea ..> DataContractsArea : uses DTOs
+TestData ..> DataContractsArea : generates DTOs
+Verification ..> DataContractsArea : compares models
+AdaptersArea ..> FrameworkConfiguration : settings & timeouts
 
-' Layout anchors: tests -> feature areas -> support -> runtime.
-TestArea -[hidden]down- UiArea
-UiArea -[hidden]right- ApiArea
-UiArea -[hidden]down- SupportArea
-ApiArea -[hidden]down- SupportArea
-SupportArea -[hidden]down- RuntimeArea
+' Stable overview layout: main flow in the center, shared layers on the sides.
+TestArea -[hidden]down- OrchestrationArea
+ServicesArea -[hidden]right- OrchestrationArea
+OrchestrationArea -[hidden]right- DataContractsArea
+OrchestrationArea -[hidden]down- AdaptersArea
+AdaptersArea -[hidden]down- EnvironmentArea
 
 @enduml
