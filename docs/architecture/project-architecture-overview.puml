@@ -109,7 +109,7 @@ package "TeamCity Environment" <<External>> as EnvironmentArea #F4F4F4 {
 
 TestSuites --> Fixtures : fixtures
 TestSuites --> UiOrchestration : UI scenarios
-TestSuites --> ApiOrchestration : API scenarios & setup
+TestSuites --> ApiOrchestration : API scenarios & test setup
 TestSuites ..> AllureMetadata : reporting metadata
 
 Fixtures --> UiAuthAdapter : authenticated context
