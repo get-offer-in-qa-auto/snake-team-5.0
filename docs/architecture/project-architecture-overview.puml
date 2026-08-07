@@ -4,16 +4,22 @@ title Архитектура тестового фреймворка TeamCity
 top to bottom direction
 skinparam backgroundColor #FFFFFF
 skinparam packageStyle rectangle
-skinparam linetype ortho
+skinparam linetype polyline
 skinparam shadowing false
 skinparam defaultFontSize 16
-skinparam ArrowFontSize 14
+skinparam ArrowFontSize 12
 skinparam ArrowColor #65717D
 skinparam ComponentBorderColor #65717D
 skinparam ComponentBackgroundColor #FFFFFF
 skinparam PackageBorderColor #65717D
 skinparam nodesep 70
 skinparam ranksep 90
+
+legend top left
+  |= Line |= Meaning |
+  | solid | runtime call or interaction |
+  | dashed | code, model or settings dependency |
+endlegend
 
 ' =========================================================
 ' TEST LAYER
@@ -23,7 +29,7 @@ package "Tests" <<Layer>> as TestArea #F4F4F4 {
   component "Pytest suites\nAPI · UI" as TestSuites
   component "Fixtures & context\nsetup · sessions · teardown" as Fixtures
 
-  TestSuites --> Fixtures
+  TestSuites --> Fixtures : fixtures
 }
 
 ' =========================================================
@@ -36,9 +42,9 @@ package "UI + Identity / Project" as UiArea #EAF4FF {
   component "UI authentication & state\nUiAuthClient · SessionStorage" as UiIntegration
   component "Identity & Project DTOs\nusers · tokens · roles · projects" as IdentityProjectDtos
 
-  PageObjects --> UiNavigation
-  PageObjects ..> IdentityProjectDtos
-  UiIntegration ..> IdentityProjectDtos
+  PageObjects --> UiNavigation : navigation
+  PageObjects ..> IdentityProjectDtos : models
+  UiIntegration ..> IdentityProjectDtos : credentials
 }
 
 ' =========================================================
@@ -51,10 +57,10 @@ package "API + Build" as ApiArea #ECF8EA {
   component "TeamCity configuration adapter\nConfigurationSteps · configuration client" as ConfigurationAdapter
   component "Build DTOs\nconfigurations · steps · executions" as BuildDtos
 
-  ApiComposition --> HttpPipeline
-  ApiComposition --> ConfigurationAdapter
-  ApiComposition ..> BuildDtos
-  ConfigurationAdapter ..> BuildDtos
+  ApiComposition --> HttpPipeline : requests
+  ApiComposition --> ConfigurationAdapter : persistence
+  ApiComposition ..> BuildDtos : models
+  ConfigurationAdapter ..> BuildDtos : expected model
 }
 
 ' =========================================================
@@ -70,12 +76,11 @@ package "Framework Services" as SupportArea #FFF5D9 {
   component "PostgreSQL client\nread-only connection · SQL executor" as PostgreSqlAdapter
   component "Cross-cutting support\nconfig · timeouts · constants · Allure" as CrossCutting
 
-  TestData ..> CrossCutting
-  Verification ..> CrossCutting
+  TestData ..> CrossCutting : constants
   DatabaseVerification --> HsqlDbAdapter : backup mode
   DatabaseVerification --> PostgreSqlAdapter : PostgreSQL mode
-  HsqlDbAdapter ..> CrossCutting
-  PostgreSqlAdapter ..> CrossCutting
+  HsqlDbAdapter ..> CrossCutting : settings & timeouts
+  PostgreSqlAdapter ..> CrossCutting : connection settings
 }
 
 ' =========================================================
@@ -95,31 +100,32 @@ package "TeamCity Environment" <<External>> as RuntimeArea #F4F4F4 {
 ' PROJECT-WIDE FLOW
 ' =========================================================
 
-TestSuites --> PageObjects
-TestSuites --> ApiComposition
-Fixtures --> UiIntegration
-Fixtures --> TestData
-Fixtures --> Lifecycle
+TestSuites --> PageObjects : UI scenarios
+TestSuites --> ApiComposition : API scenarios
+Fixtures --> UiIntegration : authenticated context
+Fixtures --> TestData : generated data
+Fixtures --> Lifecycle : teardown
 
 PageObjects --> TeamCityUi : Playwright
-UiIntegration --> TeamCityRest : REST session
+UiIntegration --> TeamCityRest : REST auth
 HttpPipeline --> TeamCityRest : HTTP
-ConfigurationAdapter --> TeamCityConfiguration : reads XML via Docker
-HsqlDbAdapter --> TeamCityBackupApi : requests backup
-TeamCityBackupApi --> HsqlDbSnapshot : creates archive
+ConfigurationAdapter --> TeamCityConfiguration : XML via Docker
+HsqlDbAdapter --> TeamCityBackupApi : backup REST
+TeamCityBackupApi --> HsqlDbSnapshot : creates ZIP
 HsqlDbAdapter --> HsqlDbSnapshot : reads snapshot
 PostgreSqlAdapter --> PostgreSql : read-only SQL
 
-TestData ..> IdentityProjectDtos
-TestData ..> BuildDtos
-ApiComposition ..> IdentityProjectDtos
-ApiComposition ..> Verification
-ApiComposition ..> Lifecycle
-ApiComposition ..> DatabaseVerification
+TestData ..> IdentityProjectDtos : generates
+TestData ..> BuildDtos : generates
+ApiComposition ..> IdentityProjectDtos : models
+ApiComposition ..> Verification : assertions
+ApiComposition ..> Lifecycle : registration
+ApiComposition --> DatabaseVerification : DB checks
 
 ' Layout anchors: tests -> feature areas -> support -> runtime.
 TestArea -[hidden]down- UiArea
-UiArea -[hidden]down- ApiArea
+UiArea -[hidden]right- ApiArea
+UiArea -[hidden]down- SupportArea
 ApiArea -[hidden]down- SupportArea
 SupportArea -[hidden]down- RuntimeArea
 
