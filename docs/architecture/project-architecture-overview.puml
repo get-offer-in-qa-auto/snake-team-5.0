@@ -1,0 +1,117 @@
+@startuml
+title TeamCity Autotests — complete project architecture
+
+top to bottom direction
+skinparam backgroundColor #FFFFFF
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam defaultFontSize 16
+skinparam ArrowFontSize 14
+skinparam ArrowColor #65717D
+skinparam ComponentBorderColor #65717D
+skinparam ComponentBackgroundColor #FFFFFF
+skinparam PackageBorderColor #65717D
+skinparam nodesep 70
+skinparam ranksep 90
+
+' =========================================================
+' TEST LAYER
+' =========================================================
+
+package "Tests" <<Layer>> as TestArea #F4F4F4 {
+  component "Pytest suites\nAPI · UI" as TestSuites
+  component "Fixtures & context\nsetup · sessions · teardown" as Fixtures
+
+  TestSuites --> Fixtures
+}
+
+' =========================================================
+' UI + IDENTITY / PROJECT
+' =========================================================
+
+package "UI + Identity / Project" as UiArea #EAF4FF {
+  component "Page Objects\nBasePage + feature pages" as PageObjects
+  component "UI components & routes\nTeamCityHeader · TeamCityRoutes" as UiNavigation
+  component "UI authentication & state\nUiAuthClient · SessionStorage" as UiIntegration
+  component "Identity & Project DTOs\nusers · tokens · roles · projects" as IdentityProjectDtos
+
+  PageObjects --> UiNavigation
+  PageObjects ..> IdentityProjectDtos
+  UiIntegration ..> IdentityProjectDtos
+}
+
+' =========================================================
+' API + BUILD
+' =========================================================
+
+package "API + Build" as ApiArea #ECF8EA {
+  component "API composition\nApiManager · domain steps" as ApiComposition
+  component "HTTP request pipeline\nrequesters · endpoints · specs" as HttpPipeline
+  component "TeamCity configuration adapter\nConfigurationSteps · configuration client" as ConfigurationAdapter
+  component "Build DTOs\nconfigurations · steps · executions" as BuildDtos
+
+  ApiComposition --> HttpPipeline
+  ApiComposition --> ConfigurationAdapter
+  ApiComposition ..> BuildDtos
+  ConfigurationAdapter ..> BuildDtos
+}
+
+' =========================================================
+' INFRASTRUCTURE / SUPPORT
+' =========================================================
+
+package "Infrastructure / Support" as SupportArea #FFF5D9 {
+  component "Test data generation\nrandom models · build scenarios" as TestData
+  component "Model verification\nassertions · comparator · rules" as Verification
+  component "Test lifecycle\nregistry · cleanup" as Lifecycle
+  component "Database infrastructure\nclients · executors · DAO" as Database
+  component "Cross-cutting support\nconfig · timeouts · constants · Allure" as CrossCutting
+
+  TestData ..> CrossCutting
+  Verification ..> CrossCutting
+  Database ..> CrossCutting
+}
+
+' =========================================================
+' EXTERNAL RUNTIME
+' =========================================================
+
+package "External runtime" <<External>> as RuntimeArea #F4F4F4 {
+  component "TeamCity UI" as TeamCityUi
+  component "TeamCity REST API" as TeamCityRest
+  component "TeamCity configuration / backup" as TeamCityInternal
+  database "PostgreSQL / HSQLDB" as TeamCityDatabase
+}
+
+' =========================================================
+' PROJECT-WIDE FLOW
+' =========================================================
+
+TestSuites --> PageObjects
+TestSuites --> ApiComposition
+Fixtures --> UiIntegration
+Fixtures --> TestData
+Fixtures --> Lifecycle
+
+PageObjects --> TeamCityUi : Playwright
+UiIntegration --> TeamCityRest : REST session
+HttpPipeline --> TeamCityRest : HTTP
+ConfigurationAdapter --> TeamCityInternal : configuration
+Database --> TeamCityInternal : backup
+Database --> TeamCityDatabase : SQL
+
+TestData ..> IdentityProjectDtos
+TestData ..> BuildDtos
+ApiComposition ..> IdentityProjectDtos
+ApiComposition ..> Verification
+ApiComposition ..> Lifecycle
+ApiComposition ..> Database
+
+' Layout anchors: tests -> feature areas -> support -> runtime.
+TestArea -[hidden]down- UiArea
+UiArea -[hidden]down- ApiArea
+ApiArea -[hidden]down- SupportArea
+SupportArea -[hidden]down- RuntimeArea
+
+@enduml
