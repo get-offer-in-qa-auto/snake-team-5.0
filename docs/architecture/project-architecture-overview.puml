@@ -58,10 +58,10 @@ package "API + Build" as ApiArea #ECF8EA {
 }
 
 ' =========================================================
-' INFRASTRUCTURE / SUPPORT
+' FRAMEWORK SERVICES
 ' =========================================================
 
-package "Infrastructure / Support" as SupportArea #FFF5D9 {
+package "Framework Services" as SupportArea #FFF5D9 {
   component "Test data generation\nrandom models · build scenarios" as TestData
   component "Model verification\nassertions · comparator · rules" as Verification
   component "Test lifecycle\nregistry · cleanup" as Lifecycle
@@ -74,10 +74,10 @@ package "Infrastructure / Support" as SupportArea #FFF5D9 {
 }
 
 ' =========================================================
-' EXTERNAL RUNTIME
+' TEAMCITY ENVIRONMENT
 ' =========================================================
 
-package "External runtime" <<External>> as RuntimeArea #F4F4F4 {
+package "TeamCity Environment" <<External>> as RuntimeArea #F4F4F4 {
   component "TeamCity UI" as TeamCityUi
   component "TeamCity REST API" as TeamCityRest
   component "TeamCity configuration files\nData Directory · XML" as TeamCityConfiguration
