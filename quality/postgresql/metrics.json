@@ -457,7 +457,7 @@
       "with_coverage": 59,
       "with_coverage_rate": 100.0
     },
-    "generated_at": "2026-08-19T03:18:07+00:00",
+    "generated_at": "2026-08-19T04:04:07+00:00",
     "latest": {
       "attempt": 1,
       "branch": "87/merge",
@@ -1298,7 +1298,7 @@
     "published_reports": 5,
     "runs_without_report": 2
   },
-  "generated_at": "2026-08-19T03:18:08+00:00",
+  "generated_at": "2026-08-19T04:04:08+00:00",
   "metric_runs": [
     {
       "api_flaky_rate": 0.0,
@@ -2072,7 +2072,7 @@
   },
   "window": {
     "days": 7,
-    "end": "2026-08-19T03:18:08+00:00",
+    "end": "2026-08-19T04:04:08+00:00",
     "start": "2026-08-13T00:00:00+00:00"
   }
 }
