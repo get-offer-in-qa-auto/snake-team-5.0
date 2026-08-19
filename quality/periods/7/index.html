@@ -210,13 +210,13 @@
 <body>
   <div class="wrap">
     <h1 class="title">TeamCity QA Metrics Dashboard</h1>
-    <p class="subtitle">Quality metrics across GitHub runs (Allure artifacts)</p><nav class="qa-report-links" aria-label="QA report navigation"><a class="active" href="../../../quality/">PR Regression</a><a class="" href="../../../quality/postgresql/">PostgreSQL Nightly</a><a href="../../coverage/">Code Coverage</a><a href="../../../reports/" target="_blank" rel="noopener noreferrer">Allure Reports</a></nav><section class="qa-run-context" aria-label="PR regression status"><h2>PR regression execution status</h2><div class="qa-context-cards"><div class="qa-context-card"><div class="label">Complete runs used</div><div class="value">1</div></div><div class="qa-context-card"><div class="label">Complete-run stability</div><div class="value">100.00%</div></div><div class="qa-context-card"><div class="label">Successful complete runs</div><div class="value">1</div></div><div class="qa-context-card"><div class="label">Latest complete workflow</div><div class="value">Success</div></div></div><details class="qa-incomplete-runs"><summary>Excluded incomplete regression runs (0)</summary><p class="muted">No incomplete runs in this period.</p></details></section>
+    <p class="subtitle">Quality metrics across GitHub runs (Allure artifacts)</p><nav class="qa-report-links" aria-label="QA report navigation"><a class="active" href="../../../quality/">PR Regression</a><a class="" href="../../../quality/postgresql/">PostgreSQL Nightly</a><a href="../../coverage/">Code Coverage</a><a href="../../../reports/" target="_blank" rel="noopener noreferrer">Allure Reports</a></nav><section class="qa-run-context" aria-label="PR regression status"><h2>PR regression execution status</h2><div class="qa-context-cards"><div class="qa-context-card"><div class="label">Complete runs used</div><div class="value">0</div></div><div class="qa-context-card"><div class="label">Complete-run stability</div><div class="value">—</div></div><div class="qa-context-card"><div class="label">Successful complete runs</div><div class="value">0</div></div><div class="qa-context-card"><div class="label">Latest complete workflow</div><div class="value">No complete runs</div></div></div><details class="qa-incomplete-runs"><summary>Excluded incomplete regression runs (0)</summary><p class="muted">No incomplete runs in this period.</p></details></section>
 
     <div class="summary">
       <div class="card">
         <div class="label">Complete Runs Used</div>
-        <div class="value">1</div>
-        <div class="label">12 Aug 2026 — 12 Aug 2026</div>
+        <div class="value">0</div>
+        <div class="label">No runs in selected period</div>
       </div>
     </div>
 
@@ -236,7 +236,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>Average Pass Rate</td><td>Average share of passed tests across all runs in the selected period.</td><td>100.00%</td><td>>= 98.00%</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+            <tr><td>Average Pass Rate</td><td>Average share of passed tests across all runs in the selected period.</td><td>0.00%</td><td>>= 98.00%</td><td><span class="status-badge metric-fail">Failed</span></td></tr>
 <tr><td>Average Fail Rate</td><td>Average share of failed tests across all runs in the selected period.</td><td>0.00%</td><td><= 2.00%</td><td><span class="status-badge metric-ok">OK</span></td></tr>
 <tr><td>Average Broken Rate</td><td>Average share of broken tests across all runs in the selected period.</td><td>0.00%</td><td><= 1.00%</td><td><span class="status-badge metric-ok">OK</span></td></tr>
 <tr><td>Average UI Flaky Rate</td><td>Average share of flaky UI tests across all runs in the selected period.</td><td>0.00%</td><td><= 2.00%</td><td><span class="status-badge metric-ok">OK</span></td></tr>
@@ -245,7 +245,7 @@
         </table>
       </div>
       <div class="metric-cards">
-        <div class="card metric-ok"><div class="label">average pass rate</div><div class="value">100.00%</div></div>
+        <div class="card metric-fail"><div class="label">average pass rate</div><div class="value">0.00%</div></div>
         <div class="card metric-ok"><div class="label">average fail rate</div><div class="value">0.00%</div></div>
         <div class="card metric-ok"><div class="label">average broken rate</div><div class="value">0.00%</div></div>
         <div class="card metric-ok"><div class="label">average UI flaky rate</div><div class="value">0.00%</div></div>
@@ -255,11 +255,11 @@
       <details class="panel calculation-details">
         <summary>How Metrics Are Calculated</summary>
         <div class="formulas">
-          average pass rate = (100.00) / 1 = 100.00%<br/>
-          average fail rate = (0.00) / 1 = 0.00%<br/>
-          average broken rate = (0.00) / 1 = 0.00%<br/>
-          average UI flaky rate = (0.00) / 1 = 0.00%<br/>
-          average API flaky rate = (0.00) / 1 = 0.00%
+          average pass rate = n/a<br/>
+          average fail rate = n/a<br/>
+          average broken rate = n/a<br/>
+          average UI flaky rate = n/a<br/>
+          average API flaky rate = n/a
         </div>
       </details>
 
@@ -385,26 +385,26 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td>Average UI Test Duration</td><td>Average UI Test Duration = Average(UI duration / UI test count) across runs</td><td>10.43s</td><td><= 12.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
-<tr><td>Average API Test Duration</td><td>Average API Test Duration = Average(API duration / API test count) across runs</td><td>1.40s</td><td><= 1.50s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
-<tr><td>Total UI Test Time</td><td>Total UI Test Time = Average of summed UI test durations per run; this is test work, not wall-clock pipeline time</td><td>281.71s</td><td><= 300.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
-<tr><td>Average API Test Run Duration</td><td>Average API Test Run Duration = Sum(API run durations) / Number of runs</td><td>69.95s</td><td><= 75.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
-<tr><td>Average Pipeline Duration</td><td>Pipeline Duration = Time from the first API/UI test job start to the last completion</td><td>298.00s</td><td><= 360.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+            <tr><td>Average UI Test Duration</td><td>Average UI Test Duration = Average(UI duration / UI test count) across runs</td><td>0.00s</td><td><= 12.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Average API Test Duration</td><td>Average API Test Duration = Average(API duration / API test count) across runs</td><td>0.00s</td><td><= 1.50s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Total UI Test Time</td><td>Total UI Test Time = Average of summed UI test durations per run; this is test work, not wall-clock pipeline time</td><td>0.00s</td><td><= 300.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Average API Test Run Duration</td><td>Average API Test Run Duration = Sum(API run durations) / Number of runs</td><td>0.00s</td><td><= 75.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
+<tr><td>Average Pipeline Duration</td><td>Pipeline Duration = Time from the first API/UI test job start to the last completion</td><td>0.00s</td><td><= 360.00s</td><td><span class="status-badge metric-ok">OK</span></td></tr>
           </tbody>
         </table>
       </div>
       <details class="panel calculation-details">
         <summary>How Metrics Are Calculated</summary>
         <div class="formulas">
-          Average UI Test Duration = (10.43)/1=10.43s<br/>Average API Test Duration = (1.40)/1=1.40s<br/>Total UI Test Time = (281.71)/1=281.71s<br/>Average API Test Run Duration = (69.95)/1=69.95s<br/>Average Pipeline Duration = (298.00)/1=298.00s
+          Average UI Test Duration = n/a<br/>Average API Test Duration = n/a<br/>Total UI Test Time = n/a<br/>Average API Test Run Duration = n/a<br/>Average Pipeline Duration = n/a
         </div>
       </details>
       <div class="metric-cards">
-        <div class="card metric-ok"><div class="label">Average Test Duration UI tests</div><div class="value">10.43s</div></div>
-        <div class="card metric-ok"><div class="label">Average Test Duration API tests</div><div class="value">1.40s</div></div>
-        <div class="card metric-ok"><div class="label">Total UI Test Time</div><div class="value">281.71s</div></div>
-        <div class="card metric-ok"><div class="label">Average API Test Run Duration</div><div class="value">69.95s</div></div>
-        <div class="card metric-ok"><div class="label">Average Pipeline Duration</div><div class="value">298.00s</div></div>
+        <div class="card metric-ok"><div class="label">Average Test Duration UI tests</div><div class="value">0.00s</div></div>
+        <div class="card metric-ok"><div class="label">Average Test Duration API tests</div><div class="value">0.00s</div></div>
+        <div class="card metric-ok"><div class="label">Total UI Test Time</div><div class="value">0.00s</div></div>
+        <div class="card metric-ok"><div class="label">Average API Test Run Duration</div><div class="value">0.00s</div></div>
+        <div class="card metric-ok"><div class="label">Average Pipeline Duration</div><div class="value">0.00s</div></div>
       </div>
 
       <div class="metric-pair">
@@ -546,18 +546,18 @@
       <p class="desc">Compare reliability and speed without duplicating the full report for every browser.</p>
 
       <div class="browser-cards">
-        <article class="card browser-card metric-ok"><div class="browser-card-head"><h3>Chromium</h3><span class="status-badge metric-ok">OK</span></div><div class="browser-pass">100.00%</div><div class="browser-facts"><span>Failures <strong>0</strong></span><span>Flaky <strong>0.00%</strong></span><span>Avg test <strong>9.54s</strong> ≤ 11.00s</span><span>P95 test <strong>19.18s</strong></span><span>P90 run <strong>85.87s</strong> ≤ 100.00s</span><span>Runs <strong>1</strong></span></div></article>
-<article class="card browser-card metric-ok"><div class="browser-card-head"><h3>Firefox</h3><span class="status-badge metric-ok">OK</span></div><div class="browser-pass">100.00%</div><div class="browser-facts"><span>Failures <strong>0</strong></span><span>Flaky <strong>0.00%</strong></span><span>Avg test <strong>10.63s</strong> ≤ 13.00s</span><span>P95 test <strong>20.06s</strong></span><span>P90 run <strong>95.69s</strong> ≤ 115.00s</span><span>Runs <strong>1</strong></span></div></article>
-<article class="card browser-card metric-ok"><div class="browser-card-head"><h3>WebKit</h3><span class="status-badge metric-ok">OK</span></div><div class="browser-pass">100.00%</div><div class="browser-facts"><span>Failures <strong>0</strong></span><span>Flaky <strong>0.00%</strong></span><span>Avg test <strong>11.13s</strong> ≤ 14.00s</span><span>P95 test <strong>21.57s</strong></span><span>P90 run <strong>100.16s</strong> ≤ 120.00s</span><span>Runs <strong>1</strong></span></div></article>
+        <article class="card browser-card metric-fail"><div class="browser-card-head"><h3>Chromium</h3><span class="status-badge metric-fail">Failed</span></div><div class="browser-pass">0.00%</div><div class="browser-facts"><span>Failures <strong>0</strong></span><span>Flaky <strong>0.00%</strong></span><span>Avg test <strong>0.00s</strong> ≤ 11.00s</span><span>P95 test <strong>0.00s</strong></span><span>P90 run <strong>0.00s</strong> ≤ 100.00s</span><span>Runs <strong>0</strong></span></div></article>
+<article class="card browser-card metric-fail"><div class="browser-card-head"><h3>Firefox</h3><span class="status-badge metric-fail">Failed</span></div><div class="browser-pass">0.00%</div><div class="browser-facts"><span>Failures <strong>0</strong></span><span>Flaky <strong>0.00%</strong></span><span>Avg test <strong>0.00s</strong> ≤ 13.00s</span><span>P95 test <strong>0.00s</strong></span><span>P90 run <strong>0.00s</strong> ≤ 115.00s</span><span>Runs <strong>0</strong></span></div></article>
+<article class="card browser-card metric-fail"><div class="browser-card-head"><h3>WebKit</h3><span class="status-badge metric-fail">Failed</span></div><div class="browser-pass">0.00%</div><div class="browser-facts"><span>Failures <strong>0</strong></span><span>Flaky <strong>0.00%</strong></span><span>Avg test <strong>0.00s</strong> ≤ 14.00s</span><span>P95 test <strong>0.00s</strong></span><span>P90 run <strong>0.00s</strong> ≤ 120.00s</span><span>Runs <strong>0</strong></span></div></article>
       </div>
 
       <div class="panel coverage-banner">
         <div>
           <h3>Browser Coverage</h3>
           <div class="label">UI scenarios executed in Chromium, Firefox and WebKit</div>
-          <div class="label">Chromium: 9 · Firefox: 9 · WebKit: 9</div>
+          <div class="label">Chromium: 0 · Firefox: 0 · WebKit: 0</div>
         </div>
-        <div class="coverage-value">100.00% · 9/9</div>
+        <div class="coverage-value">0.00% · 0/0</div>
       </div>
 
       <div class="charts-2">
@@ -601,10 +601,10 @@
   </div>
 
   <script>
-    const data = [{"run_name": "20260812_123328_31596474598_allure-results.zip", "run_label": "2026-08-12 12:33", "report_url": "../../../reports/regression/31596474598-attempt-1/", "total_tests": 77, "passed_tests": 77, "pass_percent": 100.0, "failed_tests": 0, "fail_percent": 0.0, "broken_tests": 0, "broken_percent": 0.0, "flaky_tests": 0, "flaky_percent": 0.0, "ui_flaky_percent": 0.0, "api_flaky_percent": 0.0, "run_success": true, "stability_value": 100.0, "run_qg_passed": 3, "run_qg_failed": 0, "run_qg_status": "OK", "run_qg_css_class": "metric-ok", "total_duration_ms": 803404, "avg_duration_sec": 10.43, "avg_api_duration_sec": 1.4, "ui_run_duration_sec": 281.71, "api_run_duration_sec": 69.95, "suite_duration_ms": 298000, "suite_duration_sec": 298.0}];
-    const slowestUiTests = [{"run_label": "2026-08-12 12:33", "browser": "WebKit", "test_name": "tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step", "duration_sec": 25.36, "status": "passed", "report_url": "../../../reports/regression/31596474598-attempt-1/#testresult/744e67a0bce213cc"}, {"run_label": "2026-08-12 12:33", "browser": "Firefox", "test_name": "tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step", "duration_sec": 24.07, "status": "passed", "report_url": "../../../reports/regression/31596474598-attempt-1/#testresult/52fd76d0f90d29cd"}, {"run_label": "2026-08-12 12:33", "browser": "Chromium", "test_name": "tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step", "duration_sec": 23.91, "status": "passed", "report_url": "../../../reports/regression/31596474598-attempt-1/#testresult/b12b9ecd6a94f74c"}, {"run_label": "2026-08-12 12:33", "browser": "WebKit", "test_name": "tests.ui.identity_access.test_access_tokens#test_admin_can_create_access_token_for_user", "duration_sec": 15.88, "status": "passed", "report_url": "../../../reports/regression/31596474598-attempt-1/#testresult/caf00fa907666320"}];
-    const slowestApiTests = [{"run_label": "2026-08-12 12:33", "browser": "API", "test_name": "tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled", "duration_sec": 21.65, "status": "passed", "report_url": "../../../reports/regression/31596474598-attempt-1/#testresult/e9a0a8a4c6fb3d3c"}, {"run_label": "2026-08-12 12:33", "browser": "API", "test_name": "tests.api.build_execution.test_build_runtime_parameters#test_build_run_with_runtime_parameter", "duration_sec": 12.31, "status": "passed", "report_url": "../../../reports/regression/31596474598-attempt-1/#testresult/8a5adf2545e5d70d"}, {"run_label": "2026-08-12 12:33", "browser": "API", "test_name": "tests.api.build_execution.test_manual_build_run#test_successful_build_run", "duration_sec": 12.27, "status": "passed", "report_url": "../../../reports/regression/31596474598-attempt-1/#testresult/6182a629ec47c512"}, {"run_label": "2026-08-12 12:33", "browser": "API", "test_name": "tests.api.build_execution.test_manual_build_run#test_failed_build_run", "duration_sec": 11.21, "status": "passed", "report_url": "../../../reports/regression/31596474598-attempt-1/#testresult/5e37c87db71d706e"}];
-    const browserRuns = [{"run_id": 31596474598, "run_label": "12 Aug 12:33", "generated_at": "2026-08-12T12:33:28+00:00", "report_url": "../../../reports/regression/31596474598-attempt-1/", "browser": "Chromium", "total_tests": 9, "passed_tests": 9, "failed_tests": 0, "broken_tests": 0, "pass_rate": 100.0, "fail_rate": 0.0, "broken_rate": 0.0, "flaky_rate": 0.0, "avg_duration_sec": 9.54, "run_duration_sec": 85.87, "avg_target_sec": 11.0, "run_target_sec": 100.0}, {"run_id": 31596474598, "run_label": "12 Aug 12:33", "generated_at": "2026-08-12T12:33:28+00:00", "report_url": "../../../reports/regression/31596474598-attempt-1/", "browser": "Firefox", "total_tests": 9, "passed_tests": 9, "failed_tests": 0, "broken_tests": 0, "pass_rate": 100.0, "fail_rate": 0.0, "broken_rate": 0.0, "flaky_rate": 0.0, "avg_duration_sec": 10.63, "run_duration_sec": 95.69, "avg_target_sec": 13.0, "run_target_sec": 115.0}, {"run_id": 31596474598, "run_label": "12 Aug 12:33", "generated_at": "2026-08-12T12:33:28+00:00", "report_url": "../../../reports/regression/31596474598-attempt-1/", "browser": "WebKit", "total_tests": 9, "passed_tests": 9, "failed_tests": 0, "broken_tests": 0, "pass_rate": 100.0, "fail_rate": 0.0, "broken_rate": 0.0, "flaky_rate": 0.0, "avg_duration_sec": 11.13, "run_duration_sec": 100.16, "avg_target_sec": 14.0, "run_target_sec": 120.0}];
+    const data = [];
+    const slowestUiTests = [];
+    const slowestApiTests = [];
+    const browserRuns = [];
     const passRateTarget = 98.00;
     const failRateTarget = 2.00;
     const brokenRateTarget = 1.00;
