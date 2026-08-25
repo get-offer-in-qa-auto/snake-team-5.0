@@ -85,7 +85,7 @@
       "with_coverage": 59,
       "with_coverage_rate": 100.0
     },
-    "generated_at": "2026-08-24T04:11:42+00:00",
+    "generated_at": "2026-08-25T03:04:16+00:00",
     "latest": {
       "attempt": 1,
       "branch": "87/merge",
@@ -827,19 +827,6 @@
   },
   "daily": [
     {
-      "date": "2026-08-18",
-      "failed": 0,
-      "flaky": 0,
-      "label": "18 Aug",
-      "pass_rate": null,
-      "passed": 0,
-      "pipeline_p95_duration_seconds": null,
-      "pipeline_runs": 0,
-      "pipeline_success_rate": null,
-      "skipped": 0,
-      "total": 0
-    },
-    {
       "date": "2026-08-19",
       "failed": 0,
       "flaky": 0,
@@ -916,6 +903,19 @@
       "pipeline_success_rate": null,
       "skipped": 0,
       "total": 0
+    },
+    {
+      "date": "2026-08-25",
+      "failed": 0,
+      "flaky": 0,
+      "label": "25 Aug",
+      "pass_rate": null,
+      "passed": 0,
+      "pipeline_p95_duration_seconds": null,
+      "pipeline_runs": 0,
+      "pipeline_success_rate": null,
+      "skipped": 0,
+      "total": 0
     }
   ],
   "data_quality": {
@@ -926,7 +926,7 @@
     "published_reports": 0,
     "runs_without_report": 0
   },
-  "generated_at": "2026-08-24T04:11:42+00:00",
+  "generated_at": "2026-08-25T03:04:16+00:00",
   "metric_runs": [],
   "pipeline": {
     "completed": 0,
@@ -1203,7 +1203,7 @@
   },
   "window": {
     "days": 7,
-    "end": "2026-08-24T04:11:42+00:00",
-    "start": "2026-08-18T00:00:00+00:00"
+    "end": "2026-08-25T03:04:16+00:00",
+    "start": "2026-08-19T00:00:00+00:00"
   }
 }
