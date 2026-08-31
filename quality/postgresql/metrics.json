@@ -4,42 +4,28 @@
       "failed_runs": 2,
       "flaky": true,
       "full_name": "tests.ui.identity_access.test_access_tokens#test_admin_can_create_access_token_for_user",
-      "identity": "65fd35669a70b9cb59201e793c0baea0",
-      "last_seen": "2026-08-30T08:02:03+00:00",
-      "name": "test_admin_can_create_access_token_for_user[chromium]",
-      "p95_duration_ms": 23830.5,
-      "report_link": "reports/postgresql-regression/33300345944-attempt-1/#testresult/ba9a0b8211153ee6",
+      "identity": "c5466dff78a81ba43a417e5e9cc8194e",
+      "last_seen": "2026-08-31T08:16:25+00:00",
+      "name": "test_admin_can_create_access_token_for_user[webkit]",
+      "p95_duration_ms": 26806.8,
+      "report_link": "reports/postgresql-regression/33371582739-attempt-1/#testresult/661cc57651fae091",
       "retries": 0,
       "runs": 7,
-      "scope": "UI \u00b7 Chromium",
+      "scope": "UI \u00b7 WebKit",
       "signal": "Intermittent failure"
     },
     {
       "failed_runs": 2,
       "flaky": true,
-      "full_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user",
-      "identity": "ce2bf6c41e94f8e3d175228510aedf84",
-      "last_seen": "2026-08-30T08:02:03+00:00",
-      "name": "test_admin_can_delete_user[chromium]",
-      "p95_duration_ms": 6786.6,
-      "report_link": "reports/postgresql-regression/33300345944-attempt-1/#testresult/5c0d2a7647903fe0",
+      "full_name": "tests.ui.identity_access.test_access_tokens#test_admin_can_create_access_token_for_user",
+      "identity": "65fd35669a70b9cb59201e793c0baea0",
+      "last_seen": "2026-08-31T08:16:25+00:00",
+      "name": "test_admin_can_create_access_token_for_user[chromium]",
+      "p95_duration_ms": 23830.5,
+      "report_link": "reports/postgresql-regression/33371582739-attempt-1/#testresult/b27ef5d582fe6100",
       "retries": 0,
       "runs": 7,
       "scope": "UI \u00b7 Chromium",
-      "signal": "Intermittent failure"
-    },
-    {
-      "failed_runs": 1,
-      "flaky": true,
-      "full_name": "tests.ui.identity_access.test_access_tokens#test_admin_can_create_access_token_for_user",
-      "identity": "c5466dff78a81ba43a417e5e9cc8194e",
-      "last_seen": "2026-08-30T08:02:03+00:00",
-      "name": "test_admin_can_create_access_token_for_user[webkit]",
-      "p95_duration_ms": 22443.7,
-      "report_link": "reports/postgresql-regression/33300345944-attempt-1/#testresult/11aba6c6a0736879",
-      "retries": 0,
-      "runs": 7,
-      "scope": "UI \u00b7 WebKit",
       "signal": "Intermittent failure"
     },
     {
@@ -47,10 +33,10 @@
       "flaky": true,
       "full_name": "tests.api.build_execution.test_build_runtime_parameters#test_build_run_with_runtime_parameter",
       "identity": "42db35554be3d04493f4dcc2f8e73d1a",
-      "last_seen": "2026-08-30T08:02:03+00:00",
+      "last_seen": "2026-08-31T08:16:25+00:00",
       "name": "Manual build run receives a runtime parameter",
-      "p95_duration_ms": 13113.2,
-      "report_link": "reports/postgresql-regression/33300345944-attempt-1/#testresult/e2f8894a024a04ce",
+      "p95_duration_ms": 16399.7,
+      "report_link": "reports/postgresql-regression/33371582739-attempt-1/#testresult/6f42c7aef8814e92",
       "retries": 0,
       "runs": 7,
       "scope": "API",
@@ -61,10 +47,10 @@
       "flaky": true,
       "full_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user",
       "identity": "8ea08c767d4c651be831d3d463eb5336",
-      "last_seen": "2026-08-30T08:02:03+00:00",
+      "last_seen": "2026-08-31T08:16:25+00:00",
       "name": "test_admin_can_delete_user[firefox]",
       "p95_duration_ms": 12047.0,
-      "report_link": "reports/postgresql-regression/33300345944-attempt-1/#testresult/efd32dce78aed7fd",
+      "report_link": "reports/postgresql-regression/33371582739-attempt-1/#testresult/63f32e87c77112b0",
       "retries": 0,
       "runs": 7,
       "scope": "UI \u00b7 Firefox",
@@ -75,10 +61,10 @@
       "flaky": true,
       "full_name": "tests.api.build_execution.test_manual_build_run#test_successful_build_run",
       "identity": "0213e39e02cdaf7abace75bccfaa5482",
-      "last_seen": "2026-08-30T08:02:03+00:00",
+      "last_seen": "2026-08-31T08:16:25+00:00",
       "name": "Manual build run finishes successfully",
       "p95_duration_ms": 11937.4,
-      "report_link": "reports/postgresql-regression/33300345944-attempt-1/#testresult/5e0cd43942a31e8c",
+      "report_link": "reports/postgresql-regression/33371582739-attempt-1/#testresult/ddc93e62c70f18d8",
       "retries": 0,
       "runs": 7,
       "scope": "API",
@@ -89,13 +75,27 @@
       "flaky": true,
       "full_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user",
       "identity": "4a37c3861e696323d61f707dcf8720e4",
-      "last_seen": "2026-08-30T08:02:03+00:00",
+      "last_seen": "2026-08-31T08:16:25+00:00",
       "name": "test_admin_can_delete_user[webkit]",
-      "p95_duration_ms": 7902.0,
-      "report_link": "reports/postgresql-regression/33300345944-attempt-1/#testresult/9fe08600d61fb616",
+      "p95_duration_ms": 7544.1,
+      "report_link": "reports/postgresql-regression/33371582739-attempt-1/#testresult/371587cd82cc47de",
       "retries": 0,
       "runs": 7,
       "scope": "UI \u00b7 WebKit",
+      "signal": "Intermittent failure"
+    },
+    {
+      "failed_runs": 1,
+      "flaky": true,
+      "full_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user",
+      "identity": "ce2bf6c41e94f8e3d175228510aedf84",
+      "last_seen": "2026-08-31T08:16:25+00:00",
+      "name": "test_admin_can_delete_user[chromium]",
+      "p95_duration_ms": 6786.6,
+      "report_link": "reports/postgresql-regression/33371582739-attempt-1/#testresult/795637643acfa581",
+      "retries": 0,
+      "runs": 7,
+      "scope": "UI \u00b7 Chromium",
       "signal": "Intermittent failure"
     }
   ],
@@ -111,99 +111,42 @@
   },
   "browser_failures": [
     {
-      "browser": "Chromium",
+      "browser": "WebKit",
       "failed_results": 2,
       "failed_runs": 2,
-      "latest_run": "2026-08-29 08:46",
-      "test_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user"
-    },
-    {
-      "browser": "Chromium",
-      "failed_results": 2,
-      "failed_runs": 2,
-      "latest_run": "2026-08-29 08:46",
+      "latest_run": "2026-08-31 08:16",
       "test_name": "tests.ui.identity_access.test_access_tokens#test_admin_can_create_access_token_for_user"
     },
     {
-      "browser": "WebKit",
-      "failed_results": 1,
-      "failed_runs": 1,
+      "browser": "Chromium",
+      "failed_results": 2,
+      "failed_runs": 2,
       "latest_run": "2026-08-29 08:46",
-      "test_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user"
-    },
-    {
-      "browser": "WebKit",
-      "failed_results": 1,
-      "failed_runs": 1,
-      "latest_run": "2026-08-26 03:09",
       "test_name": "tests.ui.identity_access.test_access_tokens#test_admin_can_create_access_token_for_user"
     },
     {
       "browser": "Firefox",
       "failed_results": 1,
       "failed_runs": 1,
-      "latest_run": "2026-08-24 03:08",
+      "latest_run": "2026-08-31 08:16",
+      "test_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user"
+    },
+    {
+      "browser": "Chromium",
+      "failed_results": 1,
+      "failed_runs": 1,
+      "latest_run": "2026-08-29 08:46",
+      "test_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user"
+    },
+    {
+      "browser": "WebKit",
+      "failed_results": 1,
+      "failed_runs": 1,
+      "latest_run": "2026-08-29 08:46",
       "test_name": "tests.ui.identity_access.test_user_creation#test_admin_can_delete_user"
     }
   ],
   "browser_runs": [
-    {
-      "avg_duration_sec": 6.13,
-      "avg_target_sec": 11.0,
-      "broken_rate": 0.0,
-      "broken_tests": 0,
-      "browser": "Chromium",
-      "fail_rate": 11.11111111111111,
-      "failed_tests": 1,
-      "flaky_rate": 11.11111111111111,
-      "generated_at": "2026-08-24T03:08:39+00:00",
-      "pass_rate": 88.88888888888889,
-      "passed_tests": 8,
-      "report_url": "reports/postgresql-regression/32685018845-attempt-1/",
-      "run_duration_sec": 55.2,
-      "run_id": 32685018845,
-      "run_label": "24 Aug 03:08",
-      "run_target_sec": 100.0,
-      "total_tests": 9
-    },
-    {
-      "avg_duration_sec": 11.7,
-      "avg_target_sec": 13.0,
-      "broken_rate": 0.0,
-      "broken_tests": 0,
-      "browser": "Firefox",
-      "fail_rate": 11.11111111111111,
-      "failed_tests": 1,
-      "flaky_rate": 11.11111111111111,
-      "generated_at": "2026-08-24T03:08:39+00:00",
-      "pass_rate": 88.88888888888889,
-      "passed_tests": 8,
-      "report_url": "reports/postgresql-regression/32685018845-attempt-1/",
-      "run_duration_sec": 105.34,
-      "run_id": 32685018845,
-      "run_label": "24 Aug 03:08",
-      "run_target_sec": 115.0,
-      "total_tests": 9
-    },
-    {
-      "avg_duration_sec": 12.91,
-      "avg_target_sec": 14.0,
-      "broken_rate": 0.0,
-      "broken_tests": 0,
-      "browser": "WebKit",
-      "fail_rate": 0.0,
-      "failed_tests": 0,
-      "flaky_rate": 0.0,
-      "generated_at": "2026-08-24T03:08:39+00:00",
-      "pass_rate": 100.0,
-      "passed_tests": 9,
-      "report_url": "reports/postgresql-regression/32685018845-attempt-1/",
-      "run_duration_sec": 116.22,
-      "run_id": 32685018845,
-      "run_label": "24 Aug 03:08",
-      "run_target_sec": 120.0,
-      "total_tests": 9
-    },
     {
       "avg_duration_sec": 9.65,
       "avg_target_sec": 11.0,
@@ -545,18 +488,75 @@
       "run_label": "30 Aug 08:02",
       "run_target_sec": 120.0,
       "total_tests": 9
+    },
+    {
+      "avg_duration_sec": 9.76,
+      "avg_target_sec": 11.0,
+      "broken_rate": 0.0,
+      "broken_tests": 0,
+      "browser": "Chromium",
+      "fail_rate": 0.0,
+      "failed_tests": 0,
+      "flaky_rate": 0.0,
+      "generated_at": "2026-08-31T08:16:25+00:00",
+      "pass_rate": 100.0,
+      "passed_tests": 9,
+      "report_url": "reports/postgresql-regression/33371582739-attempt-1/",
+      "run_duration_sec": 87.82,
+      "run_id": 33371582739,
+      "run_label": "31 Aug 08:16",
+      "run_target_sec": 100.0,
+      "total_tests": 9
+    },
+    {
+      "avg_duration_sec": 7.87,
+      "avg_target_sec": 13.0,
+      "broken_rate": 0.0,
+      "broken_tests": 0,
+      "browser": "Firefox",
+      "fail_rate": 11.11111111111111,
+      "failed_tests": 1,
+      "flaky_rate": 0.0,
+      "generated_at": "2026-08-31T08:16:25+00:00",
+      "pass_rate": 88.88888888888889,
+      "passed_tests": 8,
+      "report_url": "reports/postgresql-regression/33371582739-attempt-1/",
+      "run_duration_sec": 70.8,
+      "run_id": 33371582739,
+      "run_label": "31 Aug 08:16",
+      "run_target_sec": 115.0,
+      "total_tests": 9
+    },
+    {
+      "avg_duration_sec": 12.88,
+      "avg_target_sec": 14.0,
+      "broken_rate": 0.0,
+      "broken_tests": 0,
+      "browser": "WebKit",
+      "fail_rate": 11.11111111111111,
+      "failed_tests": 1,
+      "flaky_rate": 11.11111111111111,
+      "generated_at": "2026-08-31T08:16:25+00:00",
+      "pass_rate": 88.88888888888889,
+      "passed_tests": 8,
+      "report_url": "reports/postgresql-regression/33371582739-attempt-1/",
+      "run_duration_sec": 115.95,
+      "run_id": 33371582739,
+      "run_label": "31 Aug 08:16",
+      "run_target_sec": 120.0,
+      "total_tests": 9
     }
   ],
   "browser_summary": [
     {
-      "avg_duration_sec": 9.23,
+      "avg_duration_sec": 9.75,
       "avg_target_sec": 11.0,
       "browser": "Chromium",
-      "failed_tests": 4,
-      "flaky_rate": 3.17,
+      "failed_tests": 3,
+      "flaky_rate": 1.59,
       "p90_run_duration_sec": 94.59,
-      "p95_duration_sec": 23.14,
-      "pass_rate": 93.65,
+      "p95_duration_sec": 24.8,
+      "pass_rate": 95.24,
       "run_target_sec": 100.0,
       "runs": 7,
       "status": "fail",
@@ -564,13 +564,13 @@
       "total_tests": 63
     },
     {
-      "avg_duration_sec": 10.91,
+      "avg_duration_sec": 10.36,
       "avg_target_sec": 13.0,
       "browser": "Firefox",
       "failed_tests": 1,
-      "flaky_rate": 1.59,
+      "flaky_rate": 0.0,
       "p90_run_duration_sec": 107.2,
-      "p95_duration_sec": 23.75,
+      "p95_duration_sec": 23.43,
       "pass_rate": 98.41,
       "run_target_sec": 115.0,
       "runs": 7,
@@ -582,11 +582,11 @@
       "avg_duration_sec": 10.44,
       "avg_target_sec": 14.0,
       "browser": "WebKit",
-      "failed_tests": 2,
-      "flaky_rate": 0.0,
-      "p90_run_duration_sec": 111.2,
-      "p95_duration_sec": 27.27,
-      "pass_rate": 96.83,
+      "failed_tests": 3,
+      "flaky_rate": 1.59,
+      "p90_run_duration_sec": 111.09,
+      "p95_duration_sec": 27.98,
+      "pass_rate": 95.24,
       "run_target_sec": 120.0,
       "runs": 7,
       "status": "fail",
@@ -620,7 +620,7 @@
       "with_coverage": 59,
       "with_coverage_rate": 100.0
     },
-    "generated_at": "2026-08-30T09:21:29+00:00",
+    "generated_at": "2026-08-31T08:17:18+00:00",
     "latest": {
       "attempt": 1,
       "branch": "87/merge",
@@ -1362,19 +1362,6 @@
   },
   "daily": [
     {
-      "date": "2026-08-24",
-      "failed": 2,
-      "flaky": 0,
-      "label": "24 Aug",
-      "pass_rate": 97.4,
-      "passed": 75,
-      "pipeline_p95_duration_seconds": 298.0,
-      "pipeline_runs": 1,
-      "pipeline_success_rate": 0.0,
-      "skipped": 0,
-      "total": 77
-    },
-    {
       "date": "2026-08-25",
       "failed": 0,
       "flaky": 0,
@@ -1451,6 +1438,19 @@
       "pipeline_success_rate": 100.0,
       "skipped": 0,
       "total": 77
+    },
+    {
+      "date": "2026-08-31",
+      "failed": 2,
+      "flaky": 0,
+      "label": "31 Aug",
+      "pass_rate": 97.4,
+      "passed": 75,
+      "pipeline_p95_duration_seconds": 341.0,
+      "pipeline_runs": 1,
+      "pipeline_success_rate": 0.0,
+      "skipped": 0,
+      "total": 77
     }
   ],
   "data_quality": {
@@ -1461,41 +1461,8 @@
     "published_reports": 7,
     "runs_without_report": 0
   },
-  "generated_at": "2026-08-30T09:21:29+00:00",
+  "generated_at": "2026-08-31T08:17:18+00:00",
   "metric_runs": [
-    {
-      "api_flaky_rate": 0.0,
-      "api_flaky_tests": 0,
-      "api_run_duration_sec": 71.926,
-      "api_tests": 50,
-      "attempt": 1,
-      "avg_api_duration_sec": 1.43852,
-      "avg_duration_sec": 10.25062962962963,
-      "broken_rate": 0.0,
-      "broken_tests": 0,
-      "fail_rate": 2.5974025974025974,
-      "failed_tests": 2,
-      "flaky_rate": 2.5974025974025974,
-      "flaky_tests": 2,
-      "generated_at": "2026-08-24T03:08:39+00:00",
-      "pass_rate": 97.40259740259741,
-      "passed_tests": 75,
-      "quality_gate_status": "Failed",
-      "quality_gates_failed": 2,
-      "quality_gates_passed": 1,
-      "report_url": "reports/postgresql-regression/32685018845-attempt-1/",
-      "run_id": 32685018845,
-      "run_label": "2026-08-24 03:08",
-      "run_number": 52,
-      "run_success": false,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/32685018845",
-      "suite_duration_sec": 298.0,
-      "total_tests": 77,
-      "ui_flaky_rate": 7.4074074074074066,
-      "ui_flaky_tests": 2,
-      "ui_run_duration_sec": 276.767,
-      "ui_tests": 27
-    },
     {
       "api_flaky_rate": 0.0,
       "api_flaky_tests": 0,
@@ -1693,11 +1660,44 @@
       "ui_flaky_tests": 0,
       "ui_run_duration_sec": 260.477,
       "ui_tests": 27
+    },
+    {
+      "api_flaky_rate": 0.0,
+      "api_flaky_tests": 0,
+      "api_run_duration_sec": 76.51,
+      "api_tests": 50,
+      "attempt": 1,
+      "avg_api_duration_sec": 1.5302,
+      "avg_duration_sec": 10.169296296296295,
+      "broken_rate": 0.0,
+      "broken_tests": 0,
+      "fail_rate": 2.5974025974025974,
+      "failed_tests": 2,
+      "flaky_rate": 1.2987012987012987,
+      "flaky_tests": 1,
+      "generated_at": "2026-08-31T08:16:25+00:00",
+      "pass_rate": 97.40259740259741,
+      "passed_tests": 75,
+      "quality_gate_status": "Failed",
+      "quality_gates_failed": 2,
+      "quality_gates_passed": 1,
+      "report_url": "reports/postgresql-regression/33371582739-attempt-1/",
+      "run_id": 33371582739,
+      "run_label": "2026-08-31 08:16",
+      "run_number": 59,
+      "run_success": false,
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/33371582739",
+      "suite_duration_sec": 341.0,
+      "total_tests": 77,
+      "ui_flaky_rate": 3.7037037037037033,
+      "ui_flaky_tests": 1,
+      "ui_run_duration_sec": 274.571,
+      "ui_tests": 27
     }
   ],
   "pipeline": {
     "completed": 7,
-    "p95_duration_seconds": 328.3,
+    "p95_duration_seconds": 338.9,
     "success_rate": 42.86,
     "successful": 3,
     "unsuccessful": 4
@@ -1706,7 +1706,7 @@
     {
       "description": "Unweighted average of the final pass rate of every published run.",
       "direction": "minimum",
-      "formula": "average pass rate = (97.40 + 100.00 + 96.10 + 100.00 + 98.70 + 96.10 + 100.00) / 7 = 98.33%",
+      "formula": "average pass rate = (100.00 + 96.10 + 100.00 + 98.70 + 96.10 + 100.00 + 97.40) / 7 = 98.33%",
       "key": "pass_rate",
       "name": "Average Pass Rate",
       "recommendation": "Review failing tests and fix frequent assertions.",
@@ -1720,7 +1720,7 @@
     {
       "description": "Unweighted average of the final failed-test rate of every published run.",
       "direction": "maximum",
-      "formula": "average fail rate = (2.60 + 0.00 + 3.90 + 0.00 + 1.30 + 3.90 + 0.00) / 7 = 1.67%",
+      "formula": "average fail rate = (0.00 + 3.90 + 0.00 + 1.30 + 3.90 + 0.00 + 2.60) / 7 = 1.67%",
       "key": "fail_rate",
       "name": "Average Fail Rate",
       "recommendation": "Prioritize top failing suites and stabilize environments.",
@@ -1748,7 +1748,7 @@
     {
       "description": "All flaky API and UI results divided by all final test results.",
       "direction": "maximum",
-      "formula": "flaky rate = 3 / 539 = 0.56%",
+      "formula": "flaky rate = 2 / 539 = 0.37%",
       "key": "flaky_rate",
       "name": "Flaky Rate",
       "recommendation": "Quarantine flaky tests and remove unstable waits.",
@@ -1757,12 +1757,12 @@
       "target": 2.0,
       "threshold": "<= 2.00",
       "unit": "%",
-      "value": 0.56
+      "value": 0.37
     },
     {
       "description": "Unweighted average of the UI flaky rate of every published run.",
       "direction": "maximum",
-      "formula": "average UI flaky rate = (7.41 + 0.00 + 0.00 + 0.00 + 0.00 + 3.70 + 0.00) / 7 = 1.59%",
+      "formula": "average UI flaky rate = (0.00 + 0.00 + 0.00 + 0.00 + 3.70 + 0.00 + 3.70) / 7 = 1.06%",
       "key": "ui_flaky_rate",
       "name": "Average UI Flaky Rate",
       "recommendation": "Quarantine flaky tests and remove unstable waits.",
@@ -1771,7 +1771,7 @@
       "target": 2.0,
       "threshold": "<= 2.00",
       "unit": "%",
-      "value": 1.59
+      "value": 1.06
     },
     {
       "description": "Unweighted average of the API flaky rate of every published run.",
@@ -1804,7 +1804,7 @@
     {
       "description": "Unweighted average of each run's mean UI-test duration.",
       "direction": "maximum",
-      "formula": "average UI test duration = (10.25 + 10.40 + 11.39 + 9.55 + 10.18 + 9.95 + 9.65) / 7 = 10.20s",
+      "formula": "average UI test duration = (10.40 + 11.39 + 9.55 + 10.18 + 9.95 + 9.65 + 10.17) / 7 = 10.18s",
       "key": "avg_duration_sec",
       "name": "Average UI Test Duration",
       "recommendation": "Optimize slow UI tests and reduce repeated browser setup.",
@@ -1813,12 +1813,12 @@
       "target": 12.0,
       "threshold": "<= 12.00",
       "unit": "s",
-      "value": 10.2
+      "value": 10.18
     },
     {
       "description": "Unweighted average of each run's mean API-test duration.",
       "direction": "maximum",
-      "formula": "average API test duration = (1.44 + 1.38 + 1.16 + 1.41 + 1.41 + 1.36 + 1.41) / 7 = 1.37s",
+      "formula": "average API test duration = (1.38 + 1.16 + 1.41 + 1.41 + 1.36 + 1.41 + 1.53) / 7 = 1.38s",
       "key": "avg_api_duration_sec",
       "name": "Average API Test Duration",
       "recommendation": "Optimize slow API tests and reduce network or database overhead.",
@@ -1827,12 +1827,12 @@
       "target": 1.5,
       "threshold": "<= 1.50",
       "unit": "s",
-      "value": 1.37
+      "value": 1.38
     },
     {
       "description": "Unweighted average of the summed UI test duration in each run.",
       "direction": "maximum",
-      "formula": "total UI test time = (276.77 + 280.76 + 307.44 + 257.78 + 274.93 + 268.70 + 260.48) / 7 = 275.27s",
+      "formula": "total UI test time = (280.76 + 307.44 + 257.78 + 274.93 + 268.70 + 260.48 + 274.57) / 7 = 274.95s",
       "key": "ui_run_duration_sec",
       "name": "Total UI Test Time",
       "recommendation": "Reduce total UI test work with faster tests and setup reuse.",
@@ -1841,12 +1841,12 @@
       "target": 300.0,
       "threshold": "<= 300.00",
       "unit": "s",
-      "value": 275.27
+      "value": 274.95
     },
     {
       "description": "Unweighted average of the summed API test duration in each run.",
       "direction": "maximum",
-      "formula": "average API run duration = (71.93 + 69.17 + 58.05 + 70.49 + 70.42 + 68.11 + 70.34) / 7 = 68.36s",
+      "formula": "average API run duration = (69.17 + 58.05 + 70.49 + 70.42 + 68.11 + 70.34 + 76.51) / 7 = 69.01s",
       "key": "api_run_duration_sec",
       "name": "Average API Test Run Duration",
       "recommendation": "Optimize API request and database paths and trim heavy setup.",
@@ -1855,12 +1855,12 @@
       "target": 75.0,
       "threshold": "<= 75.00",
       "unit": "s",
-      "value": 68.36
+      "value": 69.01
     },
     {
       "description": "Unweighted average of the GitHub Actions test-stage duration.",
       "direction": "maximum",
-      "formula": "average pipeline duration = (298.00 + 260.00 + 276.00 + 269.00 + 315.00 + 334.00 + 297.00) / 7 = 292.71s",
+      "formula": "average pipeline duration = (260.00 + 276.00 + 269.00 + 315.00 + 334.00 + 297.00 + 341.00) / 7 = 298.86s",
       "key": "suite_duration_sec",
       "name": "Average Pipeline Duration",
       "recommendation": "Increase parallelism and remove long serial bottlenecks.",
@@ -1869,7 +1869,7 @@
       "target": 360.0,
       "threshold": "<= 360.00",
       "unit": "s",
-      "value": 292.71
+      "value": 298.86
     }
   ],
   "quality_targets": {
@@ -1935,6 +1935,19 @@
     }
   },
   "recent_runs": [
+    {
+      "attempt": 1,
+      "branch": "main",
+      "conclusion": "failure",
+      "created_at": "2026-08-31T08:09:40+00:00",
+      "duration_seconds": 341.0,
+      "event": "schedule",
+      "id": 33371582739,
+      "number": 59,
+      "report_url": "reports/postgresql-regression/33371582739-attempt-1/",
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/33371582739",
+      "test_suite_complete": true
+    },
     {
       "attempt": 1,
       "branch": "main",
@@ -2012,57 +2025,27 @@
       "report_url": "reports/postgresql-regression/32803361770-attempt-1/",
       "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/32803361770",
       "test_suite_complete": true
-    },
-    {
-      "attempt": 1,
-      "branch": "main",
-      "conclusion": "failure",
-      "created_at": "2026-08-24T03:02:00+00:00",
-      "duration_seconds": 298.0,
-      "event": "schedule",
-      "id": 32685018845,
-      "number": 52,
-      "report_url": "reports/postgresql-regression/32685018845-attempt-1/",
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/32685018845",
-      "test_suite_complete": true
     }
   ],
   "reference_summary": {
     "api_flaky_rate": 0.0,
-    "api_run_duration_sec": 68.36,
-    "avg_api_duration_sec": 1.37,
-    "avg_duration_sec": 10.2,
+    "api_run_duration_sec": 69.01,
+    "avg_api_duration_sec": 1.38,
+    "avg_duration_sec": 10.18,
     "broken_rate": 0.0,
     "fail_rate": 1.67,
-    "flaky_rate": 0.56,
+    "flaky_rate": 0.37,
     "pass_rate": 98.33,
     "published_runs": 7,
     "stability_rate": 42.86,
     "successful_runs": 3,
-    "suite_duration_sec": 292.71,
-    "total_flaky": 3,
+    "suite_duration_sec": 298.86,
+    "total_flaky": 2,
     "total_tests": 539,
-    "ui_flaky_rate": 1.59,
-    "ui_run_duration_sec": 275.27
+    "ui_flaky_rate": 1.06,
+    "ui_run_duration_sec": 274.95
   },
   "run_trends": [
-    {
-      "attempt": 1,
-      "conclusion": "failure",
-      "created_at": "2026-08-24T03:02:00+00:00",
-      "flaky_results": 2,
-      "label": "24 Aug 03:02",
-      "pipeline_success_rate": 0.0,
-      "report_url": "reports/postgresql-regression/32685018845-attempt-1/",
-      "run_id": 32685018845,
-      "run_number": 52,
-      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/32685018845",
-      "test_failed": 2,
-      "test_pass_rate": 97.4,
-      "test_suite_complete": true,
-      "test_total": 77,
-      "workflow_duration_seconds": 298.0
-    },
     {
       "attempt": 1,
       "conclusion": "success",
@@ -2164,15 +2147,32 @@
       "test_suite_complete": true,
       "test_total": 77,
       "workflow_duration_seconds": 297.0
+    },
+    {
+      "attempt": 1,
+      "conclusion": "failure",
+      "created_at": "2026-08-31T08:09:40+00:00",
+      "flaky_results": 1,
+      "label": "31 Aug 08:09",
+      "pipeline_success_rate": 0.0,
+      "report_url": "reports/postgresql-regression/33371582739-attempt-1/",
+      "run_id": 33371582739,
+      "run_number": 59,
+      "run_url": "https://github.com/get-offer-in-qa-auto/snake-team-5.0/actions/runs/33371582739",
+      "test_failed": 2,
+      "test_pass_rate": 97.4,
+      "test_suite_complete": true,
+      "test_total": 77,
+      "workflow_duration_seconds": 341.0
     }
   ],
   "slowest_api_tests": [
     {
       "browser": "API",
-      "duration_sec": 30.39,
-      "report_url": "reports/postgresql-regression/32685018845-attempt-1/#testresult/6204b7e6bb1213ec",
-      "run_id": 32685018845,
-      "run_label": "2026-08-24 03:08",
+      "duration_sec": 30.38,
+      "report_url": "reports/postgresql-regression/33371582739-attempt-1/#testresult/aeb2c684f3deb885",
+      "run_id": 33371582739,
+      "run_label": "2026-08-31 08:16",
       "status": "passed",
       "test_name": "tests.api.build_execution.test_build_cancellation#test_running_build_can_be_cancelled"
     },
@@ -2207,19 +2207,19 @@
   "slowest_ui_tests": [
     {
       "browser": "WebKit",
-      "duration_sec": 31.59,
-      "report_url": "reports/postgresql-regression/32685018845-attempt-1/#testresult/661080bbb3de29af",
-      "run_id": 32685018845,
-      "run_label": "2026-08-24 03:08",
+      "duration_sec": 31.0,
+      "report_url": "reports/postgresql-regression/32925034333-attempt-1/#testresult/bb1bcac4b9f82bb5",
+      "run_id": 32925034333,
+      "run_label": "2026-08-26 03:09",
       "status": "passed",
       "test_name": "tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step"
     },
     {
       "browser": "WebKit",
-      "duration_sec": 31.0,
-      "report_url": "reports/postgresql-regression/32925034333-attempt-1/#testresult/bb1bcac4b9f82bb5",
-      "run_id": 32925034333,
-      "run_label": "2026-08-26 03:09",
+      "duration_sec": 29.7,
+      "report_url": "reports/postgresql-regression/33371582739-attempt-1/#testresult/34414086caf7712f",
+      "run_id": 33371582739,
+      "run_label": "2026-08-31 08:16",
       "status": "passed",
       "test_name": "tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step"
     },
@@ -2234,12 +2234,12 @@
     },
     {
       "browser": "WebKit",
-      "duration_sec": 27.6,
-      "report_url": "reports/postgresql-regression/32803361770-attempt-1/#testresult/8ad449237a1814ff",
-      "run_id": 32803361770,
-      "run_label": "2026-08-25 03:03",
-      "status": "passed",
-      "test_name": "tests.ui.build_steps.test_build_step_creation#test_admin_can_create_command_line_build_step"
+      "duration_sec": 28.03,
+      "report_url": "reports/postgresql-regression/33371582739-attempt-1/#testresult/661cc57651fae091",
+      "run_id": 33371582739,
+      "run_label": "2026-08-31 08:16",
+      "status": "failed",
+      "test_name": "tests.ui.identity_access.test_access_tokens#test_admin_can_create_access_token_for_user"
     }
   ],
   "suites": [
@@ -2247,7 +2247,7 @@
       "failed": 2,
       "flaky_tests": 0,
       "name": "API",
-      "p95_duration_ms": 11209.2,
+      "p95_duration_ms": 11205.2,
       "pass_rate": 99.43,
       "passed": 348,
       "skipped": 0,
@@ -2255,21 +2255,21 @@
       "unique_tests": 50
     },
     {
-      "failed": 4,
+      "failed": 3,
       "flaky_tests": 1,
       "name": "UI \u00b7 Chromium",
-      "p95_duration_ms": 23135.3,
-      "pass_rate": 93.65,
-      "passed": 59,
+      "p95_duration_ms": 24796.1,
+      "pass_rate": 95.24,
+      "passed": 60,
       "skipped": 0,
       "total": 63,
       "unique_tests": 9
     },
     {
       "failed": 1,
-      "flaky_tests": 1,
+      "flaky_tests": 0,
       "name": "UI \u00b7 Firefox",
-      "p95_duration_ms": 23747.2,
+      "p95_duration_ms": 23427.4,
       "pass_rate": 98.41,
       "passed": 62,
       "skipped": 0,
@@ -2277,12 +2277,12 @@
       "unique_tests": 9
     },
     {
-      "failed": 2,
-      "flaky_tests": 0,
+      "failed": 3,
+      "flaky_tests": 1,
       "name": "UI \u00b7 WebKit",
-      "p95_duration_ms": 27274.0,
-      "pass_rate": 96.83,
-      "passed": 61,
+      "p95_duration_ms": 27983.4,
+      "pass_rate": 95.24,
+      "passed": 60,
       "skipped": 0,
       "total": 63,
       "unique_tests": 9
@@ -2301,7 +2301,7 @@
   },
   "window": {
     "days": 7,
-    "end": "2026-08-30T09:21:29+00:00",
-    "start": "2026-08-24T00:00:00+00:00"
+    "end": "2026-08-31T08:17:18+00:00",
+    "start": "2026-08-25T00:00:00+00:00"
   }
 }
