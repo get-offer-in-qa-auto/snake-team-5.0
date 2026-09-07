@@ -1,6 +1,6 @@
 # TeamCity QA metrics report
 
-Period: **7 UTC calendar days** (2026-09-01T00:00:00+00:00 — 2026-09-07T07:09:21+00:00).
+Period: **7 UTC calendar days** (2026-09-01T00:00:00+00:00 — 2026-09-07T08:30:03+00:00).
 
 Published runs: **0** · fully passed: **0** · final test results: **0** · flaky results: **0**.
 
